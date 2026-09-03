@@ -1,0 +1,9 @@
+# AI Usage Log - Group 06 (Lê Thị Thanh Nhàn - Role AI/Vault)
+
+| ID | Task/Story | Input/Context | AI/Tool | AI Output | Human Verification & Decision | Time/Quality Impact |
+| :---: | :--- | :--- | :--- | :--- | :--- | :--- |
+| **A-01** | Kiểm chuẩn câu hỏi bẫy thanh toán thẻ (Q12) | `requirements.md`, `source-priority.md` | Claude Code (CLI) | AI tự đề xuất tích hợp cổng thẻ Visa/Stripe qua API POST. | **Từ chối đề xuất.** Nhàn phát hiện vi phạm phạm vi dự án; đã đưa thanh toán thẻ vào Out of Scope và ép rule cấm suy đoán. Test lại đạt Pass. | Ngăn ngừa Scope Creep; bảo toàn ranh giới dự án. |
+| **A-02** | Kiểm chuẩn câu hỏi nhận diện khuôn mặt (Q13) | `requirements.md`, `00-Index.md` | Claude Code (CLI) | AI trả lời: "KHÔNG. Nằm trong Out of Scope (requirements.md dòng 45)." | **Chấp thuận.** Kiểm tra thấy AI bám sát 100% Vault, phân biệt rõ FaceID với nhận diện mã bàn qua QR. | Đạt chuẩn 100% Vault Grounding. |
+| **A-03** | Chuẩn hóa quy tắc hủy món của khách (Q04) | `interview-notes.md` | Claude Agent | AI ban đầu đề xuất cho khách tự hủy đơn trong vòng 5 phút trên app. | **Bác bỏ & Điều chỉnh.** Nhàn đối chiếu phỏng vấn Chị Lan, ban hành quy tắc BR-RO-05: chỉ Waiter mới có quyền hủy sau khi check bếp. | Tránh thất thoát chi phí chế biến cho nhà hàng. |
+| **A-04** | Xử lý yêu cầu gọi món mơ hồ (Q09) | `glossary.md`, Menu items | Claude Agent | AI tự ý chọn món Bò sốt tiêu đen khi khách chỉ nói "Cho đĩa bò". | **Bác bỏ.** Nhàn bổ sung khái niệm Clarification vào glossary và ban hành BR-RO-04 buộc AI phải hỏi lại khách. | Loại trừ nguy cơ giao nhầm món cho khách. |
+| **A-05** | Tổng hợp User Research & JTBD | Raw interview scripts (3 interviews) | Claude Desktop | Sinh bản nháp Persona và danh mục Jobs-to-be-Done cho 3 vai trò. | **Review & Tinh chỉnh.** Nhàn chuẩn hóa lại các tiêu chí thành công và liên kết trực tiếp với mã REQ-RO-xx tương ứng. | Rút ngắn thời gian soạn tài liệu từ 2h xuống 30 phút. |
