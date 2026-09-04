@@ -7,11 +7,19 @@ Hệ thống Smart Restaurant Ordering & KDS
 Số hóa hoàn toàn quy trình phục vụ tại bàn, từ lúc khách quét QR gọi món (có AI tư vấn) đến khi bếp nhận đơn qua KDS và khách tự thanh toán, giúp giảm tỷ lệ sai sót đơn hàng xuống dưới 2% và tăng hiệu suất xoay vòng bàn.
 
 ## 3. Core Features (Tính năng cốt lõi)
-Dựa trên 4 luồng thao tác chính yếu (User Stories), hệ thống tập trung giải quyết:
-- **US-01: Guest Ordering (E-Menu & Giỏ hàng):** Cho phép khách hàng tự quét mã QR tại bàn để xem E-Menu và chọn món. Bắt buộc hiển thị Order Draft để xác nhận (Explicit Confirmation).
-- **US-02: AI Voice Ordering:** Tích hợp AI Assistant nhận diện giọng nói hỗ trợ gọi món nhanh, xử lý các trường hợp dị ứng hoặc thiếu thông tin (Clarification). Hỗ trợ Fallback sang nhập text nếu ồn.
-- **US-03: Kitchen KDS (Màn hình bếp):** Màn hình hiển thị ticket order trong bếp theo thời gian thực (Websocket). Cảnh báo quá 15 phút (màu đỏ) và đồng bộ trạng thái "Out of Stock" khóa món tự động.
-- **US-04: Waiter Table Management:** Tablet cho nhân viên phục vụ nhận thông báo khi món chín, cập nhật sơ đồ bàn (Table Map) và xử lý phân quyền Hủy món (Void/Refund) qua mã PIN Quản lý.
+Hệ thống bao gồm 8 User Stories (đáp ứng tiêu chuẩn 8-12 US của giáo trình), được chia làm 2 nhóm:
+
+**Nhóm 1: Luồng Vận hành chính (End-to-End Workflow)**
+- **US-01: Guest Ordering (E-Menu & Giỏ hàng):** Khách tự quét mã QR tại bàn để xem Menu và chọn món. Bắt buộc hiển thị Order Draft (Explicit Confirmation).
+- **US-02: AI Voice Ordering:** Tích hợp AI nhận diện giọng nói gọi món nhanh, có cơ chế hỏi lại (Clarification) và Fallback nhập text.
+- **US-03: Kitchen KDS (Màn hình bếp):** KDS hiển thị ticket realtime (Websocket). Cảnh báo đỏ món quá 15 phút, đồng bộ khóa món (Out of Stock).
+- **US-04: Waiter Table Management:** Tablet cho nhân viên nhận thông báo món chín, cập nhật Table Map và xử lý Hủy món (Void) qua mã PIN.
+
+**Nhóm 2: Luồng Phụ trợ & Quản trị (Supporting & Admin)**
+- **US-05: Split Bill (Chia tiền hóa đơn):** Khách hàng chia tiền ngay trên điện thoại (Chia đều hoặc theo món) bằng MoMo/VNPAY.
+- **US-06: Revenue Dashboard:** Quản lý xem biểu đồ doanh thu và top món bán chạy trong ngày theo thời gian thực trên POS.
+- **US-07: CMS Menu Management:** Quản lý sửa giá, ảnh món ăn. Áp dụng RBAC cấm nhân viên phục vụ truy cập tính năng này.
+- **US-08: Inventory Reconciliation:** Bếp trưởng đối soát hao hụt nguyên liệu thực tế cuối ca so với lý thuyết.
 ## 4. Ranh giới Dự án (Out of Scope)
 - Cổng thanh toán quốc tế (Visa/Mastercard/Stripe).
 - Ứng dụng/Nghiệp vụ giao hàng tận nơi (Delivery).
