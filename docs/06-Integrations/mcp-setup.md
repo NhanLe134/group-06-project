@@ -54,8 +54,8 @@ Tệp cấu hình MCP Server được thiết lập trong tệp cấu hình AI A
       "args": ["-y", "@modelcontextprotocol/server-taiga"],
       "env": {
         "TAIGA_HOST": "https://taiga.io",
-        "TAIGA_PROJECT_SLUG": "nhanle134-group-06-smart-restaurant",
-        "TAIGA_API_TOKEN": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        "TAIGA_PROJECT_SLUG": "ntqtrang2k5-g6-restaurant-operations-smart-ordering",
+        "TAIGA_API_TOKEN": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg4NTQ1MDA0LCJqdGkiOiI5ZWUwY2NiZTRhMmE0NmY0YTliNWJhZTZmMzQ2ODZlMyIsInVzZXJfaWQiOjk1NzIxNX0.BZsPc8Okf9hzO2YFp8SEZ75E-gNZC9OqVfLzDeo513NU6er5bN3Enb181jUH7aGcjjiiGjvq0B5xI8lrNTaChNyQCakSDRMJjsgnYEOnvnwpbyCbVDps2zYXjh9tT2r4xHkB3O4UJs-cFLLcdxcX878hmD8GFpV39CLa_cGA2XO54GcZ-iohvLB95Z2JNoGkXn9HIogTqFogOYT-0ssDV-8yuc3EkZT1Hlmw86BrEXFyeuKlGEqSb_JyZI-C4d-EtoKekKSJ-zg2MANRfHPeNGs0VlzqqJeDA2cs_y4BQklgeItLb8Rlr6cCT6ufx6jCyebZr2bQlo-tb6THofDf7A"
       }
     },
     "figma-mcp": {
