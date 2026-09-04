@@ -7,9 +7,14 @@ Hệ thống Single Source of Truth cho con người và AI Agents (Claude Code 
 - `01-Requirements/glossary.md`: Từ điển thuật ngữ chuẩn cho con người và AI.
 - `02-Research/interview-notes.md`: Ghi chép phỏng vấn thô 3 người dùng thực tế.
 - `02-Research/user-research.md`: Tổng hợp Persona, JTBD và Pain points.
+- `03-Product/PRD.md`: Product Requirements Document.
+- `04-User-Stories/user-stories.md`: Danh mục User Stories và Acceptance Criteria.
+- `05-Design/`: Wireframe, UI mockup, design system (chờ Design phase).
+- `06-Engineering/`: Engineering Outputs — `architecture.md` (C4 + ADR-ARCH), `data-model.md` (ERD), `command-schema.md` (intent AI), `api-contract.md`, `story-spec-ai-order.md`, `repo-structure.md`, `ai-prompt-and-review.md`.
 - `07-QA/vault-qa-benchmark.md`: Bảng kiểm chuẩn 20 câu hỏi đánh giá AI.
 - `08-Decisions/decision-log.md`: Nhật ký quyết định kiến trúc và thay đổi nghiệp vụ (ADR).
 - `docs/AI_USAGE_LOG.md`: Nhật ký kiểm soát AI và bằng chứng con người can thiệp.
+- `docs/TRACEABILITY.md`: Ma trận truy vết Requirements ↔ User Stories ↔ Test.
 
 ## QUY TẮC BẮT BUỘC KHI AI TRUY VẤN VAULT (AI VAULT GUARDRAILS):
 ### 1. Nguyên tắc truy vấn & phản hồi dữ liệu:
