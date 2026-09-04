@@ -15,4 +15,6 @@
 | T-10 | US-05 | Viết API `PUT /api/menu/out-of-stock` và logic Broadcast khóa món. | Backend | Nhã (Dev) | 3h | Món bị disable trên mọi client. |
 | T-11 | US-06 | Tích hợp thư viện sinh QR Code động cho MoMo/VNPAY. | Frontend | Nhã (Dev) | 3h | QR code scan được bằng app bank. |
 | T-12 | US-07 | Viết Middleware Check Role (RBAC) cho endpoint `POST /api/order/void`. | Backend | Nhã (Dev) | 2h | Trả về 403 nếu không phải Manager. |
-| T-13 | ALL | Viết Unit Test cho các logic tính tiền và chia bill. | QA | Ny (QA) | 4h | Pass 100% test cases. |
+| T-13 | US-08 | Build UI Màn hình đối soát tồn kho, highlight đỏ khi chênh lệch. | Frontend | Nhã (Dev) | 3h | Bảng nhập số liệu tồn kho cuối ngày. |
+| T-14 | US-08 | Viết API `POST /api/inventory/reconcile` lưu chốt ca và cập nhật tồn kho. | Backend | Nhã (Dev) | 3h | API cập nhật tồn kho ngày tiếp theo. |
+| T-15 | ALL | Viết Unit Test cho các logic tính tiền và chia bill. | QA | Ny (QA) | 4h | Pass 100% test cases. |
