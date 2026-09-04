@@ -1,5 +1,4 @@
 # Ghi chép Phỏng vấn & Khảo sát Người dùng (Interview Notes - Detailed BA Script)
-> Dữ liệu thô ban đầu phục vụ bóc tách yêu cầu và phân tích Persona/JTBD. Mọi tài liệu PRD, Flow và User Stories sau này đều phải bắt nguồn từ dữ liệu trong file này. Transcript đã được ghi chép đầy đủ từ các buổi phỏng vấn sâu (Deep Interview) kéo dài 45-60 phút mỗi buổi.
 
 ---
 
@@ -22,7 +21,7 @@ Nhóm mình hay có người kén ăn hoặc dị ứng. Ví dụ vợ mình kh�
 **BA:** Nếu hệ thống nhà hàng có một ứng dụng hoặc QR code tại bàn, anh mong muốn nó giải quyết bài toán này như thế nào?
 
 **Tuấn:** 
-Mình rất muốn có một **Trợ lý ảo (AI Assistant)** trên điện thoại khi quét mã QR. 
+Mình rất muốn có một **Trợ lý ảo** trên điện thoại khi quét mã QR. 
 
 Mình không muốn phải lướt lướt tự tìm kiếm nữa. Mình chỉ cần gõ (hoặc bấm nút nói âm thanh): *"Tư vấn cho bàn mình 4 món, trong đó có 2 món không cay cho trẻ em và tuyệt đối không có đậu phộng, ngân sách tầm 1 triệu rưỡi"*. 
 
