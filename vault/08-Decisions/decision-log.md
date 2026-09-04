@@ -1,10 +1,13 @@
-# DECISION LOG (ADR - Architecture & Business Decision Log)
+# DECISION LOG (Nhật ký Quyết định Kiến trúc & Nghiệp vụ - ADR)
 
-## ADR-001: Quy tắc xử lý món chuyển Out of Stock khi đang nằm trong Order Draft
-- **Ngày quyết định**: 2026-09-01
-- **Người quyết định**: Lê Thị Thanh Nhàn (Role: AI/Vault & UX/UI)
-- **Bối cảnh**: AI Vault phát hiện lỗ hổng tri thức (Missing Data) khi món chuyển Out of Stock (`REQ-09`) trong lúc khách đang giữ trong Order Draft nhưng chưa bấm xác nhận (`REQ-02`).
-- **Quyết định chính thức (Human Decision)**:
-  1. Khi món chuyển OOS, item đó trong Order Draft của khách sẽ tự động **chuyển sang màu xám (Grayed-out)** kèm nhãn đỏ *"Món đã hết"*.
-  2. Nút "Xác nhận gửi bếp" (Explicit Confirmation) sẽ **bị khóa (Disabled)** cho đến khi khách xóa món OOS đó ra khỏi Order Draft.
-  3. AI Assistant sẽ hiển thị thông báo nhẹ nhàng: *"Dạ món [Tên món] vừa hết hàng, anh/chị vui lòng bỏ món khỏi danh sách để chốt đơn nhé!"*.
+> **Dự án**: Hệ thống Gọi món Nhà hàng Thông minh (Group 06)  
+> **Người quản lý Vault**: Lê Thị Thanh Nhàn (Role AI/Vault Master & UX/UI Designer)  
+
+---
+
+| ID | Quyết định | Trạng thái | Ngày / Người duyệt | Bối cảnh (Context) | Quyết định chính thức (Decision) | Phương án bị loại (Alternatives) | Hệ quả & Tác động (Consequences) | Kiểm chứng / Theo dõi (Follow-up) |
+| :---: | :--- | :---: | :--- | :--- | :--- | :--- | :--- | :--- |
+| **ADR-001** | Xử lý món hết hàng (Out of Stock) trong bản nháp giỏ hàng | Approved | 2026-09-01<br>Lê Thị Thanh Nhàn | Món chuyển sang hết hàng (`REQ-09`) đúng lúc khách đang giữ món trong giỏ hàng tạm tính chưa chốt (`REQ-02`). Vault chưa có quy định xử lý. | 1. Món hết hàng trong giỏ tự mờ xám (*Grayed-out*) kèm nhãn đỏ *"Món đã hết"*. <br>2. Vô hiệu hóa nút *"Xác nhận gửi bếp"* cho đến khi gỡ món.<br>3. Trợ lý AI nhắc nhở đổi món khác. | Tự động xóa món khỏi giỏ (gây bất ngờ cho khách); Cho phép gửi bếp rồi bếp hủy sau (gây phiền hà cho khách). | **+** Tránh việc bếp nhận đơn món đã hết.<br>**-** Cần đồng bộ trạng thái tồn kho thời gian thực xuống màn hình khách. | Kiểm thử Benchmark Q10 đạt Pass đợt 3. Đã cài đặt vào luồng FLOW C. |
+| **ADR-002** | Hiển thị rõ trạng thái đang thu âm giọng nói AI | Approved | 2026-09-04<br>Lê Thị Thanh Nhàn | Kết thử Usability (Output #11) cho thấy 2/3 người thử nghiệm lúng túng không biết ứng dụng đã bắt đầu nghe giọng nói hay chưa. | 1. Bổ sung hiệu ứng sóng âm nhấp nháy khi micro hoạt động.<br>2. Dòng chữ thông báo rõ *"Đang nghe..."*.<br>3. Bổ sung nút bấm dừng thu âm trực quan. | Chỉ hiển thị icon biểu tượng micro cố định (người dùng không biết hệ thống đã bắt đầu nghe hay chưa). | **+** Người dùng nhận biết ngay khi nào cần nói.<br>**+** Giảm thời gian do dự từ 12s xuống dưới 3s. | Kiểm thử Usability đợt 2: 3/3 người test thao tác mượt mà. Đã cập nhật vào Prototype. |
+| **ADR-003** | Rõ ràng hóa nút bấm gửi bếp để tránh hiểu nhầm đã chốt đơn | Approved | 2026-09-04<br>Lê Thị Thanh Nhàn | Kết quả kiểm thử Usability phát hiện 1/3 người dùng tưởng rằng khi món nhảy vào giỏ hàng là đơn đã được tự động gửi xuống bếp rồi. | 1. Đổi tên nút bấm xác nhận thành *"Xác nhận gửi Bếp ngay"* màu nổi bật.<br>2. Thêm dòng thông báo màu đỏ *"Bản nháp - Chưa gửi bếp"* ở đầu giỏ hàng. | Tự động gửi đơn xuống bếp ngay khi khách ngưng nói (vi phạm quy tắc bắt buộc khách xác nhận `BR-RO-03`). | **+** Ngăn chặn hoàn toàn việc khách hiểu nhầm đơn đã được gửi.<br>**+** Khách luôn rà soát lại món trước khi bấm gửi. | Đã xác minh 3/3 người test đọc kỹ giỏ hàng và chủ động bấm nút xác nhận gửi bếp. |
+| **ADR-004** | Giao diện hỏi lại dạng thẻ gợi ý khi khách gọi món chung chung | Approved | 2026-09-04<br>Lê Thị Thanh Nhàn | Khách nói câu lệnh không rõ ràng như *"Cho 1 đĩa bò"* (`BR-RO-04`), trong khi thực đơn có `Bò xào cần` và `Bò sốt tiêu đen`. | AI đưa ra lời hỏi lại tự nhiên (*"Nhà hàng có 2 món bò, bạn chọn món nào?"*) kết hợp hiển thị các thẻ món ăn kèm hình ảnh và giá tiền để khách bấm chọn nhanh. | Dùng danh sách sổ xuống (Dropdown List) khô cứng; AI tự ý chọn bừa 1 món thay khách (vi phạm `BR-RO-04`). | **+** Giao diện thân thiện, dễ tương tác trên điện thoại.<br>**+** Giúp khách chọn đúng món mình muốn chỉ với 1 chạm. | 3/3 người test hiểu ngay câu hỏi và bấm chọn thẻ món thành công trong Task 3. |

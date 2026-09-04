@@ -1,0 +1,3025 @@
+GIÁO TRÌNH THỰC HÀNH
+
+THỰC HÀNH LẬP TRÌNHỨNG DỤNG DOANH NGHIỆP
+
+Hướng dẫn dự án AI-assisted từ yêu cầu đến sản phẩm triển khai được
+
+Lớp học
+
+75 sinh viên · 15 nhóm × 5 người
+
+Đánh giá
+
+Bài 1 = 10% · Bài 2 = 30% · Bài cuối = 60%
+
+Báo cáo cá nhân
+
+2 lần/sinh viên · Lần 1: Bài 1+2 · Lần 2: Bài cuối
+
+Nguyên tắc xuyên suốt
+
+AI tạo tốc độ; sinh viên chịu trách nhiệm về yêu cầu, quyết định, kiểm chứng và chất lượng. Mọi kết quả quan trọng phải có artifact và evidence có thể kiểm tra.
+
+Phiên bản 2026 · Lab Manual dành cho sinh viên
+
+0. Cách dùng tài liệu này
+
+Tài liệu được viết như một quy trình thực hành. Nhóm chọn một dự án duy nhất và phát triển xuyên suốt cả học phần. Mỗi bài tập là một quality gate của cùng dự án; bài sau phải kế thừa artifact của bài trước, không làm lại từ đầu.
+
+Cách học hiệu quả
+
+Ở mỗi giai đoạn, đọc 6 mục theo thứ tự: Mục tiêu → Input → Các bước làm → Prompt mẫu → Output phải nộp → Self-check. Chỉ chuyển sang giai đoạn tiếp theo khi self-check đạt.
+
+0.1. Luồng tổng thể
+
+Vòng lặp bắt buộc ở mọi bước: Context → Plan → Generate → Verify → Integrate → Learn/Reuse. Không dùng AI theo kiểu nhập một câu lệnh rồi sao chép kết quả thẳng vào bài nộp.
+
+0.2. Artifact là gì?
+
+Artifact là đầu ra có thể mở, đọc, chạy hoặc kiểm tra lại: file Markdown, Figma frame, issue Taiga, pull request, test report, deployment URL, video demo, log hoặc quyết định kỹ thuật. Screenshot chỉ là bằng chứng phụ, không thay thế artifact gốc.
+
+Artifact
+
+Ví dụ đúng
+
+Ví dụ chưa đủ
+
+Requirement
+
+requirements.md có ID + nguồn + trạng thái
+
+Ảnh chụp đoạn chat AI
+
+Prototype
+
+URL/file prototype + test notes
+
+Video quay prototype nhưng không có file/link
+
+Backlog
+
+Taiga có Epic/Story/Task + owner + AC
+
+Danh sách việc trong chat nhóm
+
+Code
+
+Repository + PR + test + commit liên quan story
+
+ZIP code không có lịch sử
+
+QA
+
+Test cases + test result + bug report
+
+“Đã test OK”
+
+Deploy
+
+URL + runbook + release notes
+
+Ảnh trang web đang chạy
+
+0.3. Cấu trúc thư mục chuẩn
+
+Cấu trúc tối thiểu
+
+project/├─ README.md├─ docs/│  ├─ 00-project-index.md│  ├─ 01-discovery/│  ├─ 02-vault/│  ├─ 03-product/│  ├─ 04-design/│  ├─ 05-technical/│  ├─ 06-testing/│  ├─ 07-release/│  └─ logs/├─ app/ hoặc src/├─ tests/└─ .env.example
+
+1. Tổ chức lớp, nhóm và cách tính điểm
+
+Mỗi nhóm 5 người. Mỗi nhóm vận hành như một product squad nhỏ. Vai trò chính giúp phân trách nhiệm nhưng không được tạo “silo”: tất cả thành viên phải hiểu toàn bộ luồng từ requirement đến deploy.
+
+Vai trò gợi ý
+
+Trách nhiệm chính
+
+Evidence cá nhân nên sở hữu
+
+Product/BA
+
+Requirement, PRD, Story, AC, scope
+
+Requirement set + 1 story từ đầu đến cuối
+
+AI/Vault
+
+Vault, context quality, prompt/skill, AI log
+
+Vault benchmark + AI workflow
+
+UX/UI
+
+Prototype, Figma, design system, UX copy
+
+1 flow + component/state documentation
+
+Engineering
+
+Architecture, API/data, implementation, PR
+
+1 story implementation + PR/review
+
+QA/Release
+
+Test strategy, automation, bug, deploy/runbook
+
+Test evidence + release evidence
+
+Bắt buộc xoay vòng hiểu biết
+
+Mỗi sinh viên phải tự chọn ít nhất 1 User Story và giải thích được: requirement nào sinh ra story đó, task nào triển khai, code/PR nào thực hiện, test nào chứng minh và phiên bản nào release.
+
+1.1. Cơ cấu điểm
+
+Hạng mục
+
+Trọng số
+
+Điểm nhóm
+
+Điểm cá nhân qua báo cáo
+
+Bài tập 1 - Discovery & Vault
+
+10%
+
+7%
+
+3%
+
+Bài tập 2 - Product Definition & Build Foundation
+
+30%
+
+21%
+
+9%
+
+Bài cuối - Full Delivery
+
+60%
+
+42%
+
+18%
+
+Điểm cá nhân của Bài 1 và Bài 2 được đánh giá trong cùng Báo cáo cá nhân lần 1. Điểm cá nhân của Bài cuối được đánh giá trong Báo cáo cá nhân lần 2.
+
+1.2. Hai lần báo cáo bắt buộc của mỗi sinh viên
+
+Lần
+
+Thời điểm
+
+Sinh viên phải chứng minh
+
+Khuyến nghị thời lượng
+
+1
+
+Sau khi hoàn tất Bài 2
+
+1 artifact Bài 1 + 1 artifact Bài 2 + 1 AI Usage Log + traceability của story mình sở hữu
+
+5 phút/người
+
+2
+
+Khi chấm Bài cuối
+
+Story đã chạy production/staging + code/PR + test + quyết định kỹ thuật + bài học AI
+
+6 phút/người
+
+Mẫu cấu trúc báo cáo lần 1
+
+45 giây: bối cảnh & vai trò → 90 giây: evidence Bài 1 → 90 giây: evidence Bài 2 → 60 giây: AI đã giúp gì và bạn kiểm chứng thế nào → 55 giây: trả lời câu hỏi ngẫu nhiên.
+
+Mẫu cấu trúc báo cáo lần 2
+
+60 giây: chức năng bạn phụ trách → 120 giây: chạy live flow → 90 giây: mở story/PR/test liên quan → 60 giây: một lỗi hoặc quyết định khó → 30 giây: bài học & cải tiến nếu làm lại.
+
+2. Kỷ luật làm việc với AI
+
+2.1. Prompt 7 phần dùng cho task quan trọng
+
+Prompt template
+
+ROLE: Bạn đang đóng vai [BA/UX/Architect/Developer/QA].GOAL: Mục tiêu cụ thể của task này là ...CONTEXT: Đây là bối cảnh, requirement IDs, source files và constraint liên quan ...INPUT: Dữ liệu/tài liệu bạn được phép sử dụng ...RULES: Không suy đoán; nếu thiếu phải đánh dấu UNKNOWN/TBD; giữ đúng terminology ...OUTPUT: Trả về đúng cấu trúc/file/table/schema sau ...VERIFY: Tự kiểm tra mâu thuẫn, missing case, security, edge case và liệt kê điểm cần con người xác nhận.
+
+2.2. Quy tắc Context → Plan → Generate → Verify
+
+Bước
+
+Sinh viên làm gì
+
+Evidence
+
+Context
+
+Đưa đúng nguồn, version, scope và glossary
+
+Danh sách nguồn + IDs
+
+Plan
+
+Yêu cầu AI nêu kế hoạch trước khi tạo output lớn
+
+Plan được review/điều chỉnh
+
+Generate
+
+Tạo output theo schema/template cố định
+
+Artifact versioned
+
+Verify
+
+Đối chiếu nguồn, test, diff, chạy lệnh kiểm tra
+
+Checklist/test/log
+
+Integrate
+
+Chỉ đưa phần đã xác nhận vào Vault/backlog/code
+
+Commit/issue/doc update
+
+Learn
+
+Ghi prompt/skill tốt, lỗi thường gặp, reusable rule
+
+AI Usage Log/skill note
+
+2.3. Không được để AI tự quyết định các nội dung sau
+
+Yêu cầu kinh doanh hoặc thay đổi scope mà không có người xác nhận.
+
+Giá, tồn kho, tổng tiền, quyền truy cập, trạng thái đơn hàng hoặc dữ liệu nghiệp vụ quan trọng nếu hệ thống có source-of-truth khác.
+
+Thông tin mà Vault/requirements không cung cấp; phải đánh dấu UNKNOWN hoặc đặt câu hỏi.
+
+Khẳng định “test pass”, “deploy thành công”, “bug đã fix” nếu chưa có evidence mới chạy ở thời điểm gần nhất.
+
+Merge code chỉ vì AI review nói “looks good”; phải chạy test/lint/build và con người đọc diff.
+
+2.4. AI Usage Log tối thiểu
+
+Trường
+
+Ví dụ
+
+Task
+
+US-VC-05 - thêm sản phẩm bằng giọng nói
+
+Input/context
+
+REQ-VC-05, BR-03, glossary.md, API cart contract
+
+AI/tool
+
+Claude/LLM + code agent
+
+Prompt/skill
+
+Story implementation + code review
+
+Output
+
+Intent schema, service change, tests
+
+Human verification
+
+Review diff; unit+integration pass; thử 6 câu lệnh voice
+
+Decision
+
+Chấp nhận parser; bỏ đề xuất tự checkout vì vi phạm confirmation rule
+
+Time
+
+Manual 150 phút → AI-assisted 85 phút
+
+3. Giai đoạn 1 - Phân tích yêu cầu và problem framing
+
+MỤC TIÊU
+
+Biến một đề bài mơ hồ thành vấn đề có ranh giới, người dùng, business rules, functional/non-functional requirements, assumptions và success criteria có ID để truy vết.
+
+INPUT
+
+Đề bài của giảng viên hoặc ý tưởng nhóm.
+
+Ghi chú phỏng vấn/khảo sát nhanh (nếu có).
+
+Các constraint về thời gian, stack, dữ liệu, deployment.
+
+CÁC BƯỚC LÀM
+
+1. Viết Problem Statement theo cấu trúc: [Người dùng] gặp [vấn đề] khi [bối cảnh], gây [tác động].
+
+2. Xác định 2-4 persona/stakeholder chính và mục tiêu của họ.
+
+3. Lập glossary 10-30 thuật ngữ để cả nhóm và AI dùng thống nhất.
+
+4. Tách yêu cầu thành FR (functional), NFR, BR (business rule), CON (constraint), ASM (assumption), Q (open question).
+
+5. Gắn ID cố định: REQ-01, NFR-01, BR-01... Không đổi ID khi sửa wording.
+
+6. Đánh dấu nguồn và mức tin cậy cho từng yêu cầu.
+
+7. Tạo MVP scope: Must / Should / Could / Out of Scope.
+
+8. Dùng AI review gap và contradiction; con người quyết định sửa requirement.
+
+Prompt: Requirement Reviewer
+
+Bạn là Business Analyst. Hãy phân tích INPUT thành bảng:ID | Loại | Yêu cầu | Nguồn | Priority | Rủi ro/điểm mơ hồ | Câu hỏi cần xác nhận.Quy tắc:- Không tự tạo business rule nếu INPUT không nói.- Nếu thiếu dữ liệu, ghi UNKNOWN và đặt câu hỏi.- Phát hiện các yêu cầu xung đột hoặc không test được.- Cuối cùng đề xuất MVP scope nhưng tách rõ "đề xuất" khỏi "yêu cầu đã xác nhận".
+
+OUTPUT PHẢI CÓ
+
+problem-statement.md
+
+stakeholders-personas.md
+
+glossary.md
+
+requirements.md có ID
+
+scope.md
+
+open-questions.md
+
+requirement-review.md
+
+SELF-CHECK
+
+Mỗi requirement có ID và nguồn.
+
+Không còn câu như “nhanh”, “thân thiện”, “bảo mật tốt” mà không có tiêu chí đo/kiểm tra.
+
+Out of Scope rõ để ngăn scope creep.
+
+Open questions chưa được biến thành sự thật bởi AI.
+
+4. Giai đoạn 2 - Dựng Project Vault và hỏi đáp theo nguồn
+
+Project Vault có thể là Obsidian hoặc một thư mục Markdown có cấu trúc. Mục tiêu là tạo “source of truth” để người và AI cùng đọc; AI trả lời dựa trên tài liệu dự án thay vì dựa trên trí nhớ chung.
+
+CẤU TRÚC VAULT KHUYẾN NGHỊ
+
+vault/├─ 00-index.md├─ 01-sources/├─ 02-requirements/├─ 03-domain/│  ├─ glossary.md│  ├─ business-rules.md│  └─ workflows.md├─ 04-product/├─ 05-design/├─ 06-technical/├─ 07-testing/├─ 08-decisions/└─ 09-meetings/
+
+CÁC BƯỚC LÀM
+
+1. Đưa tài liệu gốc vào 01-sources; không sửa nội dung nguồn để “khớp” với ý tưởng nhóm.
+
+2. Tạo 00-index.md liệt kê file nào là current source, file nào superseded.
+
+3. Tạo source-priority.md: khi hai nguồn xung đột, nguồn nào thắng?
+
+4. Chuyển requirement/domain knowledge sang Markdown có heading, ID, link chéo.
+
+5. Tạo 15-25 câu hỏi benchmark: factual, cross-file, conflict, unknown, edge-case.
+
+6. Hỏi AI khi có Vault context. Yêu cầu AI trích ID/file dùng để trả lời.
+
+7. Chấm mỗi câu: Correct / Partial / Wrong / Unsupported. Sửa Vault hoặc prompt nếu điểm thấp.
+
+8. Mọi quyết định mới phải vào decision log, không chỉ nằm trong chat.
+
+Prompt: Vault Q&A
+
+Chỉ trả lời dựa trên Project Vault được cung cấp.Với mỗi câu trả lời:1) Trả lời ngắn gọn.2) Nêu Requirement/Business Rule ID và file nguồn.3) Nếu nguồn xung đột, nêu cả hai và không tự chọn.4) Nếu Vault không đủ dữ liệu, trả lời "KHÔNG ĐỦ DỮ LIỆU" và nêu tài liệu/câu hỏi cần bổ sung.5) Không dùng kiến thức bên ngoài để lấp khoảng trống.
+
+OUTPUT PHẢI CÓ
+
+Vault folder có cấu trúc.
+
+00-index.md + source-priority.md.
+
+Q&A benchmark tối thiểu 15 câu.
+
+Bảng accuracy và ít nhất 3 lần cải thiện Vault/prompt dựa trên lỗi benchmark.
+
+5. Giai đoạn 3 - Prototype nhanh bằng Claude
+
+Prototype dùng để kiểm chứng luồng và wording sớm, không phải code production. Nhóm phải tách rõ “prototype assumptions” và “confirmed requirements”.
+
+CÁC BƯỚC LÀM
+
+1. Chọn 3-5 critical user flows từ requirements, ưu tiên flow có rủi ro/mơ hồ cao.
+
+2. Tạo prototype brief: persona, goal, screens, states, sample data, design constraints.
+
+3. Đưa brief + requirement IDs cho Claude và yêu cầu tạo prototype tương tác hoặc HTML/React demo.
+
+4. Kiểm tra đủ state: loading, empty, error, permission, confirmation, success.
+
+5. Thực hiện usability test nhanh với 3 người; không giải thích cách dùng trước.
+
+6. Ghi observation → issue → decision. Không hỏi “bạn có thích không”; quan sát có hoàn thành task không.
+
+7. Cập nhật requirement/flow nếu phát hiện vấn đề; ghi decision log.
+
+Prompt: Prototype
+
+Tạo prototype cho [tên flow].Nguồn yêu cầu: [REQ IDs].Persona: [...]. Mục tiêu: [...].Screens bắt buộc: [...].States bắt buộc: default, loading, empty, error, success, confirmation.Dùng sample data sau: [...].Không thêm feature ngoài requirement. Nếu cần giả định để prototype hoạt động, liệt kê ASSUMPTIONS riêng trước khi tạo.
+
+OUTPUT PHẢI CÓ
+
+prototype-brief.md
+
+Prototype URL/file
+
+screen-flow.md
+
+usability-test-script.md
+
+usability-findings.md
+
+decision log sau prototype
+
+6. Giai đoạn 4 - PRD, User Stories và Acceptance Criteria
+
+CÁC BƯỚC LÀM
+
+1. Tạo PRD từ requirements đã xác nhận, không từ prototype một mình.
+
+2. Nhóm requirement thành Epic theo giá trị người dùng/business.
+
+3. Tách User Story đủ nhỏ để 1 người hoàn thành trong 1-3 ngày.
+
+4. Mỗi story dùng format: As a [role], I want [action], so that [benefit].
+
+5. Viết 2-6 Acceptance Criteria bằng Given/When/Then, bao phủ happy path và lỗi quan trọng.
+
+6. Gắn Requirement IDs và design link vào story.
+
+7. Tạo Out of Scope cho phần dễ bị hiểu nhầm.
+
+8. Review story bằng Definition of Ready trước khi đưa vào sprint.
+
+Prompt: Story Generator
+
+Từ PRD và requirement IDs, hãy tạo draft User Stories.Mỗi story gồm:Title (<80 ký tự)User Story: As a..., I want..., so that...ContextRequirement IDsAcceptance Criteria (2-6 Given/When/Then)Out of ScopeDependenciesEstimate đề xuất: 1-3 pointsNếu story >3 points hoặc có nhiều giá trị độc lập, đề xuất cách split trước. Chưa tạo task cho đến khi tôi duyệt danh sách story.
+
+DEFINITION OF READY
+
+Có user value rõ.
+
+Có source requirement IDs.
+
+AC test được.
+
+Dependency/design/API cần thiết đã biết hoặc đánh dấu TBD.
+
+Story ≤3 points theo quy ước lớp.
+
+Không chứa nhiều flow độc lập.
+
+7. Giai đoạn 5 - Chia Epic/Story/Task trên Taiga
+
+Taiga là nơi thể hiện “ai đang làm gì, tại sao và xong nghĩa là gì”. Không tạo task kiểu “làm backend”, “làm frontend” quá lớn.
+
+CÁC BƯỚC LÀM
+
+1. Tạo Epic theo capability, ví dụ Search & Discovery, Cart & Checkout, Admin.
+
+2. Tạo User Story đã duyệt, copy đủ Context + AC + link requirement/design.
+
+3. Tách task theo deliverable kiểm chứng được: schema, endpoint, component, test, docs.
+
+4. Mỗi task có owner, estimate giờ, expected output và verify command/check.
+
+5. Gắn dependency giữa stories/tasks; không để dependency chỉ nằm trong đầu thành viên.
+
+6. Dùng board status đơn giản: New → Ready → In Progress → Review → QA → Done.
+
+7. Story chỉ Done khi tất cả AC pass và evidence đã link.
+
+Task kém
+
+Task tốt
+
+Làm backend cart
+
+Implement POST /api/cart/items + validation + integration tests
+
+Làm giao diện
+
+Build VoiceComposer states: idle/listening/processing/error
+
+Test checkout
+
+Automate checkout happy path + out-of-stock rejection
+
+Sửa bug
+
+Fix stale stock total after cart update + regression test
+
+8. Giai đoạn 6 - Figma, design system và UX copy
+
+CÁC BƯỚC LÀM
+
+1. Từ prototype findings, xác định screen inventory và states cần thiết.
+
+2. Tạo design tokens: color, typography, spacing, radius, shadow; không hardcode tùy tiện.
+
+3. Tạo component set tối thiểu: Button, Input, Voice control, Card, Modal/Confirm, Toast, Empty/Error state.
+
+4. Mỗi component có variants/states: default, hover/focus, disabled, loading, error khi phù hợp.
+
+5. Thiết kế desktop/mobile hoặc ít nhất responsive rules cho breakpoints chính.
+
+6. Kiểm tra contrast, keyboard/focus, label, error message, touch target.
+
+7. Viết UX copy theo nguyên tắc rõ-ràng, ngắn, nhất quán, có hành động sửa lỗi.
+
+8. Link frame/component IDs vào User Story để developer và QA truy cập đúng phiên bản.
+
+OUTPUT PHẢI CÓ
+
+Figma file có page: Foundations / Components / Flows / Handoff.
+
+DESIGN.md tóm tắt tokens và rules.
+
+screen-inventory.md + state matrix.
+
+UX copy table cho CTA, error, empty, confirmation.
+
+9. Giai đoạn 7 - Technical specification và Spec-Driven Development
+
+CÁC BƯỚC LÀM
+
+1. Chốt stack và ghi lý do; không đổi stack giữa chừng nếu không có ADR.
+
+2. Vẽ architecture: client, server, database, external services, auth, logs.
+
+3. Thiết kế data model và constraint nghiệp vụ ở DB/service layer.
+
+4. Định nghĩa API contract trước khi cả frontend/backend code song song.
+
+5. Mỗi story quan trọng có Story Spec: behavior, data, API, edge cases, security, test plan.
+
+6. Tạo ADR cho quyết định khó: auth, storage, voice provider, LLM orchestration, caching...
+
+7. Scaffold repo, CI tối thiểu và .env.example.
+
+8. Chỉ bắt đầu code khi Story đạt DoR và spec đủ để test.
+
+Template Story Spec
+
+# Story SpecStory ID:Requirement IDs:Design link:Goal:Preconditions:Happy path:Alternate/error paths:Data read/write:API contract:Authorization:Validation/business rules:Observability/logging:Test plan:Definition of Done:
+
+10. Giai đoạn 8 - Code bằng AI nhưng giữ kiến trúc production
+
+WORKFLOW MỖI TASK
+
+1. Mở đúng story/spec; nói rõ file/module được phép sửa.
+
+2. Yêu cầu AI đưa plan và danh sách file trước khi viết code.
+
+3. Review plan: tránh thêm dependency/abstraction không cần thiết.
+
+4. Cho AI implement từng lát nhỏ; sau mỗi lát chạy typecheck/lint/test.
+
+5. Đọc diff; kiểm tra ownership của logic, error handling, security, naming, dead code.
+
+6. Nếu prototype code được đưa vào production, tách module, state, API layer, shared components có chủ đích.
+
+7. Tạo/ cập nhật test cùng task, không để “test sau”.
+
+8. Commit/PR có Story ID; request review trước merge.
+
+Quy tắc component frontend
+
+Mỗi component nên sở hữu tối đa khoảng 3 trách nhiệm. Logic phức tạp tách khỏi render; presentational component không tự fetch data; public API của module phải rõ; tránh component khổng lồ với nhiều boolean props.
+
+Prompt: Implementation Agent
+
+Bạn đang implement [TASK ID] thuộc [STORY ID].Hãy đọc Story Spec và chỉ sửa các module cần thiết.Trước tiên trả về:1) Plan 3-7 bước.2) File sẽ tạo/sửa và lý do.3) Test sẽ thêm/chạy.4) Rủi ro regression/security.Chờ tôi duyệt plan trước khi implementation. Sau khi code xong, không được nói "done" cho đến khi có output thật của lint/typecheck/test/build.
+
+11. Giai đoạn 9 - Code review, testing và xử lý bug
+
+11.1. Code review
+
+Quy trình: READ → UNDERSTAND → VERIFY → EVALUATE → RESPOND → IMPLEMENT. Không chấp nhận feedback chỉ vì nghe hợp lý; phải kiểm tra trong context codebase.
+
+Trước merge: fresh lint/typecheck/test/build.
+
+Review theo story/spec, không chỉ style.
+
+Kiểm tra auth/permission, validation, secrets, race condition, error paths.
+
+Một claim “fixed” phải đi cùng test/reproduction evidence.
+
+11.2. Testing pyramid
+
+Lớp
+
+Mục tiêu gợi ý
+
+Dùng cho
+
+Unit
+
+60-70% test logic
+
+validator, parser, reducer, hook, utility
+
+Integration
+
+15-25%
+
+form + API, service + DB, components phối hợp
+
+E2E
+
+5-15%
+
+login, checkout, critical business journey
+
+11.3. Checklist edge cases
+
+Empty / one / many items.
+
+Invalid/malformed data.
+
+Double click/rapid voice command.
+
+Slow/offline/network 5xx/429.
+
+401/403 permission.
+
+Boundary quantity/price/text length.
+
+Unicode/tiếng Việt/emoji.
+
+Keyboard/focus/screen reader cho UI quan trọng.
+
+Concurrent stock/order update nếu domain có inventory.
+
+11.4. Bug report chuẩn
+
+## Summary## Environment## Reproduction Steps## Expected vs Actual## Root Cause Analysis## Solution## Regression Risk## Test Plan## Evidence / links
+
+12. Giai đoạn 10 - Deploy, release và vận hành
+
+1. Tạo staging trước; chạy smoke test trên URL thật.
+
+2. Secrets chỉ ở environment manager; repo chỉ có .env.example.
+
+3. Database migration có thứ tự và rollback/forward-fix plan.
+
+4. Bật structured logging cho auth, assistant tool calls, order creation và lỗi server.
+
+5. Có health endpoint hoặc cách kiểm tra dịch vụ sống.
+
+6. Chạy release checklist: build, tests, DB, permissions, critical flows, responsive, accessibility cơ bản.
+
+7. Deploy production/demo environment.
+
+8. Tạo release notes và runbook: setup, deploy, rollback, known issues.
+
+9. Sau demo, retrospective: metric kỹ thuật + metric dùng AI + 3 cải tiến.
+
+DEFINITION OF DONE CẤP RELEASE
+
+Không có critical/high bug mở cho critical flow.
+
+Tất cả Must-have stories pass AC.
+
+Build + automated tests pass mới nhất.
+
+Không có secret trong repository/history mới.
+
+Deployment URL truy cập được.
+
+README/runbook đủ để một thành viên khác setup lại.
+
+Traceability Matrix không có Must requirement “mồ côi”.
+
+13. Bài tập 1 - Discovery & Project Vault (10%)
+
+Mục tiêu: chứng minh nhóm hiểu đúng vấn đề trước khi thiết kế/code và đã tạo được context có thể hỏi đáp có kiểm chứng.
+
+13.1. Nhiệm vụ
+
+1. Chọn đề tài và viết Project Charter 1 trang.
+
+2. Thực hiện tối thiểu 3 mini-interviews hoặc observation với người dùng mục tiêu; nếu domain khó tiếp cận, dùng stakeholder proxy và ghi limitation.
+
+3. Tổng hợp pain points/themes, không chỉ chép transcript.
+
+4. Tạo requirement inventory tối thiểu: 12 FR, 5 NFR, 5 business rules/constraints/assumptions tổng hợp.
+
+5. Tạo MVP scope + Out of Scope.
+
+6. Dựng Vault và source priority.
+
+7. Tạo ≥15 Q&A benchmark; accuracy mục tiêu ≥80%, không tính câu trả lời “đúng nhờ đoán”.
+
+8. Ghi ít nhất 5 AI Usage Log entries có verification.
+
+13.2. Output nộp
+
+#
+
+Artifact
+
+Điều kiện tối thiểu
+
+1
+
+Project Index
+
+Link được toàn bộ artifact
+
+2
+
+Project Charter
+
+Problem, users, scope, success
+
+3
+
+Research notes + synthesis
+
+≥3 participants + themes
+
+4
+
+Requirements + glossary
+
+IDs + nguồn + priority
+
+5
+
+Vault
+
+Index + source priority + cross-links
+
+6
+
+Q&A benchmark
+
+≥15 câu + score + sửa lỗi
+
+7
+
+AI Usage Log
+
+≥5 entries
+
+8
+
+Báo cáo nhóm ngắn
+
+Highlights + open risks
+
+13.3. Rubric 10%
+
+Tiêu chí
+
+Điểm
+
+Problem/research có evidence
+
+2.0
+
+Requirement rõ, testable, traceable
+
+2.5
+
+Vault cấu trúc & source priority
+
+2.0
+
+Q&A benchmark & cải tiến
+
+1.5
+
+AI Usage Log có verification
+
+1.0
+
+Điểm cá nhân từ Báo cáo lần 1
+
+1.0
+
+14. Bài tập 2 - Product Definition & Build Foundation (30%)
+
+Mục tiêu: chuyển discovery thành sản phẩm có thể xây: prototype đã test, PRD/story/backlog, design handoff, architecture/data/API và repo foundation.
+
+14.1. Nhiệm vụ
+
+1. Tạo prototype cho ≥3 critical flows và usability test với ≥3 người.
+
+2. Tạo PRD current-state; link requirement IDs.
+
+3. Tạo 8-15 User Stories, mỗi story 2-6 AC; Must stories đều có traceability.
+
+4. Tạo Taiga Epic/Story/Task; task có owner và expected output.
+
+5. Tạo Figma foundations + components + critical screens + states.
+
+6. Tạo architecture, ERD/data model, API contracts và ≥2 ADR.
+
+7. Scaffold repo, CI/lint/test baseline; triển khai vertical slice đầu tiên.
+
+8. Cập nhật Project Index, AI Usage Log và Traceability Matrix.
+
+14.2. Output nộp
+
+Artifact
+
+Điều kiện tối thiểu
+
+Prototype + findings
+
+3 flows; 3 users; decisions được ghi
+
+PRD
+
+Goals, scope, users, requirements, metrics, risks
+
+Stories + AC
+
+8-15 stories; AC testable
+
+Taiga
+
+Epic/Story/Task + owner/status
+
+Figma + DESIGN.md
+
+tokens, components, states, handoff
+
+Technical docs
+
+architecture, data, API, ADR
+
+Repository baseline
+
+README, env example, lint/test/build
+
+Vertical slice
+
+1 story chạy end-to-end
+
+14.3. Rubric 30%
+
+Tiêu chí
+
+Điểm
+
+Prototype + usability evidence
+
+4
+
+PRD + story quality + AC
+
+6
+
+Taiga backlog/decomposition
+
+3
+
+Figma/design system/handoff
+
+4
+
+Architecture/data/API/ADR
+
+4
+
+Repo foundation + vertical slice
+
+3
+
+Traceability + AI evidence
+
+2
+
+Điểm cá nhân từ Báo cáo lần 1
+
+4
+
+15. Bài cuối - Full Delivery (60%)
+
+Mục tiêu: giao một sản phẩm doanh nghiệp chạy được, có quality gates, evidence và tài liệu đủ để người khác kiểm tra.
+
+15.1. Nhiệm vụ
+
+1. Chọn Must/Should stories cho release; freeze scope trước tuần cuối.
+
+2. Mỗi Must story có spec, implementation, PR/review và tests.
+
+3. Hoàn thành auth/roles, validation, error handling, audit/logging phù hợp domain.
+
+4. Tự động hóa critical path E2E; unit/integration cho logic quan trọng.
+
+5. Triage và chuẩn hóa bug reports; có regression tests cho bug quan trọng.
+
+6. Deploy staging/production demo; chạy release checklist trên URL thật.
+
+7. Hoàn thiện README, architecture, API docs, runbook, release notes.
+
+8. Đo metric: test pass, coverage nếu có, bug, performance cơ bản, AI time saving/iterations.
+
+9. Hoàn thiện Traceability Matrix requirement → story → task → code/PR → test → release.
+
+10. Mỗi thành viên chuẩn bị evidence riêng cho Báo cáo cá nhân lần 2.
+
+15.2. Rubric 60%
+
+Tiêu chí
+
+Điểm
+
+Business completeness & critical flows
+
+9
+
+Architecture/code quality
+
+8
+
+Frontend UX/design fidelity/accessibility
+
+5
+
+Backend/data/auth/security
+
+6
+
+Automated testing & bug quality
+
+6
+
+Deployment/release/observability
+
+4
+
+Documentation & traceability
+
+3
+
+AI workflow quality & measurable learning
+
+1
+
+Điểm cá nhân Báo cáo lần 2
+
+18
+
+16. Hướng dẫn báo cáo cá nhân và chấm sinh viên
+
+16.1. Báo cáo lần 1 - Bài 1 + Bài 2
+
+Mỗi sinh viên mở trực tiếp Project Index của nhóm và điều hướng đến artifact mình sở hữu. Không dùng slide để thay cho evidence. Có thể dùng 1 slide mở đầu nếu cần nhưng phần chính phải là artifact thật.
+
+Mốc thời gian
+
+Nội dung
+
+Giảng viên nhìn vào
+
+0:00-0:45
+
+Tên dự án, vai trò, story/flow mình chịu trách nhiệm
+
+Hiểu phạm vi cá nhân
+
+0:45-2:15
+
+Artifact Bài 1: requirement/vault/research
+
+Nguồn, ID, decision, quality
+
+2:15-3:45
+
+Artifact Bài 2: story/prototype/design/spec/backlog
+
+Traceability và mức hoàn thiện
+
+3:45-4:45
+
+Một AI Usage Log: input → output → verify → decision
+
+Khả năng dùng AI có kiểm soát
+
+4:45-5:00
+
+Câu hỏi nhanh
+
+Hiểu thật hay chỉ đọc
+
+16.2. Báo cáo lần 2 - Bài cuối
+
+Mốc thời gian
+
+Nội dung
+
+Evidence
+
+0:00-1:00
+
+Nêu story/feature chịu trách nhiệm
+
+Story ID + AC
+
+1:00-3:00
+
+Chạy live flow
+
+URL staging/production
+
+3:00-4:30
+
+Mở code/PR/test
+
+PR diff + test output
+
+4:30-5:30
+
+Một lỗi/quyết định khó
+
+Bug/ADR + cách kiểm chứng
+
+5:30-6:00
+
+Bài học AI
+
+AI log + điều sẽ làm khác
+
+16.3. Câu hỏi viva ngẫu nhiên
+
+Requirement ID nào dẫn đến story bạn vừa demo? Nếu bỏ requirement đó thì code nào có thể bỏ?
+
+AC nào khó test nhất và bạn đã biến nó thành test case thế nào?
+
+Cho tôi xem một đề xuất của AI mà nhóm đã từ chối. Tại sao?
+
+Source-of-truth của giá/tồn kho/quyền là gì? AI có được tự quyết định không?
+
+Nếu API trả 500 hoặc timeout ở flow này, UI và log của bạn phản ứng thế nào?
+
+Cho xem commit/PR nào sửa bug này và regression test nào bảo vệ nó.
+
+Nếu một thành viên mới clone repo, họ cần làm gì để chạy trong 10 phút?
+
+Một business rule đang được enforce ở layer nào? Có thể bypass từ client không?
+
+Nếu thiết kế Figma khác implementation, tài liệu nào được xem là current và nhóm xử lý lệch thế nào?
+
+Metric nào chứng minh AI giúp tốt hơn, ngoài cảm giác “nhanh hơn”?
+
+16.4. Mẹo tổ chức chấm thực tế
+
+15 nhóm × 5 người = 75 lượt cá nhân mỗi lần. Với 5 phút/người, Báo cáo 1 cần khoảng 6 giờ 15 phút chưa tính chuyển nhóm; nên chia thành nhiều ca hoặc nhiều buổi.
+
+Báo cáo 2 với 6 phút/người cần khoảng 7 giờ 30 phút; có thể cho nhóm demo chung 8-10 phút ở đầu ca rồi từng người viva 4-5 phút.
+
+Dùng Project Index giống nhau cho mọi nhóm để giảm thời gian tìm link.
+
+Trước giờ chấm 24 giờ, freeze evidence links. Nếu link lỗi trong giờ chấm, chấm theo evidence còn truy cập được.
+
+Giảng viên chọn ngẫu nhiên 1 requirement và yêu cầu truy vết end-to-end để chống “chia nhỏ rồi không ai hiểu tổng thể”.
+
+17. Skill cards - cách dùng AI theo từng loại việc
+
+Skill
+
+Input
+
+AI làm
+
+Output bắt buộc
+
+Requirement Reviewer
+
+Requirement/source
+
+Gap, conflict, testability review
+
+Requirement IDs + questions
+
+Research Synthesizer
+
+Interview notes
+
+Themes, evidence, opportunities
+
+Synthesis + limitations
+
+PRD Writer
+
+Confirmed requirements
+
+Structured PRD
+
+Goals/scope/metrics/risks
+
+Story Breaker
+
+PRD/spec
+
+Draft stories ≤3 pts
+
+Stories + AC + dependencies
+
+Flow Designer
+
+Stories/AC
+
+User flow & alternate paths
+
+Flow diagram + state list
+
+Design System Auditor
+
+Figma/DESIGN.md
+
+Tokens/components/state gaps
+
+Audit + actions
+
+UX Copy Reviewer
+
+Screen context
+
+CTA/error/empty/confirm copy
+
+Copy table + rationale
+
+Spec Generator
+
+Story/design/API
+
+Implementation-ready spec
+
+Story Spec
+
+Implementation Agent
+
+Story Spec + codebase
+
+Plan + controlled code changes
+
+Diff + tests
+
+Code Reviewer
+
+PR/spec
+
+Correctness/security/regression review
+
+Findings with severity
+
+Test Designer
+
+AC/spec
+
+Unit/integration/E2E cases
+
+Test plan + edge cases
+
+Bug Normalizer
+
+Raw bug + logs
+
+Repro/root cause/fix/test
+
+Standard bug report
+
+Release Reviewer
+
+Build/tests/issues
+
+Go/No-Go checklist
+
+Release readiness
+
+Technical Doc Writer
+
+Repo/system
+
+README/API/runbook/ADR
+
+Docs with verify steps
+
+Skill không phải “câu thần chú”
+
+Một skill tốt là workflow tái sử dụng: có trigger, input contract, rules, output contract và verification. Sinh viên được phép thay tool/model nhưng phải giữ quality gate.
+
+18. CASE MẪU HOÀN CHỈNH - Voice Commerce + Smart Voice Assistant
+
+Mục đích của case mẫu
+
+Đây là chuẩn tham khảo về độ sâu và cách liên kết artifact. Sinh viên không sao chép nguyên đề tài; hãy thay domain, user, business rules, data và test của dự án nhóm mình.
+
+Ý tưởng: xây dựng một web commerce cho phép khách hàng tìm sản phẩm, hỏi thông tin, thêm/sửa giỏ hàng, chuẩn bị checkout và theo dõi đơn bằng giọng nói hoặc văn bản. Trợ lý thông minh chỉ diễn giải yêu cầu và gọi các tool có kiểm soát; giá, tồn kho, tổng tiền và trạng thái đơn luôn lấy từ backend.
+
+18.1. Output #1 - Project Charter
+
+Trường
+
+Nội dung mẫu
+
+Project
+
+Voice Commerce + Smart Voice Assistant
+
+Problem
+
+Người mua trên mobile thường phải chạm/nhập nhiều bước khi tìm sản phẩm và quản lý giỏ. Khi đang bận tay, họ muốn nói tự nhiên nhưng vẫn cần giá/tồn kho/đơn hàng chính xác và có bước xác nhận trước hành động quan trọng.
+
+Primary users
+
+Khách hàng mua hàng online; quản trị viên danh mục/tồn kho.
+
+Value proposition
+
+Hands-free discovery + cart actions; assistant grounded vào catalog và order services.
+
+MVP
+
+Voice/text input; product search; product detail Q&A; add/update cart; order draft + confirm; order status; admin product/stock.
+
+Out of scope
+
+Voice biometric authentication; card payment thật; multi-language; recommendations từ lịch sử nhạy cảm; call-center telephony.
+
+Success signals
+
+≥80% 20 câu voice command benchmark parse đúng intent; 5 critical flows E2E pass; không hallucinate price/stock trong benchmark; checkout cần explicit confirmation.
+
+Constraints
+
+8-10 tuần; browser web; text fallback bắt buộc; demo data; không lưu raw audio mặc định.
+
+18.2. Output #2 - User research mini-study
+
+Research question: “Trong tình huống nào người dùng muốn dùng giọng nói khi mua hàng, và họ cần mức kiểm soát nào trước khi thay đổi giỏ/đặt đơn?”
+
+P
+
+Observation/quote rút gọn
+
+Insight
+
+P1 - nhân viên văn phòng
+
+Hay tìm lại mặt hàng quen lúc đang nấu ăn; không muốn chạm màn hình nhiều.
+
+Voice có giá trị cho search + add-to-cart.
+
+P2 - phụ huynh
+
+Sợ trợ lý nghe nhầm số lượng/giá; muốn thấy lại giỏ trước khi đặt.
+
+Hành động có tác động tiền cần confirmation.
+
+P3 - người dùng lớn tuổi
+
+Nói tên sản phẩm không đúng chính tả; muốn trợ lý hỏi lại khi mơ hồ.
+
+Cần fuzzy search + clarification, không đoán.
+
+RESEARCH SYNTHESIS MẪU
+
+Theme A - Hands-free convenience: 3/3 thấy hữu ích ở search/add cart.
+
+Theme B - Trust before transaction: 3/3 muốn xem/đọc lại tổng tiền trước confirm.
+
+Theme C - Ambiguity handling: 2/3 kỳ vọng assistant hỏi lại thay vì chọn bừa.
+
+Product implication: ưu tiên voice search/cart; thiết kế confirmation state rõ; price/stock phải từ tool/backend.
+
+18.3. Output #3 - Personas và Jobs-to-be-Done
+
+Persona
+
+JTBD
+
+Pain point
+
+Success
+
+Mai - Busy Shopper
+
+Khi tay đang bận, tôi muốn nói sản phẩm cần mua để nhanh tạo giỏ.
+
+Gõ nhiều; search từ khóa chính xác khó.
+
+Tìm/thêm đúng món trong ≤2 lượt nói.
+
+An - Careful Shopper
+
+Khi chuẩn bị đặt hàng, tôi muốn nghe và nhìn tổng tiền trước khi xác nhận.
+
+Lo trợ lý nghe nhầm số lượng.
+
+Không order nếu chưa explicit confirm.
+
+Store Admin
+
+Khi sản phẩm hết hàng, tôi muốn cập nhật stock để assistant không bán sai.
+
+Catalog và assistant có thể lệch dữ liệu.
+
+Stock update phản ánh ngay ở search/cart.
+
+18.4. Output #4 - Glossary
+
+Thuật ngữ
+
+Định nghĩa
+
+Voice Turn
+
+Một lượt input của khách và response của assistant.
+
+Intent
+
+Mục tiêu có cấu trúc suy ra từ utterance, ví dụ SEARCH_PRODUCT, ADD_TO_CART.
+
+Tool Call
+
+Lệnh có schema mà assistant yêu cầu application thực hiện.
+
+Order Draft
+
+Bản nháp đơn có items, giá, phí; chưa phải đơn đã xác nhận.
+
+Explicit Confirmation
+
+Hành động xác nhận rõ ràng bằng nút hoặc câu “Xác nhận đặt hàng”.
+
+Grounded Response
+
+Câu trả lời về product/order dựa trên dữ liệu tool/backend.
+
+Clarification
+
+Câu hỏi lại khi intent/product/quantity không đủ chắc chắn.
+
+Critical Action
+
+Hành động thay đổi giỏ đáng kể, tạo đơn, quyền hoặc dữ liệu quan trọng.
+
+18.5. Output #5 - Requirement Inventory
+
+ID
+
+Loại
+
+Yêu cầu
+
+P
+
+REQ-VC-01
+
+FR
+
+Khách có thể nhập yêu cầu bằng voice hoặc text.
+
+Must
+
+REQ-VC-02
+
+FR
+
+Hệ thống hiển thị transcript để người dùng biết hệ thống đã nghe gì.
+
+Must
+
+REQ-VC-03
+
+FR
+
+Assistant tìm sản phẩm theo từ khóa, category, price range và thuộc tính có trong catalog.
+
+Must
+
+REQ-VC-04
+
+FR
+
+Assistant trả lời chi tiết sản phẩm chỉ từ product service.
+
+Must
+
+REQ-VC-05
+
+FR
+
+Khách có thể thêm sản phẩm và số lượng vào giỏ bằng voice/text.
+
+Must
+
+REQ-VC-06
+
+FR
+
+Khách có thể tăng/giảm/xóa item trong giỏ bằng voice/text.
+
+Must
+
+REQ-VC-07
+
+FR
+
+Hệ thống tạo Order Draft và đọc/hiển thị items, total trước confirm.
+
+Must
+
+REQ-VC-08
+
+FR
+
+Chỉ tạo order sau explicit confirmation.
+
+Must
+
+REQ-VC-09
+
+FR
+
+Khách xem trạng thái đơn gần nhất hoặc theo order code.
+
+Should
+
+REQ-VC-10
+
+FR
+
+Admin CRUD sản phẩm và cập nhật stock.
+
+Must
+
+REQ-VC-11
+
+FR
+
+Assistant hỏi clarification khi nhiều sản phẩm/intent phù hợp.
+
+Must
+
+REQ-VC-12
+
+FR
+
+Nếu voice không hỗ trợ, tất cả flow vẫn dùng được bằng text.
+
+Must
+
+NFR-VC-01
+
+NFR
+
+Response text đầu tiên cho command không cần LLM dài phải ≤2.5s ở demo environment.
+
+Should
+
+NFR-VC-02
+
+NFR
+
+Không lưu raw audio mặc định; transcript có thể xóa theo session.
+
+Must
+
+NFR-VC-03
+
+NFR
+
+API protected theo role; admin endpoints từ chối customer.
+
+Must
+
+NFR-VC-04
+
+NFR
+
+Tool call và order creation có structured audit log.
+
+Must
+
+NFR-VC-05
+
+NFR
+
+UI dùng keyboard được cho text fallback, cart và confirmation.
+
+Should
+
+18.6. Output #6 - Business Rules, Assumptions và Open Questions
+
+ID
+
+Rule/Assumption
+
+BR-VC-01
+
+Price và stock chỉ được lấy từ backend; LLM không được sinh giá/tồn kho.
+
+BR-VC-02
+
+Không cho add quantity > stock hiện tại.
+
+BR-VC-03
+
+Mọi create order cần explicit confirmation trên Order Draft hiện tại.
+
+BR-VC-04
+
+Nếu assistant confidence thấp hoặc tìm thấy >1 sản phẩm hợp lý, phải clarification.
+
+BR-VC-05
+
+Customer không gọi admin product/stock tools.
+
+BR-VC-06
+
+Order total được tính server-side từ price tại thời điểm confirm.
+
+ASM-VC-01
+
+MVP dùng COD/mock payment; không xử lý thẻ thật.
+
+ASM-VC-02
+
+Voice recognition dùng browser API hoặc provider có sẵn; text input là fallback bắt buộc.
+
+Q-VC-01
+
+Có cần giữ conversation history giữa nhiều ngày không? → MVP: không.
+
+Q-VC-02
+
+Có cho phép voice xóa toàn bộ cart một lần? → Chỉ sau confirmation.
+
+18.7. Output #7 - MVP Scope
+
+Must
+
+Should
+
+Could
+
+Out of Scope
+
+Voice/text inputSearchProduct Q&ACart add/updateOrder draft + confirmAdmin stock
+
+Order statusCompare 2 productsSaved address demo
+
+TTS responseRecent commandsSimple analytics
+
+Card paymentVoice biometricsMulti-languageReal recommenderPhone-call assistant
+
+18.8. Output #8 - Project Vault
+
+vault/├─ 00-index.md├─ 01-sources/│  ├─ assignment-brief.md│  └─ interview-notes.md├─ 02-requirements/│  ├─ requirements.md│  ├─ scope.md│  └─ open-questions.md├─ 03-domain/│  ├─ glossary.md│  ├─ business-rules.md│  └─ assistant-command-schema.md├─ 04-product/│  ├─ prd.md│  └─ stories/├─ 05-design/│  ├─ prototype-findings.md│  └─ DESIGN.md├─ 06-technical/│  ├─ architecture.md│  ├─ api-contract.md│  └─ adr/├─ 07-testing/│  └─ test-strategy.md└─ 08-decisions/   └─ decision-log.md
+
+SOURCE-PRIORITY.MD MẪU
+
+1. Business rules/requirements đã được giảng viên hoặc nhóm xác nhận mới nhất.2. ADR/Decision Log đã Approved.3. PRD current version.4. User Story/Acceptance Criteria current sprint.5. Prototype/Figma (minh họa hành vi, không tự tạo business rule).6. Chat/AI output chỉ là working note nếu chưa được integrate.Khi xung đột: không tự chọn nguồn thấp hơn; mở Q/Decision để xác nhận.
+
+18.9. Output #9 - Vault Q&A Benchmark
+
+#
+
+Expected answer
+
+Nguồn/logic
+
+KQ
+
+Q1
+
+Assistant có được tự tạo giá không?
+
+Không. BR-VC-01.
+
+Correct
+
+Q2
+
+Voice không chạy trên browser thì user làm gì?
+
+Dùng text fallback. REQ-VC-12.
+
+Correct
+
+Q3
+
+Có thể tạo order ngay sau câu “mua 2 hộp” không?
+
+Không; cần Order Draft + explicit confirmation. REQ-VC-07/08, BR-VC-03.
+
+Correct
+
+Q4
+
+Có hỗ trợ thẻ Visa thật không?
+
+Không trong MVP; ASM-VC-01 / Out of Scope.
+
+Correct
+
+Q5
+
+Nếu 2 sản phẩm cùng tên gần giống?
+
+Assistant phải clarification. REQ-VC-11/BR-VC-04.
+
+Correct
+
+Q6
+
+Ai được sửa stock?
+
+Admin. REQ-VC-10, BR-VC-05.
+
+Correct
+
+Q7
+
+Order total do frontend tính có được không?
+
+Không là source of truth; server tính tại confirm. BR-VC-06.
+
+Correct
+
+Q8
+
+Conversation lưu 30 ngày?
+
+KHÔNG ĐỦ DỮ LIỆU / MVP không giữ giữa nhiều ngày theo Q-VC-01 decision.
+
+Correct
+
+Q9
+
+Có voice biometrics không?
+
+Không, Out of Scope.
+
+Correct
+
+Q10
+
+Raw audio có lưu không?
+
+Mặc định không. NFR-VC-02.
+
+Correct
+
+Q11
+
+Customer gọi admin tool được không?
+
+Không. BR-VC-05/NFR-VC-03.
+
+Correct
+
+Q12
+
+Quantity lớn hơn stock?
+
+Từ chối. BR-VC-02.
+
+Correct
+
+Q13
+
+Có compare 2 products?
+
+Should, không bắt buộc Must.
+
+Correct
+
+Q14
+
+Có multi-language?
+
+Không trong scope.
+
+Correct
+
+Q15
+
+Mục tiêu latency là bao nhiêu?
+
+≤2.5s cho response text đầu tiên ở command phù hợp. NFR-VC-01.
+
+Correct
+
+Kết quả mẫu: 15/15 = 100%. Nếu AI trả lời Q8 là “30 ngày” dù Vault không nói, phải đánh Wrong/Unsupported; sửa prompt để bắt buộc “KHÔNG ĐỦ DỮ LIỆU”.
+
+18.10. Output #10 - Prototype Brief
+
+Prototype goal: kiểm chứng 4 flow có rủi ro cao.Persona: Mai - Busy Shopper.FLOW A - Voice search"Tìm cà phê rang vừa dưới 200 nghìn"→ listening → transcript → processing → product results.FLOW B - Clarification"Thêm sữa vào giỏ"→ có 3 sản phẩm phù hợp → assistant hỏi chọn loại nào.FLOW C - Add to cart"Thêm 2 hộp sữa hạt Oat 1L"→ product resolved → stock check → cart updated → đọc lại item + quantity.FLOW D - Checkout confirmation"Đặt đơn này"→ Order Draft → hiển thị items + total → nút/câu xác nhận → success.Required states:idle, listening, processing, no-match, ambiguous, network-error,out-of-stock, cart-updated, order-draft, confirm, success.Prototype assumptions phải hiển thị riêng, không được trộn vào requirement.
+
+PROMPT CHO CLAUDE MẪU
+
+Tạo một prototype web responsive cho Voice Commerce.Dùng requirement REQ-VC-01..12 và business rules BR-VC-01..06 dưới đây.Tập trung 4 flows trong Prototype Brief. Hiển thị rõ transcript, assistant message,product cards, cart summary và confirmation.Bắt buộc có state: listening, processing, ambiguous, out-of-stock, network error,order draft và success. Không cho assistant tự tạo giá/stock; dùng sample catalog tôi cung cấp.Trước khi tạo, liệt kê mọi assumption còn thiếu để tôi duyệt.
+
+18.11. Output #11 - Usability Test Script & Findings
+
+Task
+
+Success criterion
+
+T1: Tìm cà phê dưới 200k bằng voice
+
+User nhận ra mic state và chọn được 1 sản phẩm ≤60s
+
+T2: Thêm 2 sản phẩm vào cart
+
+Quantity đúng, user hiểu feedback
+
+T3: Nói câu mơ hồ “thêm sữa”
+
+User hiểu assistant đang hỏi lại, không nghĩ hệ thống lỗi
+
+T4: Checkout
+
+User nhận ra cần confirm và đọc được total trước khi đặt
+
+Finding
+
+Evidence
+
+Decision
+
+Mic state chưa rõ
+
+2/3 người nói không biết hệ thống đang nghe
+
+Thêm pulse + label “Đang nghe…” + stop action
+
+Confirmation dễ bị bỏ qua
+
+1/3 nói “tôi tưởng đã đặt rồi” khi thấy draft
+
+Đổi CTA thành “Xác nhận đặt hàng”; thêm copy “Chưa tạo đơn”
+
+Clarification tốt hơn dropdown
+
+3/3 hiểu câu hỏi “Bạn muốn loại nào?”
+
+Giữ conversational clarification + cards để chọn
+
+18.12. Output #12 - PRD
+
+# PRD - Voice Commerce + Smart Voice AssistantStatus: Approved for MVP## 1. ProblemKhách hàng cần thao tác mua hàng nhanh bằng voice/text nhưng hệ thống phải giữ tính chính xácvề giá, tồn kho, giỏ và đơn hàng.## 2. GoalsG1. Hoàn thành search → add-to-cart bằng voice/text.G2. Không tạo order nếu chưa explicit confirmation.G3. Mọi câu trả lời về catalog/order được grounded bằng backend tools.G4. Có text fallback cho toàn bộ critical flows.## 3. Non-goalsCard payment thật; voice biometrics; multi-language; recommender cá nhân hóa.## 4. UsersCustomer; Store Admin.## 5. Functional ScopeREQ-VC-01..12.## 6. Business RulesBR-VC-01..06.## 7. UX Principles- Transcript luôn nhìn thấy.- Hỏi lại khi mơ hồ, không đoán.- Critical action có confirmation rõ.- Error nói điều gì xảy ra + cách sửa.## 8. Metrics / Acceptance Signals- Intent benchmark ≥80% trên 20 utterances.- 5 critical E2E flows pass.- 0 hallucinated price/stock trong test set.- 100% create-order path đi qua confirmation token/state.## 9. RisksSpeech API browser compatibility; LLM latency/cost; prompt injection; stale stock;assistant tool-call schema drift.## 10. Release SliceMVP-1: input/search/cart/order confirmation/admin stock.MVP-2 (nếu còn thời gian): compare + order status + TTS.
+
+18.13. Output #13 - Epics và 12 User Stories
+
+Epic
+
+Capability
+
+Story
+
+Title
+
+Pts
+
+EP1
+
+Conversation & Input
+
+US-VC-01
+
+Use voice/text input
+
+2
+
+EP1
+
+Conversation & Input
+
+US-VC-02
+
+Show transcript and assistant states
+
+2
+
+EP2
+
+Product Discovery
+
+US-VC-03
+
+Search catalog by natural request
+
+3
+
+EP2
+
+Product Discovery
+
+US-VC-04
+
+Ask grounded product details
+
+2
+
+EP3
+
+Cart
+
+US-VC-05
+
+Add product and quantity by voice/text
+
+3
+
+EP3
+
+Cart
+
+US-VC-06
+
+Update or remove cart items
+
+2
+
+EP4
+
+Checkout
+
+US-VC-07
+
+Create and review order draft
+
+3
+
+EP4
+
+Checkout
+
+US-VC-08
+
+Confirm order explicitly
+
+2
+
+EP4
+
+Checkout
+
+US-VC-09
+
+Check order status
+
+2
+
+EP5
+
+Admin
+
+US-VC-10
+
+Manage products
+
+3
+
+EP5
+
+Admin
+
+US-VC-11
+
+Update inventory
+
+2
+
+EP1
+
+Conversation & Input
+
+US-VC-12
+
+Handle ambiguity and failures
+
+3
+
+18.14. Output #14 - User Story chi tiết mẫu
+
+## US-VC-05 - Add product and quantity by voice/textAs a shopper, I want to add a specific product and quantity using natural language,so that I can build my cart without navigating multiple screens.Context:Covers REQ-VC-05 and BR-VC-01/02. Product identity and stock must be resolved by backend data.Acceptance Criteria:AC1Given product "Sữa hạt Oat 1L" is active with stock 10When the shopper says "Thêm 2 hộp sữa hạt Oat 1L"Then the cart contains quantity 2 and assistant confirms the exact product and quantity.AC2Given stock is 1When the shopper asks to add quantity 2Then the system does not exceed stock and explains the available quantity.AC3Given more than one product matches the utteranceWhen confidence is below the configured thresholdThen no cart change occurs and assistant asks for clarification.AC4Given the cart API failsWhen an add command is submittedThen the cart remains unchanged and the UI shows a recoverable error.Out of Scope:Substitution recommendations; bundle pricing; checkout.Dependencies:US-VC-03 product resolution; cart API; VoiceComposer component.Estimate: 3 pts
+
+18.15. Output #15 - Taiga Backlog mẫu
+
+Story
+
+Task
+
+Title
+
+Owner
+
+Est
+
+Expected output
+
+US-VC-05
+
+T-501
+
+Define ADD_TO_CART command schema
+
+AI/BE
+
+3h
+
+Schema + unit tests
+
+US-VC-05
+
+T-502
+
+Implement product resolution service
+
+BE
+
+5h
+
+Service + integration test
+
+US-VC-05
+
+T-503
+
+Implement POST /api/cart/items validation
+
+BE
+
+4h
+
+Endpoint + 4 tests
+
+US-VC-05
+
+T-504
+
+Build cart feedback in VoiceComposer
+
+FE
+
+4h
+
+UI states + component test
+
+US-VC-05
+
+T-505
+
+E2E voice/text add-to-cart flow
+
+QA
+
+3h
+
+Playwright spec
+
+US-VC-07
+
+T-701
+
+Create order draft endpoint
+
+BE
+
+5h
+
+Draft API + totals
+
+US-VC-08
+
+T-801
+
+Add explicit confirmation state
+
+FE/BE
+
+5h
+
+Confirm token + UI
+
+US-VC-11
+
+T-1101
+
+Admin stock update form
+
+FE/BE
+
+5h
+
+RBAC + validation
+
+Status policy mẫu
+
+New → Ready → In Progress → Review → QA → Done. Story không Done nếu AC chưa có test/evidence hoặc task con còn mở.
+
+18.16. Output #16 - Figma / Design System Handoff
+
+DESIGN TOKENS MẪU
+
+Token
+
+Value
+
+Use
+
+color.primary
+
+#205B8E
+
+Primary CTA, active voice
+
+color.success
+
+#2F6B4F
+
+Cart/order success
+
+color.warning
+
+#9A5B00
+
+Clarification/warning
+
+color.danger
+
+#9B2C2C
+
+Destructive/error
+
+radius.md
+
+12px
+
+Cards, input, dialogs
+
+space.base
+
+4px scale
+
+4/8/12/16/24/32
+
+type.body
+
+16/24
+
+Main body
+
+type.caption
+
+13/18
+
+Metadata/status
+
+COMPONENT INVENTORY MẪU
+
+Component
+
+Variants/States
+
+Accessibility/behavior
+
+VoiceButton
+
+idle/listening/processing/disabled/error
+
+Button label changes; focus visible; Escape stops listening
+
+AssistantMessage
+
+text/product-list/clarification/error
+
+Live region for new assistant response
+
+ProductCard
+
+default/out-of-stock/selected
+
+Price/stock read from props only
+
+CartItem
+
+default/updating/error
+
+Disable rapid actions while mutation pending
+
+OrderDraft
+
+review/changed/expired
+
+Shows “Chưa tạo đơn” until confirmed
+
+ConfirmDialog
+
+default/loading/error
+
+Focus trap; Enter confirm; Escape cancel
+
+UX COPY MẪU
+
+Context
+
+Copy
+
+Listening
+
+Đang nghe… Nói tên sản phẩm hoặc yêu cầu của bạn.
+
+Ambiguous
+
+Tôi tìm thấy 3 loại sữa. Bạn muốn loại nào?
+
+Out of stock
+
+Sữa hạt Oat 1L hiện chỉ còn 1 hộp. Tôi có thể thêm 1 hộp vào giỏ.
+
+Draft
+
+Đây là bản nháp đơn hàng. Chưa có đơn nào được tạo.
+
+Confirm CTA
+
+Xác nhận đặt hàng
+
+Network error
+
+Chưa thể cập nhật giỏ. Kiểm tra kết nối và thử lại; giỏ hiện tại chưa thay đổi.
+
+18.17. Output #17 - Architecture
+
+LLM không truy cập DB trực tiếp; chỉ đề xuất structured tool call.
+
+Application validate tool name, role, arguments và business rules trước khi gọi domain service.
+
+Product/Cart/Order service là source-of-truth cho dữ liệu nghiệp vụ.
+
+Audit log lưu tool call metadata, kết quả, latency và order creation event; không lưu secret/raw audio.
+
+18.18. Output #18 - Data Model
+
+Entity
+
+Fields chính
+
+Rules
+
+User
+
+id, email, role, created_at
+
+role ∈ CUSTOMER|ADMIN
+
+Product
+
+id, sku, name, description, price, active
+
+price >=0; SKU unique
+
+Inventory
+
+product_id, quantity, updated_at
+
+quantity >=0
+
+Cart
+
+id, user_id, status
+
+1 active cart/user
+
+CartItem
+
+cart_id, product_id, quantity, unit_price_snapshot
+
+quantity >0; validate stock
+
+Order
+
+id, user_id, status, subtotal, total, confirmed_at
+
+created only after confirm
+
+OrderItem
+
+order_id, product_id, name_snapshot, unit_price, quantity
+
+immutable snapshot
+
+VoiceSession
+
+id, user_id, started_at
+
+no raw audio by default
+
+VoiceTurn
+
+session_id, transcript, intent, tool_name, status
+
+redact sensitive fields
+
+AuditEvent
+
+actor_id, action, target, metadata, created_at
+
+append-only for critical events
+
+18.19. Output #19 - Assistant Command Schema
+
+type AssistantCommand =  | { type: "SEARCH_PRODUCTS"; query?: string; category?: string; maxPrice?: number }  | { type: "GET_PRODUCT"; productId: string }  | { type: "ADD_TO_CART"; productId: string; quantity: number }  | { type: "UPDATE_CART_ITEM"; cartItemId: string; quantity: number }  | { type: "GET_CART" }  | { type: "CREATE_ORDER_DRAFT" }  | { type: "CONFIRM_ORDER"; draftId: string; confirmationToken: string }  | { type: "GET_ORDER_STATUS"; orderId?: string }  | { type: "CLARIFY"; question: string; candidates?: string[] };Validation rules:- quantity: integer 1..99, then domain service checks stock.- CONFIRM_ORDER requires unexpired draft + matching confirmationToken.- Tool whitelist by role; CUSTOMER cannot access admin tools.- Unknown/low-confidence intent → CLARIFY, never guess a critical action.
+
+18.20. Output #20 - API Contract
+
+Method
+
+Path
+
+Input
+
+Output
+
+Auth
+
+POST
+
+/api/assistant/message
+
+{sessionId,message}
+
+Assistant turn + tool result summary
+
+CUSTOMER
+
+GET
+
+/api/products
+
+q,category,maxPrice
+
+Product[]
+
+PUBLIC/AUTH
+
+POST
+
+/api/cart/items
+
+{productId,quantity}
+
+Cart
+
+CUSTOMER
+
+PATCH
+
+/api/cart/items/:id
+
+{quantity}
+
+Cart
+
+CUSTOMER
+
+GET
+
+/api/cart
+
+-
+
+Cart
+
+CUSTOMER
+
+POST
+
+/api/orders/draft
+
+-
+
+OrderDraft + confirmationToken
+
+CUSTOMER
+
+POST
+
+/api/orders/confirm
+
+{draftId,confirmationToken}
+
+Order
+
+CUSTOMER
+
+GET
+
+/api/orders/:id
+
+-
+
+Order
+
+OWNER/ADMIN
+
+PATCH
+
+/api/admin/products/:id/stock
+
+{quantity}
+
+Inventory
+
+ADMIN
+
+18.21. Output #21 - ADR mẫu
+
+# ADR-002 - LLM chỉ phát structured command, không được ghi dữ liệu trực tiếpStatus: AcceptedContext:Voice requests có thể chứa ambiguity; LLM không đáng tin để tự quyết định price/stock/order.Decision:LLM trả AssistantCommand theo schema. Server validate command, role, argument và business rule;sau đó mới gọi Product/Cart/Order service. LLM không có database credentials.Consequences:+ Dễ test và audit; giảm hallucination tác động nghiệp vụ.+ Có thể thay model mà domain logic không đổi.- Cần orchestration layer và schema validation.- Một số hội thoại cần thêm clarification turn.Rejected alternative:Cho LLM sinh SQL hoặc gọi DB trực tiếp - rủi ro security, consistency và khó test.
+
+18.22. Output #22 - Story Spec US-VC-05
+
+Story: US-VC-05Requirement: REQ-VC-05; BR-VC-01/02/04Design: Figma / Flows / Cart / Voice AddGoal:Resolve a voice/text request into a safe ADD_TO_CART command and update the active cart.Sequence:1. Client sends transcript/message to assistant endpoint.2. Orchestrator returns ADD_TO_CART or CLARIFY.3. Server resolves productId and validates quantity.4. Cart service checks active product + stock.5. Transaction upserts CartItem.6. API returns authoritative cart.7. Assistant formats grounded confirmation from returned cart data.Error paths:- Product not found → no mutation; offer search refinement.- Multiple matches → CLARIFY.- Quantity > stock → 409 STOCK_INSUFFICIENT + availableQuantity.- Network/server error → no optimistic success message.Security:Authenticated customer only; never trust product price sent by client.Observability:Log intent, tool, productId, quantity, outcome, latency; no raw audio.Tests:Unit parser/schema; integration cart service; API auth/stock; E2E text command + mocked voice transcript.
+
+18.23. Output #23 - Repository Structure
+
+src/├─ app/                         # routes/pages only├─ modules/│  ├─ assistant/│  │  ├─ components/│  │  ├─ hooks/│  │  ├─ server/│  │  └─ index.ts│  ├─ catalog/│  ├─ cart/│  ├─ orders/│  └─ admin/├─ shared/│  ├─ ui/│  ├─ validation/│  └─ utils/├─ core/│  ├─ auth/│  ├─ db/│  ├─ logging/│  └─ ai/└─ tests/   ├─ integration/   └─ e2e/Rules:- Route/page là thin shell.- Module chỉ expose public API qua index.ts.- Presentational component không fetch data.- Domain rules không đặt trong component/UI.
+
+18.24. Output #24 - AI Implementation Prompt + Verification
+
+TASK: T-503 - Implement POST /api/cart/itemsSTORY: US-VC-05CONTEXT: Story Spec + BR-VC-01/02 + API contract + current cart module.Rules:- Không nhận unitPrice từ client làm source of truth.- Check authenticated user owns active cart.- Validate quantity integer >0.- Check product active + stock before mutation.- Return typed domain errors: PRODUCT_NOT_FOUND, STOCK_INSUFFICIENT.- Không refactor module ngoài cart trừ khi thật sự cần.Before coding: nêu plan, files, tests và rủi ro.After coding: chạy lint, typecheck, targeted tests và build; báo output thật.
+
+VERIFICATION EVIDENCE MẪU
+
+$ npm run lint0 errors$ npm run typecheckpassed$ npm test -- cart12 passed, 0 failed$ npm run buildbuild completed successfullyHuman diff review:- Không nhận price từ request.- Transaction bảo vệ cart update.- 409 stock error mapped đúng.- Không có unrelated refactor.
+
+18.25. Output #25 - Code Review mẫu
+
+Severity
+
+Finding
+
+Action
+
+High
+
+Endpoint tin quantity nhưng chưa re-check stock bên trong transaction; có race giữa check và update.
+
+Move stock check + cart mutation into transaction / atomic update.
+
+Medium
+
+Assistant success message được tạo trước khi cart API hoàn tất.
+
+Format success only from authoritative API response.
+
+Medium
+
+No test for quantity=0/negative.
+
+Add validator unit tests + API 400 test.
+
+Low
+
+CartItem component 220 lines, owns mutation + render + toast logic.
+
+Extract useCartItemActions hook after feature stabilizes.
+
+Completion gate
+
+Sau khi sửa review, chạy lại fresh tests/build. Không dùng output kiểm tra cũ để khẳng định phiên bản mới pass.
+
+18.26. Output #26 - Test Strategy
+
+Layer
+
+Coverage cho case mẫu
+
+Unit
+
+intent schema validator; quantity validator; total calculator; clarification rule; permission helpers
+
+Integration
+
+catalog search; cart stock transaction; order draft totals; confirm token; admin stock RBAC
+
+E2E
+
+login → voice/text search → add cart; ambiguous clarification; out-of-stock; order draft → confirm; admin stock update
+
+Non-functional
+
+basic latency sample; keyboard flow; no secrets; audit event presence
+
+10 TEST CASES MẪU
+
+ID
+
+Case
+
+Trace
+
+Expected
+
+Mode
+
+TC-01
+
+Search dưới price
+
+REQ-VC-03
+
+Results đều ≤ maxPrice
+
+Automated
+
+TC-02
+
+Add qty=2 đủ stock
+
+US-VC-05 AC1
+
+Cart qty=2
+
+Automated
+
+TC-03
+
+Add vượt stock
+
+US-VC-05 AC2
+
+409 + no over-allocation
+
+Automated
+
+TC-04
+
+Ambiguous product
+
+US-VC-05 AC3
+
+No mutation; clarification
+
+Automated
+
+TC-05
+
+Cart API 500
+
+US-VC-05 AC4
+
+Error; no false success
+
+Automated
+
+TC-06
+
+Order draft
+
+REQ-VC-07
+
+Shows authoritative total
+
+Automated
+
+TC-07
+
+Confirm without token
+
+REQ-VC-08
+
+Rejected 400/409
+
+Automated
+
+TC-08
+
+Customer admin stock
+
+NFR-VC-03
+
+403
+
+Automated
+
+TC-09
+
+Voice unavailable
+
+REQ-VC-12
+
+Text flow still works
+
+Manual/E2E
+
+TC-10
+
+Keyboard checkout
+
+NFR-VC-05
+
+Can complete via keyboard
+
+Manual/E2E
+
+18.27. Output #27 - E2E Scenario mẫu
+
+Scenario: shopper completes safe voice-assisted orderGiven shopper is logged inAnd product "Sữa hạt Oat 1L" has stock 10 and price 65,000When shopper submits transcript "Thêm 2 hộp sữa hạt Oat 1L"Then cart shows quantity 2 and total based on backend priceWhen shopper requests "Đặt đơn này"Then app displays Order Draft and text "Chưa tạo đơn"And no Order record is confirmed yetWhen shopper chooses "Xác nhận đặt hàng"Then one Order is created with authoritative item snapshotAnd success page shows order codeAnd audit events include CART_ITEM_ADDED and ORDER_CONFIRMED
+
+18.28. Output #28 - Bug Report mẫu
+
+## BUG-17 - Duplicate cart quantity on repeated voice callbackSummary:Một voice utterance đôi khi tạo 2 ADD_TO_CART requests, làm quantity tăng gấp đôi.Environment:Chrome 128 / staging / assistant-cart flow.Reproduction:1. Start listening.2. Say "Thêm 1 sữa Oat".3. Browser emits final transcript twice in rare callback sequence.4. Observe quantity +2.Expected:Một utterance cuối cùng chỉ tạo một mutation.Actual:Hai POST requests giống nhau trong <200ms.Root Cause:Client handler không de-duplicate final transcript event; endpoint cũng chưa có idempotency key.Solution:Generate commandRequestId client-side; server stores/recognizes idempotency key per user for cart mutation.Regression Risk: MediumTouches cart mutation semantics.Test Plan:- Unit: duplicate final callbacks emit one command.- Integration: same idempotency key returns same result, no second mutation.- E2E: simulate duplicate request; cart quantity stays +1.
+
+18.29. Output #29 - Release Checklist
+
+[ ] Must stories US-VC-01..08,10,11,12 Done và AC pass.
+
+[ ] Fresh lint/typecheck/unit/integration/E2E green.
+
+[ ] DB migrations applied on staging then production/demo.
+
+[ ] Customer không truy cập admin endpoint.
+
+[ ] Price/stock hallucination benchmark = 0/20.
+
+[ ] Create order without confirmation test bị reject.
+
+[ ] Voice unsupported → text fallback verified.
+
+[ ] Secrets scan/manual check; .env.example updated.
+
+[ ] Smoke test URL thật: search, cart, draft, confirm, admin stock.
+
+[ ] Logs/audit visible cho command error và order confirm.
+
+[ ] README + runbook + known issues + rollback/forward fix ready.
+
+18.30. Output #30 - README / Runbook rút gọn
+
+# Voice Commerce## Quick start1. Copy .env.example → .env.local2. Configure DATABASE_URL, AUTH_SECRET, LLM_API_KEY (optional if MOCK_ASSISTANT=true)3. npm install4. npm run db:migrate5. npm run db:seed6. npm run dev7. Open http://localhost:3000Verify:- /health returns 200- Login customer@example.test / demo credentials from seed note- Search "cà phê" returns seeded products## Testnpm run lintnpm run typechecknpm testnpm run test:e2e## Deploy1. Apply migration.2. Deploy app with production env vars.3. Run smoke suite against deployment URL.4. Verify audit events and order creation.## Rollback / forward fixIf app release fails before migration-dependent writes: rollback application.If irreversible data migration already ran: deploy forward-fix; do not blindly downgrade schema.## Known limitationsBrowser voice API varies; text fallback is the supported baseline.
+
+18.31. Output #31 - Release Notes mẫu
+
+# v1.0.0 - Voice Commerce MVPAdded- Voice/text assistant input with visible transcript.- Grounded catalog search and product Q&A.- Voice/text cart add/update.- Order Draft + explicit confirmation.- Admin product/stock management.- Audit events for assistant tool calls and order confirmation.Quality- Critical E2E: 5/5 pass.- Intent command benchmark: 18/20 correct (90%).- Price/stock hallucination benchmark: 0/20.Known issues- Voice recognition quality depends on browser/environment.- TTS not enabled on all devices; text response always available.
+
+18.32. Output #32 - AI Usage Log mẫu
+
+ID
+
+Task
+
+Context
+
+AI output
+
+Human verification/decision
+
+Value
+
+A-01
+
+Requirement review
+
+Interview notes + brief
+
+Found missing confirmation rule
+
+Added BR-VC-03 after human review
+
+Prevent unsafe checkout
+
+A-02
+
+Prototype
+
+REQ-VC-01..12
+
+Generated 4 flows
+
+Rejected auto-order interaction
+
+Prototype aligned with rules
+
+A-03
+
+Story split
+
+PRD
+
+Proposed checkout as 1 large story
+
+Split draft/confirm into US-07/08
+
+Stories ≤3 pts
+
+A-04
+
+Code
+
+US-VC-05 spec
+
+Generated cart endpoint
+
+Human found race condition in review
+
+Moved validation into transaction
+
+A-05
+
+Testing
+
+AC set
+
+Generated 14 cases
+
+Added duplicate callback/idempotency case manually
+
+Caught BUG-17
+
+A-06
+
+Docs
+
+Repo + release state
+
+Drafted runbook
+
+Verified commands on clean clone
+
+Onboarding reproducible
+
+18.33. Output #33 - Traceability Matrix mẫu
+
+Requirement
+
+Story
+
+Tasks
+
+Code/PR
+
+Tests
+
+Release
+
+REQ-VC-05
+
+US-VC-05
+
+T-501..505
+
+PR #42
+
+TC-02..05
+
+v1.0.0
+
+REQ-VC-07
+
+US-VC-07
+
+T-701..704
+
+PR #51
+
+TC-06
+
+v1.0.0
+
+REQ-VC-08
+
+US-VC-08
+
+T-801..804
+
+PR #55
+
+TC-07 + E2E checkout
+
+v1.0.0
+
+REQ-VC-10
+
+US-VC-10/11
+
+admin tasks
+
+PR #63
+
+TC-08 + admin E2E
+
+v1.0.0
+
+REQ-VC-12
+
+US-VC-12
+
+fallback tasks
+
+PR #39
+
+TC-09/10
+
+v1.0.0
+
+18.34. Output #34 - Status Report mẫu
+
+# Weekly Status - Week 7Overall: YELLOW - feature complete for Must scope, two release risks remain.Done- US-VC-05 cart add-to-cart merged with tests.- US-VC-07 order draft complete.- Figma handoff for confirmation flow finalized.In Progress- US-VC-08 order confirm token (80%).- Admin inventory E2E (60%).Blocked / Risks- Voice API inconsistent on Safari → text fallback verified; Safari voice is non-blocking for MVP.- BUG-17 duplicate voice callback → fix in review; must close before release.Next1. Merge idempotency fix + regression tests.2. Run full E2E on staging.3. Freeze v1.0 scope and create release candidate.Decisions needed- Keep TTS as Could, not release blocker.
+
+18.35. Output #35 - Retrospective / AI Metrics mẫu
+
+Metric
+
+Kết quả mẫu
+
+Ý nghĩa
+
+Requirement-to-story traceability
+
+17/17 requirements mapped
+
+Không có Must requirement mồ côi
+
+Automated critical E2E
+
+5/5
+
+Critical business journeys được bảo vệ
+
+Command benchmark
+
+18/20 = 90%
+
+Đạt mục tiêu ≥80%; 2 câu mơ hồ cần clarification tuning
+
+Price/stock hallucination
+
+0/20
+
+Grounding/tool architecture hoạt động
+
+AI-assisted implementation time
+
+~35% giảm ở 6 tracked tasks
+
+Có ích khi spec rõ; review vẫn bắt buộc
+
+AI-generated defects caught before merge
+
+4 findings
+
+Review/test tạo giá trị, không chỉ generation
+
+Reusable artifacts
+
+6 prompt/skill templates
+
+Có thể tái sử dụng cho story tiếp theo
+
+Keep: Story Spec + tool schema trước coding giúp AI ít đi sai hướng.
+
+Improve: Q&A benchmark cần thêm conflict cases, không chỉ factual cases.
+
+Stop: Cho agent sửa nhiều module một lần; diff quá lớn khó review.
+
+Next experiment: thêm eval set 30 utterances và test structured command tự động trong CI.
+
+18.36. Project Index mẫu để chấm trong 60 giây
+
+Mục
+
+Link/ID phải có
+
+Discovery
+
+Charter · Research · REQ-VC-* · BR-VC-*
+
+Vault
+
+00-index · Q&A benchmark · source priority
+
+Product
+
+PRD · US-VC-01..12 · Taiga board
+
+Design
+
+Prototype · Findings · Figma · DESIGN.md
+
+Technical
+
+Architecture · ERD · API · ADR · Story Specs
+
+Code
+
+Repository · PR list by Story ID
+
+QA
+
+Test plan · E2E · bugs · latest test report
+
+Release
+
+Deployment URL · release checklist · runbook · release notes
+
+Evidence
+
+AI Usage Log · Traceability Matrix · retrospective
+
+18.37. Báo cáo cá nhân lần 1 - ví dụ cho sinh viên phụ trách US-VC-05
+
+0:00-0:45"Em phụ trách BA/Engineering cho flow thêm sản phẩm bằng voice. Requirement chính là REQ-VC-05,liên quan BR-VC-01/02/04."0:45-2:15 - Bài 1Mở requirements.md và Vault benchmark.Chỉ REQ-VC-05, BR-VC-02 và Q5/Q12. Giải thích vì sao assistant phải hỏi lại và không được vượt stock.2:15-3:45 - Bài 2Mở US-VC-05 trên Taiga + Figma VoiceComposer + Story Spec.Chỉ 4 AC và task T-501..505.3:45-4:45 - AI evidenceMở AI Log A-03/A-04: AI đề xuất implementation; em review và phát hiện stock race.Cho thấy quyết định sửa transaction.4:45-5:00 - VivaTrả lời: "Nếu bỏ BR-VC-02, test TC-03 và stock validation sẽ mất lý do tồn tại."
+
+18.38. Báo cáo cá nhân lần 2 - ví dụ cho cùng sinh viên
+
+0:00-1:00Nêu US-VC-05 và AC1-AC4.1:00-3:00Live demo: text/voice "Thêm 2 hộp..." → cart +2; thử vượt stock → bị chặn.3:00-4:30Mở PR #42 và tests TC-02..05. Chỉ fresh CI result.4:30-5:30Mở BUG-17: duplicate voice callback. Giải thích idempotency key và regression test.5:30-6:00Bài học: AI viết endpoint nhanh nhưng không tự phát hiện race/idempotency nếu context thiếu.Lần sau sẽ đưa concurrency/idempotency vào Story Spec từ đầu.
+
+19. Bộ template sinh viên copy để dùng cho dự án của mình
+
+19.1. Project Index
+
+# Project IndexProject:Team:Last updated:## Discovery- Charter:- Research:- Requirements:- Vault:- Q&A benchmark:## Product & Design- PRD:- Stories:- Taiga:- Prototype:- Figma:## Engineering- Architecture:- Data model:- API:- ADRs:- Repository:## QA & Release- Test plan/report:- Bugs:- Deployment:- Runbook:- Release notes:## Evidence- AI Usage Log:- Traceability Matrix:- Retrospective:
+
+19.2. Requirement
+
+ID:Type: FR | NFR | BR | CON | ASM | QStatement:Source:Priority: Must | Should | CouldRationale:Acceptance signal / how to verify:Dependencies:Status: Draft | Confirmed | SupersededLast updated:
+
+19.3. User Story
+
+# [ID] - [Title]As a [role], I want [action], so that [benefit].Context:Requirement IDs:Design link:Acceptance Criteria:Given ... When ... Then ...Out of Scope:Dependencies:Estimate:Owner:Evidence links:
+
+19.4. ADR
+
+# ADR-[NNN] - [Decision]Status: Proposed | Accepted | SupersededContext:Decision:Alternatives considered:Consequences:Verification / follow-up:Date / owners:
+
+19.5. AI Usage Log
+
+ID | Date | Task/Story | Goal | Context/Input | AI/Skill | Output |Verification performed | Human decision | Time/quality impact | Artifact link
+
+19.6. Traceability Matrix
+
+Requirement ID | Story ID | Taiga tasks | Design | Spec/ADR | PR/Commit | Test IDs | Release
+
+19.7. Release Readiness
+
+[ ] Scope freeze confirmed.
+
+[ ] Must stories Done.
+
+[ ] Fresh lint/typecheck/build pass.
+
+[ ] Unit/integration/E2E pass.
+
+[ ] Critical permissions tested.
+
+[ ] Secrets/env checked.
+
+[ ] Migration/seed checked.
+
+[ ] Staging smoke passed.
+
+[ ] Bugs triaged.
+
+[ ] README/runbook current.
+
+[ ] Traceability complete.
+
+[ ] Deployment URL verified.
+
+20. Lịch thực hành gợi ý 14 buổi
+
+Buổi
+
+Trọng tâm
+
+Output cuối buổi
+
+1
+
+Project setup · problem framing · AI discipline
+
+Charter + workspace
+
+2
+
+Research · requirement analysis
+
+Requirement draft + glossary
+
+3
+
+Vault · Q&A benchmark
+
+Vault v1 + benchmark
+
+4
+
+Review Bài 1 · prototype brief
+
+Bài 1 freeze + brief
+
+5
+
+Claude prototype · usability test
+
+Prototype + findings
+
+6
+
+PRD · story · AC
+
+PRD + story draft
+
+7
+
+Taiga · Figma system
+
+Backlog + design foundations
+
+8
+
+Architecture · data · API · ADR
+
+Technical baseline
+
+9
+
+Bài 2 vertical slice · Báo cáo 1 bắt đầu
+
+Bài 2 freeze
+
+10
+
+AI-assisted implementation · PR review
+
+2-3 Must stories
+
+11
+
+Testing · bug workflow
+
+Automation + bug evidence
+
+12
+
+Integration · security · observability
+
+Feature complete
+
+13
+
+Deploy · release rehearsal
+
+Release candidate
+
+14
+
+Final demo · Báo cáo 2 · retrospective
+
+Final release + evidence
+
+21. Checklist cuối cùng cho sinh viên
+
+[ ] Tôi có thể mở Project Index và tìm mọi artifact trong <60 giây.
+
+[ ] Mọi Must requirement có Story, Task, Code/PR, Test và Release link.
+
+[ ] Vault trả lời unknown bằng “không đủ dữ liệu”, không bịa.
+
+[ ] Prototype đã được test với người khác, không chỉ nhóm tự xem.
+
+[ ] Story/AC testable và không quá lớn.
+
+[ ] Taiga phản ánh trạng thái thật; không “Done” khi QA chưa pass.
+
+[ ] Figma có states/error/empty/loading/confirmation, không chỉ happy path.
+
+[ ] Code do AI hỗ trợ đã được human diff review và fresh verification.
+
+[ ] Test critical flows và edge cases quan trọng.
+
+[ ] Deployment URL, README, runbook và release notes hoạt động.
+
+[ ] AI Usage Log có cả đề xuất bị từ chối, lỗi và cách kiểm chứng.
+
+[ ] Tôi tự truy vết được story mình phụ trách từ requirement đến production.
+
+[ ] Tôi sẵn sàng cho 2 lần báo cáo cá nhân mà không phụ thuộc thành viên khác trả lời hộ.
+
+Chuẩn “đạt” của học phần
+
+Một dự án tốt không nhất thiết có nhiều feature. Dự án tốt là dự án có scope hợp lý, critical flow chạy ổn định, quyết định có lý do, test có evidence, tài liệu truy vết được và AI được dùng để tăng tốc mà không làm mất kiểm soát kỹ thuật.

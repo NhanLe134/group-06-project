@@ -7,9 +7,11 @@ Hệ thống Single Source of Truth cho con người và AI Agents (Claude Code 
 - `01-Requirements/glossary.md`: Từ điển thuật ngữ chuẩn cho con người và AI.
 - `02-Research/interview-notes.md`: Ghi chép phỏng vấn thô 3 người dùng thực tế.
 - `02-Research/user-research.md`: Tổng hợp Persona, JTBD và Pain points.
-- `07-QA/vault-qa-benchmark.md`: Bảng kiểm chuẩn 20 câu hỏi đánh giá AI.
-- `08-Decisions/decision-log.md`: Nhật ký quyết định kiến trúc và thay đổi nghiệp vụ (ADR).
-- `docs/AI_USAGE_LOG.md`: Nhật ký kiểm soát AI và bằng chứng con người can thiệp.
+- `05-Design/DESIGN.md`: Quy chuẩn Hệ thống Thiết kế (Design System Tokens & Rules - Output #16).
+- `05-Design/prototype-findings.md`: Báo cáo kết quả kiểm thử Usability & Prototype Findings.
+- `07-QA/vault-qa-benchmark.md`: Bảng kiểm chuẩn 18 câu hỏi đánh giá AI.
+- `08-Decisions/decision-log.md`: Nhật ký quyết định kiến trúc và thay đổi nghiệp vụ (ADR-001..004).
+- `docs/AI_USAGE_LOG.md`: Nhật ký kiểm soát AI và bằng chứng con người can thiệp (A-01..A-13).
 
 ## QUY TẮC BẮT BUỘC KHI AI TRUY VẤN VAULT (AI VAULT GUARDRAILS):
 ### 1. Nguyên tắc truy vấn & phản hồi dữ liệu:
