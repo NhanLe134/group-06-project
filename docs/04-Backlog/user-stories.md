@@ -107,16 +107,46 @@
 *Mang lại giá trị cốt lõi: Tự động hóa luồng thông tin giữa Bếp và Nhân viên phục vụ để tăng tốc độ xoay vòng bàn.*
 
 ## US-03: Bếp nhận Order và Báo hoàn thành trên KDS
-- **User Story:** *Là* Đầu bếp, *tôi muốn* nhìn thấy đơn hàng hiện lên KDS theo thứ tự thời gian, *để* tôi biết món nào cần nấu trước và báo Done.
-- **Context:** Xử lý hiển thị thông tin Real-time và cảnh báo trễ hạn. (Phụ trách: Nhã - Eng).
-- **Requirement IDs:** `REQ-08`, `REQ-09`
-- **Acceptance Criteria:**
-  - **AC1:** `CHO TRƯỚC` khách bấm gửi đơn, `KHI` hệ thống nhận đơn, `THÌ` KDS tự động nhảy Ticket kèm đồng hồ đếm ngược.
-  - **AC2:** `CHO TRƯỚC` Ticket trên KDS chờ quá 15 phút, `KHI` đồng hồ chạm mốc, `THÌ` Ticket chớp đỏ và đẩy lên vị trí đầu ưu tiên.
-  - **AC3:** `CHO TRƯỚC` Bếp bấm *Out of Stock* món Bò, `KHI` hệ thống ghi nhận, `THÌ` khóa món Bò trên mọi thiết bị ngay lập tức.
-- **Out of Scope:** KDS không có quyền gộp bill hay đổi giá món ăn.
-- **Dependencies:** Cấu trúc Websocket/Realtime (TBD).
-- **Estimate đề xuất:** 3 points
+- ## US-03 - Bếp nhận Order và Báo hoàn thành trên KDS
+
+**User Story:** *As an* Đầu bếp (Kitchen Staff), *I want* nhìn thấy đơn hàng hiển thị trên KDS theo thứ tự và thao tác cập nhật trạng thái, *so that* tôi biết món nào cần ưu tiên nấu và đồng bộ trạng thái hết hàng tức thì.
+
+**Context:**
+Đặc tả bám sát tri thức Vault, trích dẫn nguồn:
+- `REQ-08` (FR): Màn hình KDS sắp xếp đơn ưu tiên, nhấp nháy Đỏ khi chờ quá 15 phút.
+- `REQ-09` / `BR-03`: Bếp bấm Out of Stock (OOS) → trạng thái khóa món được đồng bộ trên mọi thiết bị trong vòng 1 giây.
+- `REQ-15`: Xử lý món OOS đang nằm sẵn trong Order Draft của khách.
+- `FR-03`: Bếp xem Ticket và đếm ngược trên KDS.
+- `NFR-RO-01`: Thời gian tải màn hình < 2 giây.
+- Ràng buộc kỹ thuật: Cập nhật thời gian thực bằng Pub/Sub WebSocket (`kds:tickets`).
+
+**Acceptance Criteria:**
+
+**AC1** (Happy Path - Nhận đơn real-time và hiển thị KDS)
+Given khách hàng hoàn tất bấm "Xác nhận gửi bếp" từ E-Menu
+When hệ thống tiếp nhận đơn hàng thành công
+Then KDS tự động hiển thị Ticket mới theo thứ tự thời gian kèm đồng hồ đếm ngược.
+
+**AC2** (Edge Case - Cảnh báo trễ hạn)
+Given một Ticket món ăn đang ở trạng thái chờ trên KDS
+When đồng hồ đếm ngược vượt mốc 15 phút
+Then Ticket tự động chớp đỏ và được đẩy lên vị trí ưu tiên cao nhất.
+
+**AC3** (Business Rule - Đồng bộ Out of Stock)
+Given Đầu bếp chọn "Out of Stock" (OOS) cho một nguyên liệu hoặc món ăn
+When hệ thống ghi nhận trạng thái mới
+Then món ăn bị khóa trên mọi E-Menu trong vòng 1 giây và các Order Draft đang chứa món này bị vô hiệu hóa nút gửi.
+
+**AC4** (Fallback - Mất kết nối mạng)
+Given thiết bị KDS mất kết nối mạng với máy chủ
+When Đầu bếp thao tác hoàn thành món hoặc báo OOS
+Then giao diện hiển thị lỗi kết nối có thể phục hồi và lưu tạm thao tác để tự động đồng bộ sau khi có mạng.
+
+**Out of Scope:**
+- Gộp tách bill; thay đổi giá tiền; định vị nhân viên.
+
+**Dependencies:**
+- Kênh WebSocket realtime (`kds:tickets`); API đồng bộ kho; US-01 (E-Menu); US-04 (Waiter).
 
 ## US-04: Phục vụ bưng món và Cập nhật trạng thái
 - **User Story:** *Là* Nhân viên phục vụ, *tôi muốn* nhận thông báo khi món nấu xong, *để* tôi bưng ra bàn kịp thời và cập nhật Table Map.
