@@ -74,8 +74,10 @@ Số hóa toàn bộ quy trình phục vụ tại bàn, từ lúc khách quét Q
 ### 7.2. Yêu cầu Phi Chức năng (Non-Functional Requirements - NFR)
 | NFR-ID | Loại (Category) | Mô tả yêu cầu (Description) |
 | :--- | :--- | :--- |
+| **NFR-RO-01** | Performance (Hiệu năng) | Hệ thống KDS và E-Menu phải tải xong trong < 2 giây. Chịu tải được 50 bàn order cùng lúc trong giờ cao điểm mà không sập. |
 | **NFR-RO-02** | Privacy / Security | Các file âm thanh thô ghi âm từ khách qua tính năng Voice Ordering phải bị hủy bỏ ngay lập tức sau phiên. |
 | **NFR-RO-03** | Security (RBAC) | Quyền hạn được thiết lập chặt chẽ: Chỉ cấp Manager mới được truy cập CMS Menu. Phục vụ (Waiter) không có quyền Hủy món. |
+| **NFR-RO-04** | Compatibility (Tương thích) | E-Menu phải chạy mượt trên trình duyệt Safari (iOS) và Chrome (Android) mà không cần cài app. App Phục vụ chạy trên máy POS Android. |
 | **NFR-RO-05** | Reliability (Fallback) | Tính năng AI Voice nếu nghe lỗi quá 2 lần trong môi trường ồn, bắt buộc phải tự động hiển thị bàn phím Text. |
 
 ### 7.3. Quy tắc Nghiệp vụ (Business Rules - BR)
