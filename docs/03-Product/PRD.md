@@ -84,3 +84,6 @@ Số hóa toàn bộ quy trình phục vụ tại bàn, từ lúc khách quét Q
 | **BR-01** | Explicit Confirmation | Khách không thể order trực tiếp. Mọi thao tác chọn món đều phải vào "Order Draft" và bấm xác nhận bước cuối. |
 | **BR-02** | Hủy món (Void/Refund) | Mọi thao tác hủy món đã đẩy xuống bếp đều yêu cầu phải nhập mã PIN của Manager. |
 | **BR-03** | Khóa món (Out of Stock) | Ngay khi Bếp đánh dấu món OOS, hệ thống phải disable món đó trên thiết bị của khách trong vòng 1 giây. |
+| **BR-04** | AI Price Grounding | Tính năng Voice AI tuyệt đối không được tự ý sinh giá hoặc chế tên món ăn. Dữ liệu giá/kho phải lấy 100% từ Database. |
+| **BR-05** | Order State Freeze | Khách không thể sử dụng E-Menu hoặc Voice AI để gọi thêm món sau khi đã bấm nút "Yêu cầu thanh toán". |
+| **BR-06** | Stock Limitation | Khách không thể order số lượng lớn hơn mức tồn kho hiện tại (VD: Kho còn 2 ly cam vắt, order 3 ly sẽ bị chặn ngay tại giỏ hàng). |
