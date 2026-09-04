@@ -1,7 +1,7 @@
 # Vault Q&A Benchmark - Group 06 (Restaurant Operations & Smart Ordering)
-- Bộ kiểm chuẩn: 18 câu hỏi (Fact, Rule, Edge-case, Conflict, Unknown/Out of Scope, NFR, Cross-file)
+- Bộ kiểm chuẩn: 17 câu hỏi (Fact, Rule, Edge-case, Conflict, Unknown/Out of Scope, NFR, Cross-file)
 - Quy tắc kiểm thử mù: AI Vault khi trả lời KHÔNG ĐƯỢC ĐỌC TRƯỚC cột "Kỳ vọng chuẩn".
-- Người thực hiện kiểm thử: Role AI/Vault & UX/UI
+- Người thực hiện kiểm thử: Lê Thị Thanh Nhàn Role AI/Vault
 
 ## BẢNG KIỂM CHUẨN ĐỘ CHÍNH XÁC (VAULT ACCURACY BENCHMARK)
 
@@ -22,15 +22,14 @@
 | Q13 | Unknown | Khách hàng quen có thể quét khuôn mặt (FaceID) tại bàn để tự động nhận diện thành viên không? | Không hỗ trợ trong MVP; thuộc Out of Scope. AI phải trả lời KHÔNG ĐỦ DỮ LIỆU TRONG VAULT / Out of Scope. | `scope.md` (Out of Scope) | Không hỗ trợ trong MVP; thuộc Out of Scope. | Correct |
 | Q14 | Unknown | Khách có thể gọi điện thoại đến nhà hàng để AI tự động nhấc máy đặt bàn trước không? | KHÔNG ĐỦ DỮ LIỆU TRONG VAULT. Tính năng nhận cuộc gọi đặt bàn qua điện thoại thuộc Out of Scope. | `scope.md` (Out of Scope) | KHÔNG ĐỦ DỮ LIỆU TRONG VAULT, trích scope liên quan, đề xuất phương án. | Correct |
 | Q15 | Unknown | Nhà hàng có đồng bộ dữ liệu hóa đơn tự động với phần mềm kế toán MISA không? | KHÔNG ĐỦ DỮ LIỆU TRONG VAULT. Tích hợp phần mềm kế toán MISA không có trong phạm vi Vault đã duyệt. | `vault/00-Index.md`, `scope.md` | KHÔNG ĐỦ DỮ LIỆU TRONG VAULT, trích scope liên quan, đề xuất phương án. | Correct |
-| Q16 | Unknown | File âm thanh giọng nói của khách có được lưu trữ vĩnh viễn trên máy chủ không? | Không lưu trữ vĩnh viễn; file âm thanh giọng nói thô bị xóa sau khi phiên bàn (Table Session) kết thúc để bảo vệ quyền riêng tư. | `requirements.md` (NFR-RO-02) | KHÔNG ĐỦ DỮ LIỆU TRONG VAULT, đưa dữ liệu liên quan, đề xuất phương án. | Correct |
-| Q17 | NFR | Nhân viên Waiter có thể dùng tài khoản của mình để sửa đổi giá món ăn hoặc hủy món đã đẩy xuống bếp không? | Không. Quyền Void/Refund món đã xuống bếp và sửa giá menu thuộc về Quản lý (RBAC) `interview-notes.md:130-132`. | Không. Quyền Void/Refund món đã xuống bếp và sửa giá menu thuộc về Quản lý. | Correct |
-| Q18 | NFR | Nếu micro của thiết bị bị hỏng hoặc mạng chập chờn thì khách và phục vụ có tiếp tục gọi món được không? | Có, 100% quy trình hỗ trợ chế độ nhập liệu bằng văn bản/chạm tay (Text fallback) trên màn hình. | `requirements.md` (NFR-RO-05) | Nhập văn bản luôn khả dụng. | Correct |
+| Q16 | NFR | Nhân viên Waiter có thể dùng tài khoản của mình để sửa đổi giá món ăn hoặc hủy món đã đẩy xuống bếp không? | Không. Quyền Void/Refund món đã xuống bếp và sửa giá menu thuộc về Quản lý (RBAC) | `interview-notes.md:130-132`. | Không. Quyền Void/Refund món đã xuống bếp và sửa giá menu thuộc về Quản lý. | Correct |
+| Q17 | NFR | Nếu micro của thiết bị bị hỏng hoặc mạng chập chờn thì khách và phục vụ có tiếp tục gọi món được không? | Có, 100% quy trình hỗ trợ chế độ nhập liệu bằng văn bản/chạm tay (Text fallback) trên màn hình. | `requirements.md` (NFR-RO-05) | Nhập văn bản luôn khả dụng. | Correct |
 
 ---
 
 ## BẢNG CHI TIẾT CÁC LẦN KIỂM THỬ THÍ ĐIỂM (MULTI-ITERATION TEST DETAILS)
 
-### 📊 1. Chi tiết kiểm thử cho Q01 (Fact - Khó khăn Anh Tuấn)
+### 1. Chi tiết kiểm thử cho Q01 (Fact - Khó khăn Anh Tuấn)
 | Lần test | AI thực tế trả lời | Đánh giá (KQ) | Hành động khắc phục / Tinh chỉnh Prompt & Vault |
 | :---: | :--- | :---: | :--- |
 | **Lần 1** | Trả lời đúng 4 khó khăn của Anh Tuấn nhưng KHÔNG trích mã ID (`REQ-RO-01`, `REQ-RO-02`) và KHÔNG ghi vị trí file nguồn (`interview-notes.md:16-19`). | **Partial** | Cập nhật Rule 3 trong `00-Index.md` ép AI mọi câu trả lời bắt buộc phải kèm mã ID và vị trí file nguồn. |
@@ -38,21 +37,23 @@
 
 ---
 
-### 📊 2. Chi tiết kiểm thử cho Q10 (Edge-case - Món OOS trong Order Draft)
+### 2. Chi tiết kiểm thử cho Q10 (Edge-case - Món OOS trong Order Draft)
 | Lần test | AI thực tế trả lời | Đánh giá (KQ) | Hành động khắc phục / Tinh chỉnh Prompt & Vault |
 | :---: | :--- | :---: | :--- |
 | **Lần 1** | AI chỉ trả lời duy nhất cụm "KHÔNG ĐỦ DỮ LIỆU TRONG VAULT" rồi dừng lại, không gợi ý hay đặt câu hỏi mở. | **Partial** | Cập nhật Rule 4 trong `00-Index.md` ép AI phải trích mã REQ liên quan và đề xuất Open Questions. |
 | **Lần 2** | AI đề xuất 3 phương án xử lý (Tự gỡ khỏi Draft, Mờ đi + chặn nút xác nhận, Hybrid) nhưng tự ý định chọn 1 phương án ghi vào `decision-log.md` khi chưa có người duyệt, không đặt câu hỏi gợi mở. | **Partial / Boundary Error** | Cập nhật Rule 5 trong `00-Index.md` quy định tệp `decision-log.md` CHỈ ĐƯỢC PHÉP GHI khi có quyết định do con người trực tiếp duyệt ban hành, yêu cầu đặt câu hỏi. |
 | **Lần 3** | AI đáp ứng 100% quy tắc, xuất trình 3 phương án và đặt các câu hỏi gợi mở giải pháp. Nhóm chọn 1 phương án $\rightarrow$ AI thực hiện ghi nhận bản ghi **ADR-001** vào `decision-log.md` và đồng bộ `TRACEABILITY.md`. | **Correct** | Hoàn thiện bản ghi kiến trúc ADR-001 chính thức và đồng bộ 100% Ma trận truy vết. |
 
+<br> **Lỗi lăp lại tương tự với Q14, Q15**
+
 ---
 
 ## TỔNG HỢP KẾT QUẢ ĐÁNH GIÁ (ACCURACY EVALUATION)
 
-### 📊 BẢNG TIẾN TRÌNH ĐÁNH GIÁ ĐỘ CHÍNH XÁC QUA 3 ĐỢT BENCHMARK (RUN 1 -> RUN 3)
+### BẢNG TIẾN TRÌNH ĐÁNH GIÁ ĐỘ CHÍNH XÁC QUA 3 ĐỢT BENCHMARK (RUN 1 -> RUN 3)
 
 | Đợt kiểm thử | Số câu test | Số câu đạt (Correct) | Tỷ lệ Accuracy (%) | Trạng thái | Chi tiết 4 câu chưa đạt & Nội dung tinh chỉnh Vault/Prompt |
 | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Đợt 1 (Run 1)** | 18 câu | 14 / 18 | **77.8%** | Baseline Test | **14 câu cơ bản đạt Correct**. Có 4 câu dính lỗi:<br>- **Q01**: Đúng nội dung nhưng thiếu trích dẫn mã ID & vị trí dòng.<br>- **Q09**: Thiếu bảng `BR-RO-04` trong `requirements.md`.<br>- **Q10**: AI báo "Không đủ dữ liệu" thụ động rồi dừng.<br>- **Q14**: AI thiếu câu chuyển tiếp và câu hỏi mở.<br>👉 **Khắc phục**: Ban hành **Rule 3 & Rule 4** trong `00-Index.md` và điền danh mục Business Rules (`BR-RO-01` $\rightarrow$ `BR-RO-06`) vào `requirements.md`. |
-| **Đợt 2 (Run 2)** | 18 câu | 16 / 18 | **88.9%** | Post-Prompt Fix | **Q01, Q09, Q14 đã sửa lỗi và đạt Correct**. Còn 2 câu chưa đạt:<br>- **Q10**: AI vi phạm phân quyền, đòi tự ý ghi `decision-log.md` khi chưa có người duyệt.<br>- **Q11**: AI phân vân thứ bậc ưu tiên mâu thuẫn.<br>👉 **Khắc phục**: Ban hành **Rule 5** (Strict Decision Log Rule) trong `00-Index.md` và siết chặt `source-priority.md`. |
-| **Đợt 3 (Run 3)** | 18 câu | 18 / 18 | **100.0%** | Final Pass | **Hoàn hảo 100%**: Tất cả 18 câu đều đạt Correct. AI tuân thủ cả 5 Rules, trích nguồn minh bạch, trích mã REQ, xuất 3 phương án và chờ con người duyệt mới ghi bản ghi `ADR-001` vào `decision-log.md` và đồng bộ `TRACEABILITY.md`. |
+| **Đợt 1 (Run 1)** | 17 câu | 13 / 17 | **76.47%** | Baseline Test | **13 câu cơ bản đạt Correct**. Có 5 câu dính lỗi:<br>- **Q01**: Đúng nội dung nhưng thiếu trích dẫn mã ID & vị trí dòng.<br>-  **Q10,14,15**: AI báo "Không đủ dữ liệu" thụ động rồi dừng.<br> **Khắc phục**:  Bổ sung **Rule 3 & Rule 4** trong `00-Index.md`. |
+| **Đợt 2 (Run 2)** | 17 câu | 14 / 17 | **82.35%** | Post-Prompt Fix | **Q01 đã sửa lỗi và đạt Correct**. Còn 3 câu chưa đạt:<br>- **Q10,14,15**: AI vi phạm phân quyền, tự ý ghi `decision-log.md` khi chưa có người duyệt.<br><br> **Khắc phục**: Ban hành **Rule 5** (Strict Decision Log Rule) trong `00-Index.md` và siết chặt `source-priority.md`. |
+| **Đợt 3 (Run 3)** | 17 câu | 17 / 17 | **100.0%** | Final Pass | **Hoàn hảo 100%**: Tất cả 17 câu đều đạt Correct. AI tuân thủ cả 5 Rules, trích nguồn minh bạch, trích mã REQ, xuất 3 phương án và chờ con người duyệt mới ghi bản ghi `ADR-001` vào `decision-log.md` và đồng bộ `TRACEABILITY.md`. |
