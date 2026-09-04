@@ -118,17 +118,62 @@
 - **Dependencies:** Cấu trúc Websocket/Realtime (TBD).
 - **Estimate đề xuất:** 3 points
 
-## US-04: Phục vụ bưng món và Cập nhật trạng thái
-- **User Story:** *Là* Nhân viên phục vụ, *tôi muốn* nhận thông báo khi món nấu xong, *để* tôi bưng ra bàn kịp thời và cập nhật Table Map.
-- **Context:** Quản lý State Machine vòng đời món ăn và xử lý ngoại lệ nghiệp vụ (Khách bom/Từ chối). (Phụ trách: Trang - BA).
-- **Requirement IDs:** `REQ-06`, `REQ-07`, `REQ-10`
-- **Acceptance Criteria:**
-  - **AC1:** `CHO TRƯỚC` Bếp bấm "Done", `KHI` hệ thống nhận tin, `THÌ` Tablet của Waiter kêu "Ting Ting" và báo số bàn.
-  - **AC2:** `CHO TRƯỚC` phục vụ bưng món ra bàn thành công, `KHI` phục vụ bấm "Đã phục vụ", `THÌ` trạng thái món đổi thành *Served* và cập nhật màu trên Table Map.
-  - **AC3:** `CHO TRƯỚC` khách từ chối món (Cancel), `KHI` phục vụ bấm "Hủy món", `THÌ` hiện Popup yêu cầu mã PIN của Manager (Áp dụng NFR RBAC).
-- **Out of Scope:** Không tích hợp hệ thống định vị GPS nhân viên.
-- **Dependencies:** API Push Notification (TBD). Làm sau US-03.
-- **Estimate đề xuất:** 2 points
+## US-04 - Phục vụ bưng món và Cập nhật trạng thái
+
+**User Story:** *Là* Nhân viên phục vụ (Waiter), *tôi muốn* nhận thông báo tức thì bằng âm thanh và thị giác khi Bếp báo hoàn thành món ăn trên KDS, xác nhận đã bưng món và cập nhật trạng thái bàn trên Table Map, *để* tôi bưng món ra bàn kịp thời, chính xác cho khách và duy trì sơ đồ trạng thái bàn thời gian thực cho toàn nhà hàng.
+
+**Context:**
+Đặc tả bám sát tri thức Vault, trích dẫn nguồn:
+- `REQ-06` (FR): Table Session Map hiển thị trực quan trạng thái bàn bằng mã màu (Xanh: Trống `empty`, Đỏ: Đang ăn `occupied`, Xám/Vàng: Cần dọn dẹp `needs_cleaning`). Nguồn: `vault/01-Requirements/requirements.md`, `vault/01-Requirements/glossary.md`.
+- `REQ-07` (FR): App phục vụ phát âm thanh "Ting Ting" và popup thông báo khi món nấu xong từ Kitchen Ticket trên KDS. Nguồn: `vault/01-Requirements/requirements.md`.
+- `REQ-10` / `BR-02` (Hủy món - Void/Refund & RBAC): Cơ chế phân quyền RBAC nghiêm ngặt — Waiter tuyệt đối không được tự ý hủy món đã gửi bếp; mọi thao tác hủy món (Void) bắt buộc phải xác thực mã PIN của Manager và ghi log vào `void_refund_logs`. Nguồn: `vault/01-Requirements/requirements.md`, `vault/03-Product/PRD.md`, `vault/06-Engineering/api-contract.md`.
+- State Machine Món ăn (`order_items.status`): `pending` ➔ `cooking` ➔ `done` ➔ `served` (hoặc `void`). Nguồn: `vault/06-Engineering/data-model.md`.
+- State Machine Bàn ăn (`tables.status`): `empty` ➔ `occupied` ➔ `needs_cleaning`. Nguồn: `vault/06-Engineering/data-model.md`.
+- `NFR-RO-03`: Quyền hạn (Security/RBAC) — Phục vụ không có quyền sửa menu, giá hoặc tự hủy đơn; thao tác trái phép trả về mã lỗi 403 Forbidden (`INVALID_MANAGER_PIN`).
+- `NFR-RO-04`: Ứng dụng Phục vụ chạy mượt mà trên thiết bị máy POS / Tablet Android chuyên dụng.
+- Ràng buộc kỹ thuật: Đồng bộ Real-time qua kênh WebSocket `table:{table_session_id}` và `kds:tickets` (độ trễ ≤ 1s theo `vault/06-Engineering/architecture.md`); API hủy món `POST /orders/items/{id}/void`.
+
+**Acceptance Criteria:**
+
+- **AC1 (Happy Path — Nhận thông báo món nấu xong từ KDS)**
+  - **Cho trước:** Bếp trưởng hoàn thành chế biến món "Bò sốt tiêu đen" (Bàn 06) và bấm nút "Done" trên màn hình KDS (`REQ-07`, `US-03`),
+  - **Khi:** Hệ thống broadcast sự kiện qua kênh WebSocket `table:{table_session_id}` đến Tablet của Waiter (`NFR-RO-04`),
+  - **Thì:** Trong vòng ≤ 1 giây, Tablet Waiter phát âm thanh thông báo "Ting Ting" kèm Popup/Badge nổi bật: `"Bàn 06: Bò sốt tiêu đen đã nấu xong"`; trạng thái món trên hệ thống chuyển từ `cooking` sang `done` (`data-model.md`).
+
+- **AC2 (Happy Path — Phục vụ bưng món ra bàn và Cập nhật Table Map)**
+  - **Cho trước:** Món ăn đang ở trạng thái `done` và Waiter đã bưng món đến bàn giao thành công cho khách tại Bàn 06,
+  - **Khi:** Waiter bấm nút "Đã phục vụ" (Mark as Served) trên giao diện Tablet,
+  - **Thì:** Trạng thái `order_items.status` chuyển thành `served` (`data-model.md`); thông báo món hoàn thành tự động biến mất; sơ đồ Table Map cập nhật trạng thái Bàn 06 hiển thị màu Đỏ (`occupied` - Đang ăn) nếu đây là món đầu tiên được phục vụ của phiên bàn (`REQ-06`).
+
+- **AC3 (Edge Case — Khách từ chối nhận món / Hủy món sau khi gửi bếp)**
+  - **Cho trước:** Món ăn đã gửi xuống bếp hoặc đã nấu xong (`status` là `cooking` hoặc `done`), nhưng khách yêu cầu hủy/từ chối nhận món (khách đổi ý, đợi quá lâu),
+  - **Khi:** Waiter bấm nút "Hủy món" (Void Item) trên màn hình chi tiết đơn của Bàn 06,
+  - **Thì:** Hệ thống chặn hủy trực tiếp và hiển thị Popup bắt buộc: (1) Nhập lý do hủy món (`reason`), (2) Nhập mã PIN bảo mật của Quản lý (`REQ-10`, `BR-02`, `api-contract.md`); Waiter không thể tự phê duyệt thao tác này.
+
+- **AC4 (Business Rule — Xác thực PIN Manager & Ghi Log kiểm toán Void)**
+  - **Cho trước:** Popup yêu cầu mã PIN Manager đang hiển thị sau khi kích hoạt hủy món (AC3),
+  - **Khi:** Quản lý nhà hàng trực tiếp nhập mã PIN hợp lệ và bấm "Xác nhận hủy",
+  - **Thì:** Hệ thống gửi request `POST /orders/items/{id}/void` kèm `pin_code` và `reason` (`api-contract.md`); API xác thực thành công trả về `200 OK`: (1) Cập nhật `order_items.status = void`, (2) Tự động ghi 1 bản ghi kiểm toán bất biến vào bảng `void_refund_logs` (`order_item_id`, `reason`, `approved_by`, `approved_at`) chống gian lận (`NFR-RO-03`); món được gỡ khỏi hóa đơn thanh toán của khách.
+
+- **AC5 (Fallback / Error Handling — Nhập sai PIN Quản lý hoặc Món không thể hủy)**
+  - **Cho trước:** Người thao tác nhập mã PIN Quản lý không chính xác, hoặc món ăn đã ở trạng thái `served` / `void`,
+  - **Khi:** Hệ thống gửi yêu cầu đến backend để xử lý,
+  - **Thì:** Backend từ chối thao tác và trả về mã lỗi tương ứng:
+    + Nếu sai mã PIN: Trả lỗi `403 Forbidden` (`INVALID_MANAGER_PIN`), hiển thị cảnh báo "Mã PIN Quản lý không chính xác; vui lòng kiểm tra lại" và tạm khóa chức năng sau 3 lần thử sai liên tiếp.
+    + Nếu món đã phục vụ (`status = served`): Trả lỗi `400 Bad Request` (`ORDER_ITEM_NOT_VOIDABLE`), hiển thị thông báo "Món đã bưng ra bàn, không thể hủy qua luồng tự động".
+
+**Out of Scope:**
+- Không tích hợp hệ thống định vị GPS nhân viên trong khuôn viên nhà hàng (vượt quá phạm vi MVP).
+- Waiter không có quyền chỉnh sửa Menu, sửa giá món hoặc tự ý áp dụng voucher giảm giá trên Tablet (thuộc quyền hạn của Manager trong US-07 và NFR-RO-03).
+- Không xử lý thanh toán, chia hóa đơn (thuộc phạm vi US-05).
+
+**Dependencies:**
+- API: `POST /orders/items/{id}/void` (Hủy món có xác thực PIN Manager theo `api-contract.md`); `PATCH /tables/{id}/status` (Cập nhật trạng thái bàn trên Table Map).
+- WebSocket Channel: `table:{table_session_id}` (Kênh nhận thông báo món chín theo thời gian thực); `kds:tickets` (Đồng bộ trạng thái từ KDS).
+- Component UI: TableMapGrid, DishDoneNotificationBadge, ManagerPinAuthModal.
+- Story phụ thuộc: Phụ thuộc vào US-03 (Bếp bấm Done trên KDS qua WebSocket thì US-04 mới nhận được thông báo); là tiền đề cho US-05 (Thanh toán sau khi các món đã hoàn tất phục vụ).
+
+**Estimate:** 2 points
 
 ---
 
