@@ -7,11 +7,11 @@ Hệ thống Smart Restaurant Ordering & KDS
 Số hóa hoàn toàn quy trình phục vụ tại bàn, từ lúc khách quét QR gọi món (có AI tư vấn) đến khi bếp nhận đơn qua KDS và khách tự thanh toán, giúp giảm tỷ lệ sai sót đơn hàng xuống dưới 2% và tăng hiệu suất xoay vòng bàn.
 
 ## 3. Core Features (Tính năng cốt lõi)
-- **Guest Ordering:** Cho phép khách hàng tự quét mã QR tại bàn để xem E-Menu. Tích hợp AI Assistant tư vấn món ăn dựa trên sở thích và dị ứng. Bắt buộc hiển thị Order Draft để xác nhận (Explicit Confirmation).
-- **Waiter Tablet:** Hỗ trợ nhân viên phục vụ ghi order bằng giọng nói (Voice-to-order), theo dõi Table Map và nhận thông báo khi có món hoàn thành.
-- **Kitchen KDS:** Màn hình hiển thị ticket order trong bếp. Sắp xếp thứ tự ưu tiên (FIFO), cảnh báo quá giờ (màu đỏ) và đồng bộ trạng thái "Out of Stock".
-- **Manager POS:** Xử lý thanh toán QR MoMo/VNPAY tự động. Phân quyền RBAC quản lý việc Void/Refund. Đối soát tồn kho thực tế.
-
+Dựa trên 4 luồng thao tác chính yếu (User Stories), hệ thống tập trung giải quyết:
+- **US-01: Guest Ordering (E-Menu & Giỏ hàng):** Cho phép khách hàng tự quét mã QR tại bàn để xem E-Menu và chọn món. Bắt buộc hiển thị Order Draft để xác nhận (Explicit Confirmation).
+- **US-02: AI Voice Ordering:** Tích hợp AI Assistant nhận diện giọng nói hỗ trợ gọi món nhanh, xử lý các trường hợp dị ứng hoặc thiếu thông tin (Clarification). Hỗ trợ Fallback sang nhập text nếu ồn.
+- **US-03: Kitchen KDS (Màn hình bếp):** Màn hình hiển thị ticket order trong bếp theo thời gian thực (Websocket). Cảnh báo quá 15 phút (màu đỏ) và đồng bộ trạng thái "Out of Stock" khóa món tự động.
+- **US-04: Waiter Table Management:** Tablet cho nhân viên phục vụ nhận thông báo khi món chín, cập nhật sơ đồ bàn (Table Map) và xử lý phân quyền Hủy món (Void/Refund) qua mã PIN Quản lý.
 ## 4. Ranh giới Dự án (Out of Scope)
 - Cổng thanh toán quốc tế (Visa/Mastercard/Stripe).
 - Ứng dụng/Nghiệp vụ giao hàng tận nơi (Delivery).
