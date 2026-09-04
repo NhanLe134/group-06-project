@@ -17,3 +17,6 @@
 | REQ-13 | FR | Dashboard báo cáo Real-time (Doanh thu, Top món, Tỷ lệ lấp đầy). | [Quản lý](../02-Research/interview-notes.md) | Could |
 | REQ-14 | FR | Tích hợp thanh toán trực tuyến bằng thẻ quốc tế Visa/Mastercard qua cổng Stripe. | (AI đề xuất) | [Out of Scope](scope.md) |
 | REQ-15 | BR | Xử lý món hết hàng đang nằm trong [Order Draft](glossary.md): Khi món chuyển [Out of Stock](glossary.md) (REQ-09) trong khi khách chưa bấm xác nhận, món hiển thị mờ (grayed-out) kèm nhãn đỏ "Món đã hết"; nút "Xác nhận gửi bếp" (Explicit Confirmation) bị Disabled cho đến khi khách gỡ món hết hàng; AI Assistant thông báo nhắc khách bỏ món. | [ADR-001](../08-Decisions/decision-log.md) | Must |
+| NFR-RO-02 | NFR | Bảo mật (Privacy): Mặc định không lưu trữ vĩnh viễn file âm thanh giọng nói của khách; transcript thô bị xóa sau khi phiên bàn kết thúc. | Benchmark Q16 | Must |
+| NFR-RO-03 | NFR | Phân quyền (Security): Tài khoản Waiter tuyệt đối không có quyền chỉnh sửa menu hoặc giá món ăn. Vi phạm sẽ nhận mã lỗi 403 Forbidden. | Benchmark Q17 | Must |
+| NFR-RO-05 | NFR | Khả dụng (Availability/Fallback): 100% quy trình gọi món phải hỗ trợ nhập liệu bằng tay (Text fallback) trên màn hình khi micro hỏng hoặc môi trường quá ồn. | Benchmark Q18 | Must |
