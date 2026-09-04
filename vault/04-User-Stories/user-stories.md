@@ -1,48 +1,56 @@
-# User Stories & Acceptance Criteria
-> Danh sách User Stories được trích xuất từ PRD. Cấu trúc chuẩn: As a... I want... so that...
+# User Stories & Acceptance Criteria (Phase 4)
+> **Quy tắc sinh:** Document này được sinh ra bám sát 100% vào `vault/01-Requirements/requirements.md` và `vault/08-Decisions/decision-log.md`. KHÔNG chứa tính năng Out of Scope.
+> **Mục tiêu:** Định nghĩa 4 User Story cốt lõi tạo thành 1 luồng Demo Prototype xuyên suốt từ lúc khách vào bàn đến khi bưng món ra bàn.
 
-## Epic 1: Guest Smart Ordering
-**US-01: Tư vấn món ăn bằng AI**  
-**Yêu cầu nguồn:** [REQ-01](../01-Requirements/requirements.md)  
-*As a* Khách hàng, *I want* được chat với AI Assistant để nhận gợi ý món ăn, *so that* tôi có thể chọn món nhanh chóng theo sở thích/dị ứng.
-- **AC1:** GIVEN khách mở E-Menu, WHEN bấm vào icon AI, THEN cửa sổ chat hiện lên.
-- **AC2:** GIVEN khách gõ "tôi dị ứng đậu phộng", WHEN AI phản hồi, THEN AI chỉ gợi ý các món không có tag đậu phộng.
+---
 
-**US-02: Đặt món và Chốt đơn (Có Xác Nhận)**  
-**Yêu cầu nguồn:** [REQ-02](../01-Requirements/requirements.md), [REQ-15](../01-Requirements/requirements.md) | [Explicit Confirmation](../01-Requirements/glossary.md)  
-*As a* Khách hàng, *I want* thêm món vào giỏ và xem lại nháp trước khi đặt, *so that* tôi không bị đặt nhầm món.
-- **AC1:** GIVEN khách chọn món từ Menu hoặc AI, WHEN bấm Thêm, THEN món được đưa vào Order Draft.
-- **AC2 (Business Rule):** GIVEN Order Draft có món, WHEN khách muốn chốt, THEN hệ thống bắt buộc hiển thị popup tổng tiền và nút "Xác nhận đặt món" (Explicit Confirmation) chứ KHÔNG tự động chốt đơn.
-- **AC3:** GIVEN khách bấm Xác nhận, WHEN thành công, THEN đơn được đẩy xuống KDS Bếp và hiển thị trạng thái "Đang nấu".
-- **AC4 (Business Rule - ADR-001):** GIVEN món trong Order Draft vừa bị bếp báo [Out of Stock](../01-Requirements/glossary.md), WHEN món chuyển trạng thái, THEN món hiển thị mờ kèm nhãn đỏ "Món đã hết", nút "Xác nhận gửi bếp" bị Disabled và AI thông báo *"Dạ món [Tên món] vừa hết hàng, anh/chị vui lòng bỏ món khỏi danh sách để chốt đơn nhé!"* cho đến khi khách gỡ món đó ra khỏi Draft.
+## US-01: Khách lướt xem Menu và Thêm vào Giỏ hàng (Phụ trách: Nhàn - UX/UI)
+**Yêu cầu nguồn:** `REQ-04`, `REQ-09`, `REQ-15`
+**Vai trò:** Là điểm chạm đầu tiên, chú trọng vào trải nghiệm UI (hình ảnh, hiệu ứng thêm vào giỏ).
 
-## Epic 2: Waiter Operations
-**US-03: Voice-to-order trên Tablet**  
-**Yêu cầu nguồn:** [REQ-05](../01-Requirements/requirements.md)  
-*As a* Phục vụ bàn, *I want* đọc order vào Tablet, *so that* hệ thống tự tạo đơn mà không cần bấm tay.
-- **AC1:** GIVEN phục vụ đang ở màn hình bàn, WHEN bấm giữ nút Micro và đọc món, THEN hệ thống tự động nhận diện và thêm món vào Order Draft.
+*As a* Khách hàng tại bàn, *I want* lướt xem E-Menu và thêm món vào Giỏ (Order Draft), *so that* tôi có thể tự kiểm tra lại danh sách trước khi gửi xuống bếp.
 
-**US-04: Theo dõi Table Map và Nhận thông báo món**  
-**Yêu cầu nguồn:** [REQ-06](../01-Requirements/requirements.md), [REQ-07](../01-Requirements/requirements.md)  
-*As a* Phục vụ bàn, *I want* xem sơ đồ bàn và nhận thông báo món, *so that* tôi bưng bê kịp thời.
-- **AC1:** GIVEN sơ đồ bàn, WHEN bàn có khách quét QR, THEN đổi màu Đỏ.
-- **AC2:** GIVEN bếp bấm Done trên KDS, WHEN thành công, THEN app của phục vụ rung và kêu "Ting ting" báo số bàn.
+### Acceptance Criteria (AC)
+- **AC1 (Happy Path):** `GIVEN` khách quét QR mã bàn hợp lệ, `WHEN` khách chọn món và bấm "Thêm vào giỏ", `THEN` món hiển thị trong Order Draft kèm tổng tiền dự kiến.
+- **AC2 (Explicit Confirmation):** `GIVEN` khách đang ở màn hình Order Draft, `WHEN` khách bấm "Gửi đơn xuống bếp", `THEN` hệ thống hiện Popup xác nhận cuối cùng (Yes/No) để chốt đơn (Không tự động chốt).
+- **AC3 (Edge Case - Món hết hàng):** `GIVEN` khách mở E-Menu, `WHEN` một món đã bị đánh dấu *Out of Stock* (REQ-09), `THEN` món đó hiển thị mờ (Grayed-out) và nút "Thêm vào giỏ" bị vô hiệu hóa.
 
-## Epic 3: Kitchen Display System (KDS)
-**US-05: Quản lý Ticket & Báo Hết hàng**  
-**Yêu cầu nguồn:** [REQ-08](../01-Requirements/requirements.md), [REQ-09](../01-Requirements/requirements.md) | [Out of Stock](../01-Requirements/glossary.md)  
-*As a* Đầu bếp, *I want* xem đơn theo thứ tự ưu tiên và có thể báo hết hàng, *so that* tôi nấu đúng tiến độ và không bị khách gọi món đã hết.
-- **AC1:** GIVEN đơn hàng đẩy xuống KDS, WHEN đợi quá 15 phút, THEN ticket trên màn hình nhấp nháy Đỏ.
-- **AC2:** GIVEN bếp bấm nút "Out of Stock" ở một món, WHEN thành công, THEN món đó bị khóa (mờ đi) trên E-Menu khách hàng ngay lập tức.
+---
 
-## Epic 4: POS & Manager Control
-**US-06: Thanh toán QR và Split Bill**  
-**Yêu cầu nguồn:** [REQ-03](../01-Requirements/requirements.md), [REQ-04](../01-Requirements/requirements.md)  
-*As a* Khách hàng, *I want* chia hóa đơn và thanh toán QR tại bàn, *so that* tôi không phải ra quầy.
-- **AC1:** GIVEN khách bấm Thanh toán, WHEN chọn Split Bill, THEN hệ thống cho phép chia đều hoặc chia theo món.
-- **AC2:** GIVEN bill đã chốt, WHEN chọn MoMo/VNPAY, THEN hệ thống tạo mã QR động chứa đúng số tiền.
+## US-02: Dùng giọng nói AI (Voice) để gọi món bổ sung (Phụ trách: Ny - QA)
+**Yêu cầu nguồn:** `REQ-01`, `REQ-05`, `NFR-RO-02`, `NFR-RO-05`
+**Vai trò:** Tính năng phức tạp, mang rủi ro AI nhận diện sai hoặc ảo giác, đòi hỏi tư duy QA/Test Cases chặt chẽ.
 
-**US-07: Phân quyền Hủy món (Void/Refund)**  
-**Yêu cầu nguồn:** [REQ-10](../01-Requirements/requirements.md)  
-*As a* Quản lý, *I want* chỉ tài khoản của tôi mới được hủy món đã nấu, *so that* ngăn chặn nhân viên gian lận.
-- **AC1:** GIVEN phục vụ bấm Void một món đã đẩy xuống bếp, WHEN thực hiện, THEN hệ thống bật popup yêu cầu mã PIN của Quản lý.
+*As a* Khách hàng (hoặc Phục vụ), *I want* bấm nút Micro để đọc tên món ăn, *so that* AI tự động phân tích và nhặt đúng món bỏ vào giỏ hàng mà không cần lướt tìm.
+
+### Acceptance Criteria (AC)
+- **AC1 (Happy Path):** `GIVEN` khách đang ở màn hình AI Chat, `WHEN` khách bấm Micro và nói *"Cho 2 ly Pepsi"*, `THEN` AI phản hồi *"Đã thêm 2 ly Pepsi"* và tự động đẩy món vào Order Draft.
+- **AC2 (Edge Case - Thiếu thông tin):** `GIVEN` khách nói *"Cho một phần bò"*, `WHEN` menu có Bò Né và Bò Bít Tết, `THEN` AI kích hoạt Clarification hỏi lại: *"Dạ nhà hàng có Bò Né và Bò Bít Tết, quý khách muốn dùng loại nào ạ?"*.
+- **AC3 (Fallback NFR-RO-05):** `GIVEN` môi trường nhà hàng quá ồn, `WHEN` AI không nhận diện được giọng nói quá 2 lần, `THEN` AI tự động gợi ý chuyển sang nhập liệu bằng bàn phím (Text fallback).
+- **AC4 (Privacy NFR-RO-02):** `GIVEN` khách hàng gọi món bằng giọng nói xong, `WHEN` bàn thanh toán và kết thúc phiên (Table Session đóng), `THEN` toàn bộ file âm thanh thô của khách phải bị xóa vĩnh viễn khỏi server.
+
+---
+
+## US-03: Bếp nhận Order và Báo hoàn thành trên KDS (Phụ trách: Nhã - Eng)
+**Yêu cầu nguồn:** `REQ-08`, `REQ-09`
+**Vai trò:** Xử lý luồng Real-time (Websocket), đếm ngược thời gian, và thay đổi trạng thái đồng bộ toàn hệ thống. Chuẩn kỹ thuật Backend.
+
+*As a* Đầu bếp, *I want* nhìn thấy các món khách vừa đặt hiện lên màn hình KDS theo thứ tự thời gian, *so that* tôi biết món nào cần nấu trước và báo Done khi nấu xong.
+
+### Acceptance Criteria (AC)
+- **AC1 (Happy Path):** `GIVEN` khách hàng bấm "Xác nhận gửi bếp", `WHEN` hệ thống nhận đơn, `THEN` màn hình KDS của bếp tự động nhảy Ticket mới (Real-time) kèm số bàn và đồng hồ bắt đầu đếm ngược.
+- **AC2 (Edge Case - Quá giờ):** `GIVEN` một Ticket đang hiển thị trên KDS, `WHEN` thời gian chờ vượt quá 15 phút, `THEN` Ticket đó tự động chớp nháy viền màu Đỏ và đẩy lên ưu tiên cao nhất.
+- **AC3 (Edge Case - Hết nguyên liệu ngang):** `GIVEN` Bếp đang nấu thì phát hiện hết thịt bò, `WHEN` bếp bấm nút *Out of Stock* cho món Bò, `THEN` hệ thống tự động khóa món Bò trên mọi Menu (của khách và phục vụ) ngay lập tức (Sync).
+
+---
+
+## US-04: Phục vụ bưng món và Cập nhật trạng thái (Phụ trách: Trang - BA)
+**Yêu cầu nguồn:** `REQ-06`, `REQ-07`, `REQ-10`
+**Vai trò:** Quản lý vòng đời trạng thái của bàn (Table State Machine) và món ăn, xử lý ngoại lệ nghiệp vụ (Khách bom, Đổ đồ ăn).
+
+*As a* Nhân viên phục vụ, *I want* nhận được thông báo khi món nấu xong, *so that* tôi có thể bưng ra bàn kịp thời và cập nhật trạng thái bàn trên Tablet.
+
+### Acceptance Criteria (AC)
+- **AC1 (Happy Path):** `GIVEN` Bếp bấm "Done" trên KDS, `WHEN` hệ thống ghi nhận, `THEN` Tablet của nhân viên phục vụ phát âm thanh "Ting Ting" và hiển thị thông báo "Bàn 5 - Bò bít tết đã sẵn sàng".
+- **AC2 (State Machine):** `GIVEN` phục vụ bưng món ra bàn thành công, `WHEN` phục vụ bấm "Đã phục vụ" trên Tablet, `THEN` trạng thái món đổi thành *Served* và màu sắc của bàn trên Table Map cập nhật tương ứng.
+- **AC3 (Edge Case - Khách từ chối món):** `GIVEN` phục vụ bưng ra nhưng khách từ chối nhận (Cancel), `WHEN` phục vụ bấm "Hủy món" trên Tablet, `THEN` hệ thống bật Popup yêu cầu mã PIN của Manager (Áp dụng phân quyền RBAC REQ-10) để đề phòng nhân viên gian lận.
