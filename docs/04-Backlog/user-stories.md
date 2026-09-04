@@ -76,16 +76,36 @@
 - **Estimate đề xuất:** 3 points
 
 ## US-04: Phục vụ bưng món và Cập nhật trạng thái
-- **User Story:** *Là* Nhân viên phục vụ, *tôi muốn* nhận thông báo khi món nấu xong, *để* tôi bưng ra bàn kịp thời và cập nhật Table Map.
-- **Context:** Quản lý State Machine vòng đời món ăn và xử lý ngoại lệ nghiệp vụ (Khách bom/Từ chối). (Phụ trách: Trang - BA).
-- **Requirement IDs:** `REQ-06`, `REQ-07`, `REQ-10`
-- **Acceptance Criteria:**
-  - **AC1:** `CHO TRƯỚC` Bếp bấm "Done", `KHI` hệ thống nhận tin, `THÌ` Tablet của Waiter kêu "Ting Ting" và báo số bàn.
-  - **AC2:** `CHO TRƯỚC` phục vụ bưng món ra bàn thành công, `KHI` phục vụ bấm "Đã phục vụ", `THÌ` trạng thái món đổi thành *Served* và cập nhật màu trên Table Map.
-  - **AC3:** `CHO TRƯỚC` khách từ chối món (Cancel), `KHI` phục vụ bấm "Hủy món", `THÌ` hiện Popup yêu cầu mã PIN của Manager (Áp dụng NFR RBAC).
-- **Out of Scope:** Không tích hợp hệ thống định vị GPS nhân viên.
-- **Dependencies:** API Push Notification (TBD). Làm sau US-03.
-- **Estimate đề xuất:** 2 points
+
+**As a** Nhân viên phục vụ (Waiter), **I want** nhận thông báo ngay khi món ăn được nấu xong, **so that** tôi có thể bưng ra bàn nhanh chóng và cập nhật trạng thái đơn hàng trên sơ đồ bàn.
+
+**Context:**
+- Quản lý vòng đời món ăn (State Machine) từ lúc Bếp nấu xong đến khi Khách nhận.
+- Áp dụng các yêu cầu: `REQ-06` (Thông báo món chín), `REQ-07` (Cập nhật trạng thái Served), `REQ-10` (Hủy món).
+- Ràng buộc nghiệp vụ: `BR-02` (Hủy món phải có PIN Manager), `NFR-RO-03` (RBAC - Phục vụ không có quyền Hủy món).
+- Phụ trách: Trang (BA).
+
+**Acceptance Criteria:**
+- **AC1 (Happy Path - Thông báo món hoàn thành):**
+  `CHO TRƯỚC` món ăn được Bếp bấm "Done" trên KDS, `KHI` hệ thống nhận tín hiệu, `THÌ` Tablet của nhân viên phục vụ phát âm thanh "Ting Ting" và hiển thị Popup báo số bàn.
+- **AC2 (Happy Path - Cập nhật trạng thái Table Map):**
+  `CHO TRƯỚC` phục vụ mang món ra bàn, `KHI` bấm nút "Đã phục vụ" (Served), `THÌ` trạng thái món đổi thành *Served* và màu sắc bàn trên Table Map được cập nhật.
+- **AC3 (Business Rule - Xử lý Khách hủy/trả món):**
+  `CHO TRƯỚC` khách hàng từ chối nhận món, `KHI` phục vụ bấm "Hủy món", `THÌ` hệ thống hiện Popup yêu cầu nhập mã PIN của Manager (Áp dụng BR-02).
+- **AC4 (Edge Case - Nhập sai mã PIN Hủy món):**
+  `CHO TRƯỚC` Popup yêu cầu mã PIN Hủy món đang hiện, `KHI` nhập sai mã PIN quá 3 lần, `THÌ` hệ thống khóa chức năng Hủy trên thiết bị đó trong 5 phút.
+- **AC5 (Fallback / Error Handling - Rớt mạng kết nối):**
+  `CHO TRƯỚC` Tablet của phục vụ rớt mạng tạm thời, `KHI` có thông báo Bếp Done, `THÌ` hệ thống tự động đẩy thông báo Fallback về màn hình POS chính của Thu ngân.
+
+**Out of Scope:**
+- Không tích hợp hệ thống định vị GPS theo dõi nhân viên phục vụ.
+- Không xử lý thanh toán hóa đơn tại luồng này.
+
+**Dependencies:**
+- Cần hoàn thành US-03 (Bếp KDS) trước.
+- API Push Notification / Websocket.
+
+**Estimate:** 2 points
 
 ---
 
