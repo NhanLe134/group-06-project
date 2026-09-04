@@ -66,7 +66,7 @@ Số hóa toàn bộ quy trình phục vụ tại bàn, từ lúc khách quét Q
 | **FR-02** | Khách gọi món bằng Giọng nói AI | Should-have | `US-02` |
 | **FR-03** | Bếp xem Ticket và đếm ngược trên KDS | Must-have | `US-03` |
 | **FR-04** | Phục vụ nhận thông báo món chín & Cập nhật bàn | Must-have | `US-04` |
-| **FR-05** | Khách chia tiền hóa đơn (Split Bill) | Could-have | `US-05` |
+| **FR-05** | Khách thanh toán (Trả toàn bộ hoặc Chia Bill) | Must-have | `US-05` |
 | **FR-06** | Dashboard Báo cáo Doanh thu | Should-have | `US-06` |
 | **FR-07** | Quản lý CMS Menu (Giá, Hình ảnh) | Must-have | `US-07` |
 | **FR-08** | Đối soát Tồn kho cuối ngày | Could-have | `US-08` |
