@@ -54,3 +54,48 @@
 - **AC1 (Happy Path):** `GIVEN` Bếp bấm "Done" trên KDS, `WHEN` hệ thống ghi nhận, `THEN` Tablet của nhân viên phục vụ phát âm thanh "Ting Ting" và hiển thị thông báo "Bàn 5 - Bò bít tết đã sẵn sàng".
 - **AC2 (State Machine):** `GIVEN` phục vụ bưng món ra bàn thành công, `WHEN` phục vụ bấm "Đã phục vụ" trên Tablet, `THEN` trạng thái món đổi thành *Served* và màu sắc của bàn trên Table Map cập nhật tương ứng.
 - **AC3 (Edge Case - Khách từ chối món):** `GIVEN` phục vụ bưng ra nhưng khách từ chối nhận (Cancel), `WHEN` phục vụ bấm "Hủy món" trên Tablet, `THEN` hệ thống bật Popup yêu cầu mã PIN của Manager (Áp dụng phân quyền RBAC REQ-10) để đề phòng nhân viên gian lận.
+
+---
+> **Lưu ý:** 4 US trên (US-01 đến US-04) là luồng cốt lõi (Core Flow) sẽ được 4 thành viên trình bày trong báo cáo. 4 US bên dưới (US-05 đến US-08) là các tính năng bổ trợ để hoàn thiện hệ thống nhà hàng theo đúng Scope (Đáp ứng tiêu chí 8-12 US của giáo trình).
+
+## US-05: Khách hàng Chia tiền hóa đơn (Split Bill)
+**Yêu cầu nguồn:** `REQ-03`
+
+*As a* Khách hàng đi ăn nhóm, *I want* có tùy chọn chia bill trên thiết bị, *so that* chúng tôi có thể tự trả tiền phần của mình (chia đều hoặc theo món) mà không cần tự tính nhẩm.
+
+### Acceptance Criteria (AC)
+- **AC1:** `GIVEN` khách bấm "Thanh toán", `WHEN` chọn "Split Bill", `THEN` màn hình hiển thị 2 tùy chọn: "Chia đều (Split Evenly)" và "Chia theo món (Split by Item)".
+- **AC2:** `GIVEN` khách chọn Chia đều cho 3 người, `WHEN` tổng bill là 300k, `THEN` hệ thống tạo ra 3 mã QR thanh toán độc lập, mỗi mã 100k.
+
+---
+
+## US-06: Quản lý xem Dashboard Doanh thu
+**Yêu cầu nguồn:** `REQ-13`
+
+*As a* Quản lý nhà hàng, *I want* xem Dashboard báo cáo tổng quan trên hệ thống POS, *so that* tôi nắm được doanh thu trong ngày và món ăn nào bán chạy nhất (Top món).
+
+### Acceptance Criteria (AC)
+- **AC1:** `GIVEN` quản lý đăng nhập thành công vào POS, `WHEN` chọn tab Dashboard, `THEN` biểu đồ doanh thu Real-time của ca làm việc hiện tại được hiển thị.
+- **AC2:** `GIVEN` Dashboard đang hiển thị, `WHEN` có một đơn hàng mới vừa được thanh toán thành công, `THEN` con số Tổng doanh thu tự động nhảy lên không cần reload trang.
+
+---
+
+## US-07: Quản lý chỉnh sửa Menu (CMS)
+**Yêu cầu nguồn:** `REQ-11`, `NFR-RO-03`
+
+*As a* Quản lý nhà hàng, *I want* có thể thêm/sửa tên, hình ảnh và giá món ăn trong phần mềm, *so that* Menu của khách (E-Menu) và AI tự động cập nhật dữ liệu mới nhất.
+
+### Acceptance Criteria (AC)
+- **AC1:** `GIVEN` Quản lý cập nhật giá món "Bít tết" từ 100k lên 120k, `WHEN` bấm Lưu, `THEN` giá trên E-Menu của khách tự động đổi thành 120k ngay lập tức.
+- **AC2:** `GIVEN` tài khoản Waiter cố tình truy cập vào trang sửa Menu, `WHEN` click vào món, `THEN` hệ thống chặn lại và báo lỗi 403 Forbidden (NFR-RO-03).
+
+---
+
+## US-08: Đối soát Tồn kho (Inventory Reconciliation)
+**Yêu cầu nguồn:** `REQ-12`
+
+*As a* Bếp trưởng / Quản lý, *I want* nhập số lượng nguyên liệu thực tế còn lại cuối ngày vào hệ thống, *so that* phần mềm đối chiếu với số liệu lý thuyết và báo cáo mức độ hao hụt (chênh lệch).
+
+### Acceptance Criteria (AC)
+- **AC1:** `GIVEN` màn hình Tồn kho, `WHEN` Quản lý nhập số lượng thịt bò thực tế là 5kg (số lý thuyết là 6kg), `THEN` hệ thống đánh dấu chênh lệch -1kg bằng màu đỏ.
+- **AC2:** `GIVEN` hoàn tất nhập liệu, `WHEN` bấm "Chốt ca", `THEN` số tồn kho đầu ca ngày hôm sau sẽ được cập nhật thành số thực tế vừa nhập.
