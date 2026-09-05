@@ -76,18 +76,41 @@
 
 **Estimate:** 3 points
 
-## US-02: Dùng giọng nói AI (Voice) để gọi món bổ sung
-- **User Story:** *Là* Khách hàng, *tôi muốn* bấm nút Micro để đọc tên món ăn, *để* AI phân tích và tự nhặt đúng món bỏ vào giỏ hàng.
-- **Context:** Trải nghiệm rảnh tay có rủi ro nhận diện sai do môi trường. AI phải tuân thủ quyền riêng tư dữ liệu và Fallback NFR. (Phụ trách: Ny - QA).
-- **Requirement IDs:** `REQ-01`, `REQ-05`, `NFR-RO-02`, `NFR-RO-05`
-- **Acceptance Criteria:**
-  - **AC1:** `CHO TRƯỚC` đang ở màn hình AI Chat, `KHI` khách nói *"Cho 2 ly Pepsi"*, `THÌ` AI phản hồi bằng giọng nói *"Đã thêm 2 ly Pepsi"* và đẩy món vào Giỏ.
-  - **AC2:** `CHO TRƯỚC` khách nói tên nguyên liệu chung chung (VD: *"Bò"*), `KHI` menu có nhiều loại, `THÌ` AI kích hoạt Clarification để hỏi lại.
-  - **AC3:** `CHO TRƯỚC` môi trường nhà hàng quá ồn, `KHI` AI nghe lỗi quá 2 lần, `THÌ` tự động hiển thị bàn phím (Text fallback - NFR-RO-05).
-  - **AC4:** `CHO TRƯỚC` phiên bàn kết thúc (Thanh toán xong), `KHI` kiểm tra server, `THÌ` file âm thanh thô của khách phải bị xóa vĩnh viễn (NFR-RO-02).
-- **Out of Scope:** AI tự động giảm giá hoặc tư vấn chuyện phiếm (Prompt injection).
-- **Dependencies:** API nhận diện giọng nói Speech-to-Text (TBD), Backend xử lý NLP (TBD). Cần làm sau khi US-01 (Giỏ hàng) hoàn thiện.
-- **Estimate đề xuất:** 3 points
+## US-02: Dùng giọng nói AI (Voice) để gọi món bổ sung và chọn số lượng (Add product and quantity by voice/text)
+- **User Story:** *As a* Khách hàng tại bàn, *I want* thêm món ăn và số lượng cụ thể bằng ngôn ngữ tự nhiên (Voice/Text), *so that* tôi có thể tích lũy món vào giỏ hàng nháp (Order Draft) một cách rảnh tay mà không cần lướt qua nhiều danh mục menu.
+- **Context:** 
+  - Thuộc Epic 1 (Guest Ordering Experience). Bao gồm các yêu cầu và quy tắc: `REQ-01` (Trợ lý AI tư vấn/gọi món), `REQ-05` (Giao diện hỗ trợ Voice-to-Order), `BR-01` (Explicit Confirmation - AI không tự chốt đơn gửi bếp), `BR-04` (Server-side Price & Stock Grounding), `NFR-RO-02` (Bảo mật riêng tư - Xóa file ghi âm thô), và `NFR-RO-05` (Fallback sang Text keyboard khi môi trường ồn).
+  - Tên món ăn, đơn giá và số lượng tồn kho khả dụng phải được xác thực chính xác 100% dựa trên dữ liệu Backend Database (`menu_items`, `inventory`), AI tuyệt đối không được tự chế giá hoặc tự động tạo order xuống bếp.
+- **Acceptance Criteria (AC):**
+  - **AC1 (Happy Path - Khách đọc tên món & số lượng rõ ràng):**
+    - `GIVEN` món *"Phở Bò Đặc Biệt"* đang hoạt động với tồn kho khả dụng là `10` suất,
+    - `WHEN` khách hàng bấm micro và nói *"Thêm 2 bát Phở Bò Đặc Biệt"*,
+    - `THEN` hệ thống trích xuất đúng `item_id`, cập nhật số lượng `2` vào Giỏ hàng nháp (Order Draft), và Trợ lý AI phát âm thanh xác nhận *"Đã thêm 2 bát Phở Bò Đặc Biệt vào giỏ hàng nháp"* mà KHÔNG tự động gửi đơn xuống bếp (`BR-01`).
+  - **AC2 (Vượt quá số lượng tồn kho khả dụng - Stock Limitation):**
+    - `GIVEN` món *"Cua Cà Mau Sốt Tiêu"* hiện chỉ còn tồn kho là `1` phần (`stock = 1`),
+    - `WHEN` khách hàng nói *"Cho tôi 2 phần Cua Cà Mau Sốt Tiêu"*,
+    - `THEN` hệ thống không thêm vượt quá tồn kho (giữ nguyên giỏ nháp), đồng thời Trợ lý AI giải thích rõ số lượng hiện có: *"Dạ nhà hàng hiện chỉ còn 1 phần Cua Cà Mau Sốt Tiêu, anh/chị có muốn lấy 1 phần không ạ?"*.
+  - **AC3 (Hội thoại mơ hồ & Độ tin cậy thấp - Intent Ambiguity & Clarification Threshold):**
+    - `GIVEN` menu có nhiều món khớp với câu thoại (VD: *"Bò sốt tiêu đen"* và *"Bò xào cần"*) hoặc độ tin cậy nhận diện NLP nằm dưới ngưỡng cấu hình (`confidence < 0.85`),
+    - `WHEN` khách hàng nói câu thoại mơ hồ *"Cho 1 đĩa bò"*,
+    - `THEN` hệ thống không tự ý thay đổi giỏ hàng nháp và Trợ lý AI tự động kích hoạt chế độ **Clarification (`BR-04`)** hỏi lại: *"Dạ nhà hàng có Bò sốt tiêu đen và Bò xào cần, anh/chị muốn chọn loại nào ạ?"* kèm hiển thị 2 Thẻ gợi ý trực quan trên UI.
+  - **AC4 (Môi trường tiếng ồn & Lỗi xử lý API - Noise Fallback & Error Handling):**
+    - `GIVEN` môi trường nhà hàng quá ồn ($>85\text{dB}$) khiến Speech-to-Text thất bại 2 lần liên tiếp hoặc API nhận diện giọng nói gặp sự cố kết nối,
+    - `WHEN` lệnh thoại được gửi lên hệ thống,
+    - `THEN` giỏ hàng nháp giữ nguyên không bị thay đổi, giao diện UI tự động đóng micro và hiển thị bàn phím ảo kèm ô nhập liệu văn bản (**Text Fallback - NFR-RO-05**) kèm thông báo lỗi có thể khôi phục được.
+  - **AC5 (Xóa sạch file âm thanh giọng nói - Privacy Audio Purge):**
+    - `GIVEN` khách hàng đã hoàn tất bữa ăn và thanh toán đóng phiên bàn (`session_status = "CLOSED"`),
+    - `WHEN` background worker dọn dẹp dữ liệu thực thi kiểm tra,
+    - `THEN` toàn bộ file âm thanh ghi âm giọng nói thô (`.wav`) của khách phải bị xóa vĩnh viễn khỏi ổ đĩa server (`NFR-RO-02`) và transcript thô bị ẩn danh hóa (anonymized).
+- **Out of Scope (Ngoài phạm vi):**
+  - Gợi ý món thay thế tự động phức tạp (Substitution recommendations).
+  - Áp dụng chính sách giá theo combo / bundle tự động bằng giọng nói.
+  - Tự động thực hiện chốt đơn xuống bếp hoặc thanh toán bằng giọng nói (Must use Explicit Confirm UI).
+- **Dependencies (Phụ thuộc):**
+  - `US-01` (Giao diện E-Menu và Giỏ hàng nháp - Order Draft API).
+  - Component `VoiceComposer` / Web Speech API Recorder trên Frontend.
+  - Service `AI Voice-Parse API` (`POST /api/v1/ai/voice-parse`) và Backend Product Resolution Engine.
+- **Estimate đề xuất:** 3 pts
 
 ## US-05: Khách hàng Thanh toán (Trả toàn bộ hoặc Chia Bill)
 - **User Story:** *Là* Khách hàng, *tôi muốn* chọn thanh toán toàn bộ hoặc chia bill trên thiết bị, *để* có thể linh hoạt tự trả tiền phần của mình.
