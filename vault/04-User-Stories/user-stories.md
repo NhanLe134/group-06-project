@@ -7,7 +7,7 @@
 
 | Epic | Capability | Story | Title | Pts |
 |---|---|---|---|---|
-| EP1 | Guest Ordering Experience | US-01 | Khách lướt xem Menu và Thêm vào Giỏ hàng | 2 |
+| EP1 | Guest Ordering Experience | US-01 | Trợ lý ảo AI tư vấn món ăn dựa trên sở thích và dị ứng | 3 |
 | EP1 | Guest Ordering Experience | US-02 | Dùng giọng nói AI (Voice) để gọi món bổ sung | 3 |
 | EP1 | Guest Ordering Experience | US-05 | Khách hàng Thanh toán (Trả toàn bộ hoặc Chia Bill) | 2 |
 | EP2 | Kitchen & Table Operations | US-03 | Bếp nhận Order và Báo hoàn thành trên KDS | 3 |
@@ -21,58 +21,53 @@
 # EPIC 1: GUEST ORDERING EXPERIENCE (Trải nghiệm gọi món của khách)
 *Mang lại giá trị cốt lõi: Khách tự gọi món nhanh chóng qua đa nền tảng (Web/Voice) và tự thanh toán.*
 
-## US-01 - Khách lướt xem Menu và Thêm vào Giỏ hàng
+## US-01 - Trợ lý ảo AI tư vấn món ăn dựa trên sở thích và dị ứng
 
-**User Story:** *As a* Khách hàng tại bàn (Customer), *I want* lướt xem E-Menu hiển thị đầy đủ hình ảnh và giá tiền, tự thao tác thêm món vào Giỏ nháp (Order Draft), *so that* tôi chủ động hoàn tất lựa chọn, tự kiểm tra đơn trước khi chủ động gửi xuống Bếp mà không phải chờ nhân viên ghi order.
+**User Story:** *As a* Khách hàng tại bàn (Customer), *I want* Trợ lý AI gợi ý món ăn phù hợp với sở thích cá nhân và tự động lọc bỏ các món có nguy cơ gây dị ứng, *so that* tôi chọn món nhanh chóng, an toàn cho sức khỏe mà không cần mất thời gian tra cứu thủ công.
 
 **Context:**
 Đặc tả bám sát tri thức Vault, trích dẫn nguồn:
-- `REQ-01` (FR): E-Menu hiển thị danh sách món ăn kèm hình ảnh, giá tiền.
-- `REQ-02` / `BR-01` (Explicit Confirmation): mọi thao tác chọn món chỉ đưa vào Order Draft; nghiêm cấm tự động gửi bếp khi khách chưa chủ động bấm "Xác nhận gửi bếp".
-- `REQ-09` / `BR-03`: Bếp bấm Out of Stock (OOS) → trạng thái khóa món được đồng bộ trên mọi thiết bị trong vòng 1 giây.
-- `REQ-15` / `ADR-001`: món đã nằm trong Order Draft khi chuyển OOS → hiển thị mờ xám (Grayed-out) kèm nhãn đỏ "Món đã hết"; nút "Xác nhận gửi bếp" bị khóa cho đến khi khách gỡ món OOS.
-- `BR-06` (Stock Limitation): chặn chọn số lượng vượt quá tồn kho thực tế.
-- `NFR-RO-01`: thời gian tải E-Menu < 2 giây.
-- `NFR-RO-04`: vận hành mượt trên trình duyệt mobile (Safari iOS & Chrome Android).
-- Ràng buộc kỹ thuật: giá món chỉ được đọc từ dữ liệu hệ thống (single source of truth); trạng thái tồn kho đồng bộ theo thời gian thực (WebSocket, ngưỡng ≤ 1s theo `BR-03`).
+- `REQ-01` (FR): Trợ lý ảo AI tư vấn món ăn dựa trên sở thích/dị ứng của khách hàng.
+- `BR-01` / `REQ-02` (Explicit Confirmation): mọi thao tác gợi ý chỉ đưa món vào Order Draft; nghiêm cấm tự động gửi bếp khi khách chưa chủ động bấm "Xác nhận gửi bếp".
+- `BR-06` / `REQ-09`: không đề xuất món đã Out of Stock (OOS) hoặc vượt quá tồn kho thực tế.
+- `NFR-RO-01` & `NFR-RO-05`: thời gian phản hồi AI < 2 giây; hỗ trợ bàn phím nhập text fallback khi môi trường ồn.
 
 **Acceptance Criteria:**
 
-- **AC1 (Happy Path — Duyệt menu và thêm món hợp lệ)**
-  - **Given** Khách hàng quét mã QR hợp lệ tại Bàn 06 và mở E-Menu trên trình duyệt mobile (Safari iOS hoặc Chrome Android) — `NFR-RO-04`,
-  - **When** E-Menu tải xong trong dưới 2 giây (`NFR-RO-01`) hiển thị danh sách món đầy đủ hình ảnh, giá tiền (`REQ-01`), và khách bấm nút "+ Thêm" trên một món đang ở trạng thái *Available*,
-  - **Then** món được thêm vào Order Draft với số lượng mặc định = 1 và đúng giá từ dữ liệu hệ thống; thanh giỏ cập nhật số lượng món và tổng tiền tạm tính tức thì; hệ thống **không** gửi bất kỳ ticket nào xuống Bếp (`REQ-02`/`BR-01`).
+- **AC1 (Happy Path — Gợi ý theo Sở thích & Dị ứng)**
+  - **Given** Khách khai báo thông tin dị ứng (VD: "Dị ứng hải sản") hoặc sở thích (VD: "Món chay/Ăn cay"),
+  - **When** Khách yêu cầu "Gợi ý món phù hợp cho tôi",
+  - **Then** AI hiển thị danh sách món gợi ý phù hợp, lọc bỏ 100% món chứa thành phần dị ứng kèm nhãn giải thích (VD: "Lọc bỏ: Tôm, Cua").
 
-- **AC2 (Edge Case — Stock Limit)**
-  - **Given** Món "Trà đá" còn tồn kho thực tế = 5 phần (`BR-06`),
-  - **When** Khách bấm tăng số lượng món "Trà đá" trong Order Draft lên mốc thứ 6 (vượt tồn kho),
-  - **Then** Hệ thống chặn thao tác, hiển thị cảnh báo "Món này chỉ còn 5 phần"; số lượng được giữ tối đa bằng 5 và không thể lưu giá trị vượt tồn kho (`BR-06`).
+- **AC2 (Edge Case — Làm rõ yêu cầu mơ hồ / Clarification)**
+  - **Given** Khách đưa yêu cầu chưa rõ ràng (VD: "Cho tôi món bò"),
+  - **When** Menu có nhiều món bò khác nhau,
+  - **Then** AI hiển thị Popup/Thẻ gợi ý để khách chọn loại cụ thể (Clarification) chứ không tự ý chọn bừa.
 
-- **AC3 (Edge Case — Out of Stock & ADR-001)**
-  - **Given** Món "Bò sốt tiêu đen" đang nằm trong Order Draft của khách với số lượng 1,
-  - **When** Bếp bấm Out of Stock trên KDS (`REQ-09`/`BR-03`) và trạng thái được đồng bộ đến thiết bị khách trong vòng 1 giây,
-  - **Then** (1) item trong Order Draft tự chuyển mờ xám kèm nhãn đỏ "Món đã hết" (`REQ-15`/`ADR-001`); (2) thẻ món trên E-Menu chuyển xám, hiển thị nhãn "Hết hàng" và nút "+ Thêm" bị vô hiệu hóa (`REQ-09`/`BR-03`); (3) nút "Xác nhận gửi bếp" chuyển sang trạng thái Disabled cho đến khi khách gỡ món OOS khỏi Draft (`REQ-15`/`ADR-001`).
+- **AC3 (Business Rule — Kiểm soát Tồn kho & OOS)**
+  - **Given** Món ăn được AI gợi ý vừa chuyển sang trạng thái Out of Stock (OOS) hoặc hết tồn kho (`BR-06`),
+  - **When** Danh sách tư vấn hiển thị,
+  - **Then** Thẻ món tự động mờ xám (*Grayed-out*), nút "+ Thêm" bị vô hiệu hóa và AI cảnh báo "Món này vừa hết hàng".
 
 - **AC4 (Business Rule — Explicit Confirmation)**
-  - **Given** Order Draft đang chứa ≥ 1 món hợp lệ (không còn món OOS) (`REQ-02`/`BR-01`),
-  - **When** Khách bấm nút "Xác nhận gửi bếp",
-  - **Then** hệ thống hiển thị modal xác nhận (số món, tổng tiền, cảnh báo "đơn đã gửi sẽ không thể tự hủy trên máy"); đơn chỉ được đẩy xuống Bếp sau khi khách bấm "Xác nhận" trong modal; sau khi gửi thành công, Order Draft làm trống cho vòng gọi mới và hệ thống sinh mã đơn. Mọi thao tác thêm món tại AC1 trước đó không tạo ra đơn tự động.
+  - **Given** Khách bấm chọn một món từ danh sách gợi ý của AI,
+  - **When** Thao tác thành công,
+  - **Then** Món ăn chỉ được đưa vào Giỏ nháp (Order Draft); hệ thống **không** tự động gửi đơn xuống Bếp cho đến khi khách bấm "Xác nhận gửi Bếp" (`BR-01`).
 
-- **AC5 (Fallback / Error Handling)**
-  - **Given** Thiết bị của khách mất kết nối mạng hoặc API E-Menu trả lỗi trong khi khách đang thao tác,
-  - **When** Khách bấm "+ Thêm" hoặc kéo làm mới danh sách món,
-  - **Then** hệ thống hiển thị banner đỏ "Lỗi kết nối. Vui lòng kiểm tra mạng và thử lại; danh sách món chưa thay đổi" kèm nút "Thử lại"; trạng thái Order Draft được bảo toàn nguyên vẹn (không mất món đã chọn); khi mạng khôi phục, bấm "Thử lại" tải lại E-Menu và trạng thái tồn kho mới nhất thành công (tự động áp dụng lại `REQ-09`/`ADR-001` nếu có món đã chuyển OOS trong thời gian ngắt kết nối).
+- **AC5 (Fallback & Safety Handling)**
+  - **Given** Khách nhập yêu cầu không liên quan hoặc rác input,
+  - **When** AI xử lý câu lệnh,
+  - **Then** AI kích hoạt Guardrail phản hồi lịch sự, đưa ra 3 tùy chọn gợi ý nhanh và bật bàn phím nhập liệu thủ công (`NFR-RO-05`).
 
 **Out of Scope:**
-- Gọi món bằng giọng nói AI (Voice-to-order, Clarification) — thuộc US-02.
-- Luồng Bếp nhận ticket và chuyển trạng thái trên KDS — thuộc US-03.
-- Thanh toán QR / Split Bill — thuộc US-05.
-- Tư vấn món theo sở thích/dị ứng; CMS chỉnh sửa Menu; Đối soát tồn kho cuối ca — thuộc US-06, US-07, US-08.
+- Tự động chốt đơn và thanh toán QR (thuộc US-05).
+- Bếp tiếp nhận đơn và cập nhật KDS (thuộc US-03).
+- CMS chỉnh sửa thông tin nguyên liệu dị ứng (thuộc US-07).
 
 **Dependencies:**
-- API: `GET /menu?tableId=B06` (danh sách món: hình ảnh, giá, trạng thái tồn kho); `PATCH /cart/{tableId}` (đồng bộ Order Draft); kênh Real-time WebSocket đẩy sự kiện `out_of_stock` (điều kiện bắt buộc của `REQ-09`/`BR-03`).
-- Component: MenuCard, OrderDraftDrawer (Sticky Bottom Bar), StockSyncService.
-- Story phụ thuộc: US-03 (Bếp báo OOS trên KDS) phải sẵn sàng để có dữ kiện tồn kho real-time; US-02 (Voice) mở rộng trực tiếp trên Order Draft của US-01.
+- API Backend xử lý Gemini NLP / Matching Engine (`allergens`, `tags`).
+- Component UI: MenuCard, OrderDraftDrawer (`CMP-DRAFT-SHEET`), AmbiguousModal (`CMP-AMBIG-MODAL`).
+- Story phụ thuộc: US-03 (Bếp báo OOS trên KDS) để có dữ kiện tồn kho real-time.
 
 **Estimate:** 3 points
 

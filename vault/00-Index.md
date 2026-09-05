@@ -1,21 +1,6 @@
 # Project Vault Index - Group 06 (Restaurant Operations & Smart Ordering)
 Hệ thống Single Source of Truth cho con người và AI Agents (Claude Code / VSCode).
 
-## 1. BẢN ĐỒ CẤU TRÚC TÀI LIỆU VAULT:
-- `source-priority.md`: Luật phân xử thứ bậc ưu tiên nguồn khi xảy ra mâu thuẫn.
-- `01-Requirements/requirements.md`: Danh mục REQ (FR, NFR), Business Rules (BR) và Scope.
-- `01-Requirements/glossary.md`: Từ điển thuật ngữ chuẩn cho con người và AI.
-- `02-Research/interview-notes.md`: Ghi chép phỏng vấn thô 3 người dùng thực tế.
-- `02-Research/user-research.md`: Tổng hợp Persona, JTBD và Pain points.
-- `03-Product/PRD.md`: Product Requirements Document.
-- `04-User-Stories/user-stories.md`: Danh mục User Stories và Acceptance Criteria.
-- `05-Design/`: Wireframe, UI mockup, design system (chờ Design phase).
-- `06-Engineering/`: Engineering Outputs — `architecture.md` (C4 + ADR-ARCH), `data-model.md` (ERD), `command-schema.md` (intent AI), `api-contract.md`, `story-spec-ai-order.md`, `repo-structure.md`, `ai-prompt-and-review.md`.
-- `07-QA/vault-qa-benchmark.md`: Bảng kiểm chuẩn 20 câu hỏi đánh giá AI.
-- `08-Decisions/decision-log.md`: Nhật ký quyết định kiến trúc và thay đổi nghiệp vụ (ADR).
-- `docs/AI_USAGE_LOG.md`: Nhật ký kiểm soát AI và bằng chứng con người can thiệp.
-- `docs/TRACEABILITY.md`: Ma trận truy vết Requirements ↔ User Stories ↔ Test.
-
 ## QUY TẮC BẮT BUỘC KHI AI TRUY VẤN VAULT (AI VAULT GUARDRAILS):
 ### 1. Nguyên tắc truy vấn & phản hồi dữ liệu:
 1. **Chỉ trả lời ngắn gọn dựa trên tài liệu trong `vault/`**: Tuyệt đối không dùng tri thức bên ngoài để lấp khoảng trống hoặc tự suy đoán (theo Mục 4 giáo trình). 
@@ -32,10 +17,10 @@ Hệ thống Single Source of Truth cho con người và AI Agents (Claude Code 
       
       Sau đó Liệt kê 2-3 câu hỏi làm rõ (Open Questions) cụ thể bên dưới để con người phản hồi.
 5. **Quy tắc Ghi tệp Quyết định (Decision Log & ADR Strict Rule - BẮT BUỘC)**:
-   * File `vault/08-Decisions/decision-log.md` **CHỈ ĐƯỢC PHÉP GHI NỔI** khi có **QUYẾT ĐỊNH QUAN TRỌNG VỀ KIẾN TRÚC/NGHIỆP VỤ (ADR)** và **DO CON NGƯỜI (NHÀN) TRỰC TIẾP RA QUYẾT ĐỊNH CHỌN PHƯƠNG ÁN**.
+   * File `vault/08-Decisions/decision-log.md` **CHỈ ĐƯỢC PHÉP GHI NỔI** khi có **QUYẾT ĐỊNH QUAN TRỌNG VỀ KIẾN TRÚC/NGHIỆP VỤ** và **DO CON NGƯỜI TRỰC TIẾP RA QUYẾT ĐỊNH CHỌN PHƯƠNG ÁN**.
    * AI tuyệt đối KHÔNG ĐƯỢC tự ý tự tạo hay tự ghi file `decision-log.md` khi con người chưa chốt phương án chính thức.
    * Khi con người chỉ chọn phương án cập nhật yêu cầu thông thường, AI chỉ ghi bổ sung vào `requirements.md` và `user-stories.md`, KHÔNG ghi vào `decision-log.md`.
-6. **Giới hạn tệp được phép chỉnh sửa trực tiếp trong Bài 1 (Exercise 1 Scope & File Access Guardrail)**:
+6. **Giới hạn tệp được phép chỉnh sửa trực tiếp trong**:
    * **Các file AI ĐƯỢC PHÉP chỉnh sửa/đồng bộ khi con người chốt quyết định**:
      - `vault/01-Requirements/requirements.md` (Bổ sung BR/REQ mới từ ADR)
      - `vault/04-User-Stories/user-stories.md` (Cập nhật AC mới từ ADR)
@@ -43,8 +28,8 @@ Hệ thống Single Source of Truth cho con người và AI Agents (Claude Code 
      - `vault/08-Decisions/decision-log.md` (Ghi nhận bản ghi ADR khi có quyết định quan trọng của con người)
      - `docs/AI_USAGE_LOG.md` (Ghi nhận nhật ký AI chuẩn 6 cột)
      - `docs/TRACEABILITY.md` (Đồng bộ ma trận truy vết)
-   * **TUYỆT ĐỐI KHÔNG ĐƯỢC TỰ Ý CHỈNH SỬA**: Mã nguồn `frontend/`, `backend/`, hoặc bất kỳ file nào ngoài danh mục Bài 1 nêu trên.
-7. **Kiểm soát phạm vi (No Scope Creep - Mục 2.3 giáo trình)**: Không tự ý thêm tính năng mới, không tự bịa giá tiền, không can thiệp trạng thái đơn hàng nếu không có trong tài liệu đã duyệt.
+   * **TUYỆT ĐỐI KHÔNG ĐƯỢC TỰ Ý CHỈNH SỬA**: Mã nguồn `frontend/`, `backend/`, hoặc bất kỳ file nào ngoài danh mục nêu trên.
+7. **Kiểm soát phạm vi**: Không tự ý thêm tính năng mới, không tự bịa giá tiền, không can thiệp trạng thái đơn hàng nếu không có trong tài liệu đã duyệt.
 8. **Quy tắc Kiểm thử Mù (Blind Benchmark Rule)**:
    - Khi trả lời các câu hỏi kiểm chuẩn trong `vault/07-QA/vault-qa-benchmark.md`, AI **TUYỆT ĐỐI KHÔNG ĐƯỢC ĐỌC TRƯỚC** cột *"Kỳ vọng chuẩn (Expected Answer)"*.
    - AI chỉ được phép đọc các tài liệu nguồn cho phép (`requirements.md`, `glossary.md`, `source-priority.md`...) để tự sinh câu trả lời tự nhiên dựa trên Vault context.

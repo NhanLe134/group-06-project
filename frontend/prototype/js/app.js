@@ -632,7 +632,7 @@ function renderDraftSheet() {
               ${it.note ? `<small>📝 ${esc(it.note)}</small>` : ''}
               ${oos ? `<span class="badge-oos">${COPY.DRAFT_OOS_LABEL}</span>` : ''}
             </div>
-            <div class="d-price">${fmtVND(d.price * it.qty)}</div>
+            <div class="d-price">${fmtVND(d.price )}</div>
             <div class="d-ctrl">
               <button data-action="dec-item" data-i="${i}" aria-label="Giảm ${esc(d.name)}">−</button>
               <span class="d-qty">${it.qty}</span>
@@ -644,16 +644,13 @@ function renderDraftSheet() {
       </div>
 
       ${hasOos ? `
-        <div class="adr-warn">
-          <p>🤖 ${esc(COPY.ADR001(oosNames.join(', ')))}</p>
-          <p class="lock-note">🔒 Nút “Xác nhận gửi bếp” bị khóa theo ADR-001 cho đến khi gỡ món hết hàng.</p>
-        </div>` : ''}
+        ` : ''}
 
       <div class="d-total"><span>Tổng tạm tính</span><b>${fmtVND(total)}</b></div>`}
 
     <button class="btn-primary btn-send" data-action="open-confirm"
       ${(!units || hasOos) ? 'disabled' : ''}>
-      ${hasOos ? '🔒 Không thể gửi — có món hết hàng' : `Xác nhận gửi bếp · ${fmtVND(total)}`}
+      ${hasOos ? '🔒  — có món hết hàng' : `Xác nhận gửi bếp · ${fmtVND(total)}`}
     </button>
   </section>`;
 }
@@ -923,7 +920,6 @@ document.addEventListener('change', e => {
   persist(); render();
 });
 
-/* Ô "Chạm để nói hoặc nhập món ăn..." — cùng bộ NLU với giọng nói */
 document.addEventListener('submit', e => {
   const f = e.target.closest('form[data-form="command"]');
   if (!f) return;

@@ -48,7 +48,7 @@ Khách chọn chạm hoặc nói *"Thêm 1 Bò sốt tiêu đen"*   → AI đọ
 ## 3. REQUIRED STATES (10 TRẠNG THÁI UI BẮT BUỘC)
 | Trạng thái (State) | Kích hoạt khi nào (Trigger) | Hành vi giao diện & UX Copy hiển thị |
 | :--- | :--- | :--- |
-| `idle` | Khách vừa mở bàn, chưa thao tác gì. | Nút micro ở trạng thái nghỉ; hiển thị thanh tìm kiếm gợi ý: "Chạm để nói hoặc nhập món ăn..." |
+| `idle` | Khách vừa mở bàn, chưa thao tác gì. | Nút micro ở trạng thái nghỉ; hiển thị thanh tìm kiếm gợi ý: "Tìm kiếm món " |
 | `listening` | Khách bấm giữ hoặc chạm vào micro. | Nút micro đổi màu/nhấp nháy sóng âm; hiển thị nhãn: "Đang nghe... Nói tên món ăn của bạn."[cite: 2] |
 | `processing` | Khách dứt câu lệnh, hệ thống đang bóc tách intent. | Hiển thị transcript tạm thời kèm biểu tượng quay chờ (spinner) và text: "Đang xử lý yêu cầu..."[cite: 2] |
 | `empty` | Phiên bàn mới mở, khách chưa chọn món nào. | Màn hình giỏ hàng trống; hiển thị minh họa kèm text: "Bàn chưa chọn món. Hãy gọi món qua trợ lý hoặc chọn từ menu." |

@@ -1,7 +1,6 @@
 # Figma Page Structure & Story Mapping Handoff - Group 06
 
 > **Tài liệu**: Quy hoạch Cấu trúc Figma & Ánh xạ Handoff cho Lập trình viên (Figma & Dev Handoff)  
-> **Phiên bản**: 1.0 (Chuẩn theo Mẫu Output #16 của Giảng viên)  
 > **Dự án**: Smart Restaurant Ordering — Group 06  
 > **Người thực hiện**: Lê Thị Thanh Nhàn (Role UX/UI Designer & AI/Vault Master)  
 
