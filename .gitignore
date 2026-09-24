@@ -13,3 +13,9 @@ playwright-report/
 test-results/
 
 .DS_Store
+
+.agents/mcp_config.json
+
+docs/log.md
+
+

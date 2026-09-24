@@ -7,7 +7,7 @@
 
 | Epic | Capability | Story | Title | Pts |
 |---|---|---|---|---|
-| EP1 | Guest Ordering Experience | US-01 | Khách lướt xem Menu và Thêm vào Giỏ hàng | 2 |
+| EP1 | Guest Ordering Experience | US-01 | Khách lướt xem Menu và Thêm vào Giỏ hàng | 3 |
 | EP1 | Guest Ordering Experience | US-02 | Dùng giọng nói AI (Voice) để gọi món bổ sung | 3 |
 | EP1 | Guest Ordering Experience | US-05 | Khách hàng Thanh toán (Trả toàn bộ hoặc Chia Bill) | 2 |
 | EP2 | Kitchen & Table Operations | US-03 | Bếp nhận Order và Báo hoàn thành trên KDS | 3 |
@@ -76,47 +76,127 @@
 
 **Estimate:** 3 points
 
-## US-02: Dùng giọng nói AI (Voice) để gọi món bổ sung
-- **User Story:** *Là* Khách hàng, *tôi muốn* bấm nút Micro để đọc tên món ăn, *để* AI phân tích và tự nhặt đúng món bỏ vào giỏ hàng.
-- **Context:** Trải nghiệm rảnh tay có rủi ro nhận diện sai do môi trường. AI phải tuân thủ quyền riêng tư dữ liệu và Fallback NFR. (Phụ trách: Ny - QA).
-- **Requirement IDs:** `REQ-01`, `REQ-05`, `NFR-RO-02`, `NFR-RO-05`
-- **Acceptance Criteria:**
-  - **AC1:** `CHO TRƯỚC` đang ở màn hình AI Chat, `KHI` khách nói *"Cho 2 ly Pepsi"*, `THÌ` AI phản hồi bằng giọng nói *"Đã thêm 2 ly Pepsi"* và đẩy món vào Giỏ.
-  - **AC2:** `CHO TRƯỚC` khách nói tên nguyên liệu chung chung (VD: *"Bò"*), `KHI` menu có nhiều loại, `THÌ` AI kích hoạt Clarification để hỏi lại.
-  - **AC3:** `CHO TRƯỚC` môi trường nhà hàng quá ồn, `KHI` AI nghe lỗi quá 2 lần, `THÌ` tự động hiển thị bàn phím (Text fallback - NFR-RO-05).
-  - **AC4:** `CHO TRƯỚC` phiên bàn kết thúc (Thanh toán xong), `KHI` kiểm tra server, `THÌ` file âm thanh thô của khách phải bị xóa vĩnh viễn (NFR-RO-02).
-- **Out of Scope:** AI tự động giảm giá hoặc tư vấn chuyện phiếm (Prompt injection).
-- **Dependencies:** API nhận diện giọng nói Speech-to-Text (TBD), Backend xử lý NLP (TBD). Cần làm sau khi US-01 (Giỏ hàng) hoàn thiện.
-- **Estimate đề xuất:** 3 points
+## US-02 - Dùng giọng nói AI (Voice) để gọi món bổ sung
 
-## US-05: Khách hàng Thanh toán (Trả toàn bộ hoặc Chia Bill)
-- **User Story:** *Là* Khách hàng, *tôi muốn* chọn thanh toán toàn bộ hoặc chia bill trên thiết bị, *để* có thể linh hoạt tự trả tiền phần của mình.
-- **Context:** Tính năng thanh toán tại bàn cuối bữa ăn.
-- **Requirement IDs:** `REQ-03`
-- **Acceptance Criteria:**
-  - **AC1:** `CHO TRƯỚC` khách bấm nút "Thanh toán", `KHI` chọn "Trả toàn bộ", `THÌ` hệ thống sinh ra 1 mã QR duy nhất cho tổng hóa đơn.
-  - **AC2:** `CHO TRƯỚC` khách bấm "Thanh toán", `KHI` chọn "Split Bill", `THÌ` hiển thị 2 tùy chọn: "Chia đều" và "Chia theo món".
-  - **AC3:** `CHO TRƯỚC` khách chọn Chia đều cho 3 người, `KHI` tổng bill 300k, `THÌ` hệ thống tạo ra 3 mã QR MoMo 100k.
-- **Out of Scope:** Không hỗ trợ thanh toán thẻ Visa/Mastercard (Theo giới hạn scope gốc).
-- **Dependencies:** Cổng thanh toán nội địa (VNPAY/MoMo API - TBD).
-- **Estimate đề xuất:** 2 points
+**User Story:** *As a* Khách hàng (Customer), *I want* bấm nút Micro để đọc tên món ăn, *so that* AI phân tích và tự động nhặt đúng món bỏ vào giỏ hàng giúp tôi gọi món rảnh tay.
+
+**Context:**
+- `REQ-01` (FR): Trợ lý ảo AI tư vấn món ăn.
+- `REQ-05` (FR): Gọi món bằng giọng nói (Voice-to-order).
+- `NFR-RO-02`: Quyền riêng tư - Xóa file âm thanh.
+- `NFR-RO-05`: Khả dụng - Text fallback khi môi trường ồn.
+Trải nghiệm rảnh tay có rủi ro nhận diện sai do môi trường ồn ào. Trợ lý ảo cần hỗ trợ hỏi lại (Clarification) nếu không chắc chắn.
+
+**Acceptance Criteria:**
+
+- **AC1 (Happy Path - Nhận diện chính xác)**
+  - **Given** Khách hàng đang ở màn hình AI Chat,
+  - **When** Khách nói *"Cho 2 ly Pepsi"*,
+  - **Then** AI phản hồi bằng giọng nói *"Đã thêm 2 ly Pepsi"* và lập tức đẩy món vào Order Draft.
+
+- **AC2 (Edge Case - Cần làm rõ món ăn)**
+  - **Given** Khách nói tên nguyên liệu chung chung (VD: *"Bò"*),
+  - **When** Menu có nhiều loại (Bò xào, Bò nướng),
+  - **Then** AI kích hoạt Clarification để hỏi lại (ví dụ: *"Nhà hàng có 2 món bò, bạn chọn món nào?"*).
+
+- **AC3 (Fallback - Môi trường ồn NFR-RO-05)**
+  - **Given** Môi trường nhà hàng quá ồn,
+  - **When** AI nghe lỗi hoặc không nhận diện được quá 2 lần,
+  - **Then** Giao diện tự động hiển thị bàn phím (Text fallback) để khách tự nhập.
+
+- **AC4 (Privacy - NFR-RO-02)**
+  - **Given** Phiên bàn đã kết thúc (Thanh toán xong),
+  - **When** Hệ thống kiểm tra dữ liệu,
+  - **Then** File âm thanh thô của khách phải bị xóa vĩnh viễn khỏi server.
+
+**Out of Scope:**
+- AI tự động giảm giá hoặc nói chuyện phiếm (Prompt injection).
+
+**Dependencies:**
+- API nhận diện giọng nói (Speech-to-Text). Backend xử lý NLP.
+- Cần làm sau khi US-01 (Giỏ hàng) hoàn thiện.
+
+**Estimate:** 3 points
+
+## US-05 - Khách hàng Thanh toán (Trả toàn bộ hoặc Chia Bill)
+
+**User Story:** *As a* Khách hàng (Customer), *I want* chọn thanh toán toàn bộ hoặc chia bill trực tiếp trên thiết bị, *so that* tôi có thể linh hoạt tự trả tiền phần của mình hoặc thanh toán chung mà không cần đến quầy.
+
+**Context:**
+- `REQ-03` (FR): Chức năng Split Bill (Chia tiền) theo người/món.
+- `REQ-04` (FR): Thanh toán bằng quét mã QR MoMo/VNPAY tại bàn.
+Tính năng thanh toán tại bàn cuối bữa ăn giúp giảm tải cho thu ngân.
+
+**Acceptance Criteria:**
+
+- **AC1 (Happy Path - Thanh toán toàn bộ)**
+  - **Given** Khách hàng bấm nút "Thanh toán" trong màn hình đơn hàng,
+  - **When** Khách chọn "Trả toàn bộ",
+  - **Then** Hệ thống sinh ra 1 mã QR duy nhất cho tổng hóa đơn để khách quét thanh toán.
+
+- **AC2 (Happy Path - Chia Bill)**
+  - **Given** Khách hàng bấm "Thanh toán",
+  - **When** Khách chọn "Chia Bill" (Split Bill),
+  - **Then** Giao diện hiển thị 2 tùy chọn: "Chia đều" và "Chia theo món".
+
+- **AC3 (Edge Case - Chia đều)**
+  - **Given** Tổng bill là 300,000 VND,
+  - **When** Khách chọn "Chia đều" cho 3 người,
+  - **Then** Hệ thống tự động tạo ra 3 mã QR tương ứng với mỗi mã là 100,000 VND.
+
+**Out of Scope:**
+- Không hỗ trợ thanh toán thẻ Visa/Mastercard trực tuyến (giới hạn scope MVP).
+
+**Dependencies:**
+- Cổng thanh toán nội địa (VNPAY/MoMo API).
+
+**Estimate:** 2 points
 
 ---
 
 # EPIC 2: KITCHEN & TABLE OPERATIONS (Vận hành Bếp & Phục vụ)
 *Mang lại giá trị cốt lõi: Tự động hóa luồng thông tin giữa Bếp và Nhân viên phục vụ để tăng tốc độ xoay vòng bàn.*
 
-## US-03: Bếp nhận Order và Báo hoàn thành trên KDS
-- **User Story:** *Là* Đầu bếp, *tôi muốn* nhìn thấy đơn hàng hiện lên KDS theo thứ tự thời gian, *để* tôi biết món nào cần nấu trước và báo Done.
-- **Context:** Xử lý hiển thị thông tin Real-time và cảnh báo trễ hạn. (Phụ trách: Nhã - Eng).
-- **Requirement IDs:** `REQ-08`, `REQ-09`
-- **Acceptance Criteria:**
-  - **AC1:** `CHO TRƯỚC` khách bấm gửi đơn, `KHI` hệ thống nhận đơn, `THÌ` KDS tự động nhảy Ticket kèm đồng hồ đếm ngược.
-  - **AC2:** `CHO TRƯỚC` Ticket trên KDS chờ quá 15 phút, `KHI` đồng hồ chạm mốc, `THÌ` Ticket chớp đỏ và đẩy lên vị trí đầu ưu tiên.
-  - **AC3:** `CHO TRƯỚC` Bếp bấm *Out of Stock* món Bò, `KHI` hệ thống ghi nhận, `THÌ` khóa món Bò trên mọi thiết bị ngay lập tức.
-- **Out of Scope:** KDS không có quyền gộp bill hay đổi giá món ăn.
-- **Dependencies:** Cấu trúc Websocket/Realtime (TBD).
-- **Estimate đề xuất:** 3 points
+## US-03 - Bếp nhận Order và Báo hoàn thành trên KDS
+
+**User Story:** *As an* Đầu bếp (Kitchen Staff), *I want* nhìn thấy đơn hàng hiển thị trên KDS theo thứ tự và thao tác cập nhật trạng thái, *so that* tôi biết món nào cần ưu tiên nấu và đồng bộ trạng thái hết hàng tức thì.
+
+**Context:**
+Đặc tả bám sát tri thức Vault, trích dẫn nguồn:
+- `REQ-08` (FR): Màn hình KDS sắp xếp đơn ưu tiên, nhấp nháy Đỏ khi chờ quá 15 phút.
+- `REQ-09` / `BR-03`: Bếp bấm Out of Stock (OOS) → trạng thái khóa món được đồng bộ trên mọi thiết bị trong vòng 1 giây.
+- `REQ-15`: Xử lý món OOS đang nằm sẵn trong Order Draft của khách.
+- `FR-03`: Bếp xem Ticket và đếm ngược trên KDS.
+- `NFR-RO-01`: Thời gian tải màn hình < 2 giây.
+- Ràng buộc kỹ thuật: Cập nhật thời gian thực bằng Pub/Sub WebSocket (`kds:tickets`).
+
+**Acceptance Criteria:**
+
+**AC1** (Happy Path - Nhận đơn real-time và hiển thị KDS)
+Given khách hàng hoàn tất bấm "Xác nhận gửi bếp" từ E-Menu
+When hệ thống tiếp nhận đơn hàng thành công
+Then KDS tự động hiển thị Ticket mới theo thứ tự thời gian kèm đồng hồ đếm ngược.
+
+**AC2** (Edge Case - Cảnh báo trễ hạn)
+Given một Ticket món ăn đang ở trạng thái chờ trên KDS
+When đồng hồ đếm ngược vượt mốc 15 phút
+Then Ticket tự động chớp đỏ và được đẩy lên vị trí ưu tiên cao nhất.
+
+**AC3** (Business Rule - Đồng bộ Out of Stock)
+Given Đầu bếp chọn "Out of Stock" (OOS) cho một nguyên liệu hoặc món ăn
+When hệ thống ghi nhận trạng thái mới
+Then món ăn bị khóa trên mọi E-Menu trong vòng 1 giây và các Order Draft đang chứa món này bị vô hiệu hóa nút gửi.
+
+**AC4** (Fallback - Mất kết nối mạng)
+Given thiết bị KDS mất kết nối mạng với máy chủ
+When Đầu bếp thao tác hoàn thành món hoặc báo OOS
+Then giao diện hiển thị lỗi kết nối có thể phục hồi và lưu tạm thao tác để tự động đồng bộ sau khi có mạng.
+
+**Out of Scope:**
+- Gộp tách bill; thay đổi giá tiền; định vị nhân viên.
+
+**Dependencies:**
+- Kênh WebSocket realtime (`kds:tickets`); API đồng bộ kho; US-01 (E-Menu); US-04 (Waiter).
 
 ## US-04 - Phục vụ bưng món và Cập nhật trạng thái
 
@@ -180,35 +260,86 @@
 # EPIC 3: RESTAURANT MANAGEMENT & CMS (Quản trị nhà hàng)
 *Mang lại giá trị cốt lõi: Cung cấp công cụ cho Quản lý kiểm soát giá cả, doanh thu và tồn kho.*
 
-## US-06: Quản lý xem Dashboard Doanh thu
-- **User Story:** *Là* Quản lý nhà hàng, *tôi muốn* xem Dashboard báo cáo trên POS, *để* tôi nắm doanh thu và top món bán chạy trong ngày.
-- **Context:** Chức năng đọc số liệu thống kê.
-- **Requirement IDs:** `REQ-13`
-- **Acceptance Criteria:**
-  - **AC1:** `CHO TRƯỚC` Manager vào POS, `KHI` click tab Dashboard, `THÌ` biểu đồ doanh thu ca hiện tại hiển thị.
-  - **AC2:** `CHO TRƯỚC` Dashboard đang mở, `KHI` có bàn thanh toán xong, `THÌ` Tổng doanh thu tự động nhảy số.
-- **Out of Scope:** Không xuất file phân tích tài chính/PDF phức tạp.
-- **Dependencies:** Database Aggregation API (TBD).
-- **Estimate đề xuất:** 2 points
+## US-06 - Quản lý xem Dashboard Doanh thu
 
-## US-07: Quản lý chỉnh sửa Menu (CMS)
-- **User Story:** *Là* Quản lý nhà hàng, *tôi muốn* sửa tên, ảnh, giá món ăn trong phần mềm, *để* Menu E-menu tự động lấy giá mới nhất.
-- **Context:** Thao tác CRUD Menu và tuân thủ phân quyền RBAC.
-- **Requirement IDs:** `REQ-11`, `NFR-RO-03`
-- **Acceptance Criteria:**
-  - **AC1:** `CHO TRƯỚC` Quản lý đổi giá món Bít tết, `KHI` bấm Lưu, `THÌ` giá trên điện thoại khách hàng lập tức đổi theo.
-  - **AC2:** `CHO TRƯỚC` Waiter truy cập link sửa Menu, `KHI` load trang, `THÌ` bị chặn và báo lỗi 403 Forbidden (NFR-RO-03).
-- **Out of Scope:** Không tích hợp công cụ cắt ghép chỉnh sửa ảnh trực tiếp.
-- **Dependencies:** Cần thiết kế Role-based Access Control (RBAC) - (TBD).
-- **Estimate đề xuất:** 2 points
+**User Story:** *As a* Quản lý nhà hàng (Manager), *I want* xem Dashboard báo cáo trên POS, *so that* tôi có thể nắm bắt doanh thu và các món bán chạy nhất (Top món) trong ngày một cách trực quan.
 
-## US-08: Đối soát Tồn kho (Inventory Reconciliation)
-- **User Story:** *Là* Bếp trưởng / Quản lý, *tôi muốn* nhập số lượng nguyên liệu thực tế cuối ngày, *để* phần mềm đối chiếu hao hụt.
-- **Context:** Quy trình chốt ca kho.
-- **Requirement IDs:** `REQ-12`
-- **Acceptance Criteria:**
-  - **AC1:** `CHO TRƯỚC` màn hình Tồn kho, `KHI` nhập 5kg (số lý thuyết là 6kg), `THÌ` đánh dấu chênh lệch -1kg màu đỏ.
-  - **AC2:** `CHO TRƯỚC` hoàn tất, `KHI` bấm "Chốt ca", `THÌ` tồn kho đầu ngày hôm sau thiết lập thành số thực tế vừa nhập.
-- **Out of Scope:** Quản lý hạn sử dụng (HSD) của nguyên liệu.
-- **Dependencies:** Database Inventory (TBD).
-- **Estimate đề xuất:** 1 point
+**Context:**
+- `REQ-13` (FR): Dashboard báo cáo Real-time (Doanh thu, Top món, Tỷ lệ lấp đầy).
+Chức năng đọc số liệu thống kê giúp quản lý ra quyết định kinh doanh ngay trong ca làm việc.
+
+**Acceptance Criteria:**
+
+- **AC1 (Happy Path - Hiển thị Dashboard)**
+  - **Given** Quản lý nhà hàng truy cập vào hệ thống POS,
+  - **When** Quản lý click vào tab Dashboard,
+  - **Then** Biểu đồ doanh thu của ca hiện tại và top món ăn hiển thị rõ ràng.
+
+- **AC2 (Real-time Update)**
+  - **Given** Màn hình Dashboard đang được mở,
+  - **When** Có một bàn thanh toán hoàn tất,
+  - **Then** Tổng số doanh thu tự động nhảy số theo thời gian thực mà không cần tải lại trang.
+
+**Out of Scope:**
+- Không hỗ trợ xuất file phân tích tài chính/PDF phức tạp.
+
+**Dependencies:**
+- Database Aggregation API (truy vấn doanh thu).
+
+**Estimate:** 2 points
+
+## US-07 - Quản lý chỉnh sửa Menu (CMS)
+
+**User Story:** *As a* Quản lý nhà hàng (Manager), *I want* thao tác chỉnh sửa tên, hình ảnh, và giá món ăn trong phần mềm quản lý, *so that* Menu điện tử (E-menu) trên thiết bị của khách sẽ tự động cập nhật thông tin và giá mới nhất.
+
+**Context:**
+- `REQ-11` (FR): CMS Quản lý Menu (Thêm, Sửa, Đổi giá, Cập nhật hình) đồng bộ E-Menu.
+- `NFR-RO-03`: Quyền hạn (RBAC) - Chỉ quản lý mới có quyền chỉnh sửa.
+
+**Acceptance Criteria:**
+
+- **AC1 (Happy Path - Cập nhật thông tin Menu)**
+  - **Given** Quản lý thay đổi giá của món "Bít tết" trên giao diện CMS,
+  - **When** Quản lý bấm "Lưu",
+  - **Then** Giá món trên điện thoại của mọi khách hàng đang xem E-menu lập tức thay đổi theo đồng bộ (thời gian thực/tải lại trang).
+
+- **AC2 (Security / RBAC - NFR-RO-03)**
+  - **Given** Nhân viên phục vụ (Waiter) đang đăng nhập hệ thống,
+  - **When** Waiter cố gắng truy cập link sửa Menu hoặc gọi API chỉnh sửa,
+  - **Then** Hệ thống chặn thao tác, báo lỗi 403 Forbidden.
+
+**Out of Scope:**
+- Không tích hợp công cụ cắt ghép chỉnh sửa ảnh trực tiếp bên trong phần mềm.
+
+**Dependencies:**
+- Role-based Access Control (RBAC) Middleware.
+
+**Estimate:** 2 points
+
+## US-08 - Đối soát Tồn kho (Inventory Reconciliation)
+
+**User Story:** *As a* Bếp trưởng hoặc Quản lý (Manager/Head Chef), *I want* nhập số lượng nguyên liệu thực tế vào cuối ngày, *so that* phần mềm có thể tự động đối chiếu và làm nổi bật các khoản hao hụt so với tồn kho lý thuyết.
+
+**Context:**
+- `REQ-12` (FR): Màn hình nhập số liệu thực tế để Đối soát tồn kho cuối ngày.
+Quy trình chốt ca kho rất quan trọng để tránh thất thoát và chuẩn bị nguyên liệu cho ngày hôm sau.
+
+**Acceptance Criteria:**
+
+- **AC1 (Happy Path - Nhập chênh lệch)**
+  - **Given** Màn hình đối soát Tồn kho đang hiển thị, số lượng lý thuyết của nguyên liệu là 6kg,
+  - **When** Quản lý nhập số lượng thực tế là 5kg,
+  - **Then** Giao diện tự động tính toán và đánh dấu chênh lệch "-1kg" bằng màu đỏ.
+
+- **AC2 (Happy Path - Chốt ca)**
+  - **Given** Quản lý đã hoàn tất việc nhập số liệu cho toàn bộ nguyên liệu,
+  - **When** Quản lý bấm "Chốt ca",
+  - **Then** Tồn kho đầu ngày hôm sau được thiết lập thành số lượng thực tế vừa nhập.
+
+**Out of Scope:**
+- Không quản lý hạn sử dụng (HSD) của nguyên liệu ở giai đoạn này.
+
+**Dependencies:**
+- Database Inventory API.
+
+**Estimate:** 1 point

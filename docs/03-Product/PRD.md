@@ -42,7 +42,20 @@ Số hóa toàn bộ quy trình phục vụ tại bàn, từ lúc khách quét Q
 
 ---
 
-## 5. Ranh giới Dự án (Scope)
+## 5. Ranh giới Dự án & Tổng quan (Scope & Project Overview)
+
+**TỔNG QUAN DỰ ÁN (PROJECT OVERVIEW)**
+- **Tên dự án:** Smart Restaurant Ordering — Group 06
+- **Mục tiêu:** Hệ thống gọi món thông minh cho nhà hàng bao gồm Quét QR gọi món, Trợ lý AI giọng nói (AI Voice Assistant), Hệ thống hiển thị nhà bếp (KDS - Kitchen Display System) và Thanh toán QR nội địa.
+- **Tài liệu nguồn chính (Single Source of Truth):** Quản lý nghiêm ngặt tại thư mục `vault/` và `docs/`.
+
+**Công nghệ sử dụng (Tech Stack)**
+- **Frontend:** React + TypeScript + Vite (Node.js 24 LTS)
+- **Backend:** Python 3.13, FastAPI (Quản lý gói phụ thuộc bằng uv)
+- **Database:** PostgreSQL 18 (Khởi chạy qua Docker Compose)
+- **CI/CD:** GitHub Actions (.github/workflows/ci.yml)
+
+**Chi tiết phạm vi:**
 | In Scope (Trong phạm vi) | Out of Scope (Ngoài phạm vi) |
 | :--- | :--- |
 | - Gọi món tại bàn qua QR (E-Menu & AI Voice).<br>- Hệ thống KDS cho nhà bếp.<br>- Cập nhật trạng thái bưng bê (Table Map).<br>- Quản trị Menu và Đối soát tồn kho cuối ngày. | - Cổng thanh toán quốc tế (Visa/Stripe).<br>- Ứng dụng giao hàng tận nơi (Delivery).<br>- Hệ thống nhân sự (Chấm công, tính lương). |
