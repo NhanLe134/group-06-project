@@ -55,15 +55,15 @@ Tệp cấu hình MCP Server được thiết lập trong tệp cấu hình AI A
       "env": {
         "TAIGA_HOST": "https://taiga.io",
         "TAIGA_PROJECT_SLUG": "nhanle134-group-06-smart-restaurant",
-        "TAIGA_API_TOKEN": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        "TAIGA_API_TOKEN": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
       }
     },
     "figma-mcp": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-figma"],
       "env": {
-        "FIGMA_PERSONAL_ACCESS_TOKEN": "YOUR_FIGMA_PERSONAL_ACCESS_TOKEN",
-        "FIGMA_FILE_KEY": "fNQe6a80rFguLNMIgVTsO1"
+        "FIGMA_PERSONAL_ACCESS_TOKEN": "<YOUR_FIGMA_PERSONAL_ACCESS_TOKEN>",
+        "FIGMA_FILE_KEY": "a8B2cD3eF4gH5iJ6kL7m"
       }
     }
   }

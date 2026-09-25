@@ -27,41 +27,11 @@ Ma trận dưới đây xác định chính xác các trạng thái giao diện 
 
 | Mã Màn hình | Default | Listening / Processing | Ambiguous (Hỏi lại) | Out-of-Stock (Mờ xám) | Order-Draft | Confirm | Success | Empty | Network Error |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **SCR-CUST-01** (E-Menu) | **X** | **X** (Micro pulse) | **X** (ADR-004) | **X** (ADR-001) | — | — | — | — | **X** (Banner đỏ) |
-| **SCR-CUST-02** (Order Draft) | — | — | — | **X** (Khóa gửi) | **X** | **X** (ADR-003) | **X** (Overlay) | **X** | **X** |
-| **SCR-CUST-03** (Thanh toán QR) | **X** | — | — | — | — | **X** (Tạo QR) | **X** (Đã nhận tiền) | — | **X** |
-| **SCR-KDS-01** (Bếp KDS) | **X** (Chờ nấu) | **X** (Đang làm) | — | **X** (Nút báo hết) | — | — | **X** (Đã xong) | **X** (Bếp trống) | **X** |
-| **SCR-WAIT-01** (Waiter Tablet) | **X** (Chờ dọn) | **X** (Voice lệnh) | — | — | — | — | **X** (Đã phục vụ) | **X** (Chờ báo) | **X** |
-| **SCR-WAIT-02** (Sơ đồ Bàn) | **X** (Sơ đồ màu) | — | — | — | — | **X** (Xác nhận hủy) | **X** (Đã đổi màu) | — | **X** |
+| **SCR-CUST-01** (E-Menu) | **X** | **X**  | **X** | **X**  | — | — | — | — | **X** (Banner đỏ) |
+| **SCR-CUST-02** (Order Draft) | — | — | — | **X**  | **X** | **X**  | **X**  | **X** | **X** |
+| **SCR-CUST-03** (Thanh toán QR) | **X** | — | — | — | — | **X** | **X** | — | **X** |
+| **SCR-KDS-01** (Bếp KDS) | **X**  | **X**  | — | **X**  | — | — | **X**  | **X** | **X** |
+| **SCR-WAIT-01** (Waiter Tablet) | **X**  | **X**  | — | — | — | — | **X**  | **X**  | **X** |
+| **SCR-WAIT-02** (Sơ đồ Bàn) | **X** | — | — | — | — | **X**  | **X**  | — | **X** |
 
----
 
-## 3. BẢNG ÁNH XẠ CHỨC NĂNG NGHIỆP VỤ (FEATURE MAP PER SCREEN)
-
-```mermaid
-graph TD
-    subgraph KHACH["📱 Màn hình Khách hàng (SCR-CUST-01..03)"]
-        F1["REQ-01: AI Voice Ordering & Gợi ý món"]
-        F2["REQ-02/15: Order Draft & Explicit Confirmation"]
-        F3["REQ-04: QR Code Payment MoMo/VNPAY"]
-        F4["REQ-03: Split Bill (Chia tiền tại bàn)"]
-    end
-
-    subgraph BEP["👨‍🍳 Màn hình Bếp KDS (SCR-KDS-01)"]
-        F5["REQ-08: Sắp xếp FIFO & Cảnh báo đỏ >15 phút"]
-        F6["REQ-09: Nút Out of Stock khóa món toàn hệ thống"]
-    end
-
-    subgraph PHUCVU["🛎️ Màn hình Phục vụ & Quản lý (SCR-WAIT-01..02)"]
-        F7["REQ-05: Tablet Voice-to-order"]
-        F8["REQ-07: Chuông báo âm thanh món xong"]
-        F9["REQ-06: Sơ đồ màu Table Session Map"]
-        F10["REQ-10: RBAC Manager Void/Refund"]
-    end
-```
-
----
-
-### 📝 Tóm tắt Kiểm chứng Bao phủ Requirements:
-- **100% Yêu cầu nghiệp vụ (`REQ-01` đến `REQ-15`)** đều đã được phân bổ cụ thể vào 6 màn hình trên.
-- **Không có chức năng nào bị bỏ sót**, bao gồm cả các chức năng mở rộng như Split Bill (`REQ-03`), Sơ đồ bàn màu sắc (`REQ-06`), Phân quyền Manager Void/Refund (`REQ-10`) và Cảnh báo quá 15 phút (`REQ-08`).

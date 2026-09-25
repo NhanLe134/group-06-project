@@ -1,9 +1,12 @@
-# Usability Test Script 
+# Usability Test Script & Findings
 
 > **Tài liệu**: Kịch bản & Kết quả Kiểm thử Tính dễ sử dụng (Usability Test Script & Findings)  
+> **Phiên bản**: 2.0 (Luồng Thao tác chạm tay trên E-Menu - Tách Bảng theo 3 Vai trò)  
 > **Người thực hiện**: Lê Thị Thanh Nhàn (Role UX/UI Designer & AI/Vault Master)  
 
 ---
+
+## PART 1: USABILITY TEST SCRIPT (KỊCH BẢN KIỂM THỬ USABILITY)
 
 ### 1. Khách hàng (Customer)
 
@@ -30,4 +33,6 @@
 
 | Task | Success criterion |
 | :--- | :--- |
-| **T8: Nhận thông báo món làm xong và nhấn đã phục vụ** | Tablet kêu "Ting Ting" báo đúng số bàn, Waiter bấm xác nhận và sơ đồ bàn đổi màu thành công |
+| **T8: Nhận thông báo món làm xong và nhấn đã phục vụ** | Tablet Hiển thị món đã làm xong|
+| **T9: Nhấn đã phục vụ** |  Waiter bấm xác nhận, món chuyển sang trạng thái đã phục vụ
+ |

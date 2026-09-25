@@ -59,7 +59,7 @@ const VOICE_SCENARIOS = [
 
 /* ---------- UX Copy — bảng 10 trạng thái (brief §3) ---------- */
 const COPY = {
-  IDLE_SEARCH:  'Chạm để nói hoặc nhập món ăn...',
+  IDLE_SEARCH:  'Tìm kiếm món ',
   LISTENING:    'Đang nghe... Nói tên món ăn của bạn.',
   PROCESSING:   'Đang xử lý yêu cầu...',
   EMPTY:        'Bàn chưa chọn món. Hãy gọi món qua trợ lý hoặc chọn từ menu.',

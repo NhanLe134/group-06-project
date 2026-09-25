@@ -1,5 +1,5 @@
 # Vault Q&A Benchmark - Group 06 (Restaurant Operations & Smart Ordering)
-- Bộ kiểm chuẩn: 17 câu hỏi (Fact, Rule, Edge-case, Conflict, Unknown/Out of Scope, NFR, Cross-file)
+- Bộ kiểm chuẩn: 17 câu hỏi (Fact, Rule, Edge-case, Conflict, Unknown/Out of Scope, NF)
 - Quy tắc kiểm thử mù: AI Vault khi trả lời KHÔNG ĐƯỢC ĐỌC TRƯỚC cột "Kỳ vọng chuẩn".
 - Người thực hiện kiểm thử: Lê Thị Thanh Nhàn Role AI/Vault
 
@@ -37,7 +37,7 @@
 
 ---
 
-### 2. Chi tiết kiểm thử cho Q10 (Edge-case - Món OOS trong Order Draft)
+### 2. Chi tiết kiểm thử cho Q10 (Unknown - Món OOS trong Order Draft)
 | Lần test | AI thực tế trả lời | Đánh giá (KQ) | Hành động khắc phục / Tinh chỉnh Prompt & Vault |
 | :---: | :--- | :---: | :--- |
 | **Lần 1** | AI chỉ trả lời duy nhất cụm "KHÔNG ĐỦ DỮ LIỆU TRONG VAULT" rồi dừng lại, không gợi ý hay đặt câu hỏi mở. | **Partial** | Cập nhật Rule 4 trong `00-Index.md` ép AI phải trích mã REQ liên quan và đề xuất Open Questions. |
