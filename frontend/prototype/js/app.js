@@ -230,7 +230,7 @@ function applyParse(parsed) {
     const d = dishById(o.id);
     S.lastOos = { id: o.id, suggestions: o.suggestions.map(s => s.id) };
     S.ui = 'out-of-stock';
-    aiSay(`"${d.name}" ${COPY.OOS_MSG}`, o.suggestions.map(s => ({ id: s.id, label: `＋ ${s.name} · ${fmtVND(s.price)}` })));
+    aiSay(`"${d.name}" ${COPY.OOS_MSG}`, o.suggestions.map(s => ({ id: s.id, label: `<i class="ph-bold ph-plus"></i> ${s.name} · ${fmtVND(s.price)}` })));
     return;
   }
   if (parsed.adds.length) {                             /* FLOW A — đồng bộ vào draft */
@@ -372,7 +372,7 @@ function renderSplash() {
   return `
   <div class="phone splash-wrap">
     <div class="splash">
-      <div class="splash-logo">🍽️</div>
+      <div class="splash-logo"><i class="ph-duotone ph-fork-knife"></i></div>
       <h1>Smart Restaurant Ordering</h1>
       <p class="splash-sub"></p>
       <p class="splash-q">Bạn là vai trò nào?</p>
@@ -380,7 +380,7 @@ function renderSplash() {
         <button class="role-card" data-action="select-role" data-role="${r.id}">
           <span class="rc-emoji">${r.emoji}</span>
           <span class="rc-text"><b>${r.title}</b><small>${r.desc}</small></span>
-          <span class="rc-arrow">›</span>
+          <span class="rc-arrow"><i class="ph-bold ph-caret-right"></i></span>
         </button>`).join('')}
     </div>
   </div>`;
@@ -418,7 +418,7 @@ function renderDemoBar() {
 function renderBanner() {
   return `
   <div class="banner" role="alert">
-    <span>⚠️ ${COPY.NETWORK}</span>
+    <span><i class="ph-fill ph-warning-circle" style="color:var(--red)"></i> ${COPY.NETWORK}</span>
     <button class="btn-mini" data-action="retry-network">Thử lại</button>
   </div>`;
 }
@@ -437,7 +437,7 @@ function renderCustomer() {
   ${renderOosAlert()}
   <form class="searchbar" data-form="command">
     <input id="cmd" type="text" placeholder="${COPY.IDLE_SEARCH}" autocomplete="off" aria-label="Nhập món ăn hoặc câu lệnh">
-    <button type="submit" aria-label="Gửi">➤</button>
+    <button type="submit" aria-label="Gửi"><i class="ph-bold ph-paper-plane-right"></i></button>
   </form>
   <div class="menu-list">
     ${CATALOG.map(d => {
@@ -446,12 +446,12 @@ function renderCustomer() {
       <article class="card ${oos ? 'oos' : ''}">
         <div class="thumb">${d.emoji}</div>
         <div class="info">
-          <h3>${esc(d.name)}${d.bestseller ? ' <span class="badge-hot">🔥Bán chạy</span>' : ''}</h3>
+          <h3>${esc(d.name)}${d.bestseller ? ' <span class="badge-hot"><i class="ph-fill ph-fire" style="color:var(--primary)"></i>Bán chạy</span>' : ''}</h3>
           <p class="price">${fmtVND(d.price)}</p>
           ${oos ? `<span class="badge-oos">${COPY.OOS_LABEL}</span>` : ''}
         </div>
         <button class="btn-add" data-action="add-item" data-id="${d.id}" ${oos ? 'disabled' : ''}
-          aria-label="Thêm ${esc(d.name)} vào đơn" title="${oos ? COPY.OOS_MSG : 'Thêm vào Order Draft'}">＋</button>
+          aria-label="Thêm ${esc(d.name)} vào đơn" title="${oos ? COPY.OOS_MSG : 'Thêm vào Order Draft'}"><i class="ph-bold ph-plus"></i></button>
       </article>`;
     }).join('')}
   </div>
@@ -464,11 +464,11 @@ function renderOosAlert() {
   const d = dishById(S.lastOos.id);
   return `
   <div class="oos-alert" role="alert">
-    <p><b>🤖 "${esc(d.name)}" — ${COPY.OOS_MSG}</b></p>
+    <p><b><i class="ph-duotone ph-robot"></i> "${esc(d.name)}" — ${COPY.OOS_MSG}</b></p>
     ${S.lastOos.suggestions.length ? `<div class="chips-row">
       ${S.lastOos.suggestions.map(id => {
         const s = dishById(id);
-        return `<button class="chip" data-action="add-suggestion" data-id="${s.id}">＋ ${esc(s.name)} · ${fmtVND(s.price)}</button>`;
+        return `<button class="chip" data-action="add-suggestion" data-id="${s.id}"><i class="ph-bold ph-plus"></i> ${esc(s.name)} · ${fmtVND(s.price)}</button>`;
       }).join('')}
     </div>` : ''}
     <button class="btn-mini" data-action="dismiss-oos">Đã hiểu</button>
@@ -482,7 +482,7 @@ function renderSentOrders() {
   return `
   <section class="sent">
     ${active.length ? `
-      <h4>📋 Đơn đã gửi xuống bếp</h4>
+      <h4><i class="ph-duotone ph-clipboard-text"></i> Đơn đã gửi xuống bếp</h4>
       ${active.map(o => `
         <div class="sent-card">
           <div class="sent-top">
@@ -521,7 +521,7 @@ function renderBill() {
   const totalQty = S.orders.reduce((n, o) => n + o.items.reduce((m, it) => m + it.qty, 0), 0);
   const totalAmt = S.orders.reduce((n, o) => n + orderTotal(o), 0);
   return `
-    <h4>🧾 Hóa đơn</h4>
+    <h4><i class="ph-duotone ph-receipt"></i> Hóa đơn</h4>
     <div class="bill">
       <table class="bill-table">
         <thead>
@@ -541,17 +541,17 @@ function renderStickyBar() {
   return `
   <div class="sticky-bar">
     <div class="sb-info">
-      ${units ? `<b>${units} món</b><span>${fmtVND(draftTotal())}${draftHasOos() ? ' · ⚠️ có món hết hàng' : ''}</span>`
+      ${units ? `<b>${units} món</b><span>${fmtVND(draftTotal())}${draftHasOos() ? ' · <i class="ph-fill ph-warning-circle" style="color:var(--red)"></i> có món hết hàng' : ''}</span>`
                : `<span>Chưa có món nào</span>`}
     </div>
-    <button class="btn-primary" data-action="open-draft">🛒 Xem đơn${units ? ` (${units})` : ''}</button>
+    <button class="btn-primary" data-action="open-draft"><i class="ph-duotone ph-shopping-cart"></i> Xem đơn${units ? ` (${units})` : ''}</button>
   </div>`;
 }
 
 function renderVoiceFab() {
   return `
   <button class="fab ${S.ui === 'listening' ? 'listening' : ''}" data-action="open-voice"
-    aria-label="Mở trợ lý gọi món bằng giọng nói">🎙️</button>`;
+    aria-label="Mở trợ lý gọi món bằng giọng nói"><i class="ph-duotone ph-microphone"></i></button>`;
 }
 
 /* ----- Voice sheet: idle / listening / processing + transcript + chat AI ----- */
@@ -562,14 +562,14 @@ function renderVoiceSheet() {
   <section class="sheet voice-sheet" role="dialog" aria-label="Trợ lý gọi món AI">
     <div class="sheet-grip"></div>
     <div class="sheet-head">
-      <b>🤖 Trợ lý gọi món AI</b>
-      <button class="btn-x" data-action="close-voice" aria-label="Đóng">✕</button>
+      <b><i class="ph-duotone ph-robot"></i> Trợ lý gọi món AI</b>
+      <button class="btn-x" data-action="close-voice" aria-label="Đóng"><i class="ph-bold ph-x"></i></button>
     </div>
 
     <div class="mini-draft">
       ${S.draft.length
         ? `<b>Đang chọn:</b> ${S.draft.map(it => `${it.qty}× ${esc(dishById(it.id).name)}`).join(' · ')} — <b>${fmtVND(draftTotal())}</b>`
-        : `<div class="empty-state small"><span>🛒</span><p>${COPY.EMPTY}</p></div>`}
+        : `<div class="empty-state small"><span><i class="ph-duotone ph-shopping-cart"></i></span><p>${COPY.EMPTY}</p></div>`}
     </div>
 
     <div class="voice-stage st-${S.ui}">
@@ -582,7 +582,7 @@ function renderVoiceSheet() {
         <div class="spinner" aria-hidden="true"></div>
         <p class="stage-label">${COPY.PROCESSING}</p>`
       : `
-        <button class="btn-mic" data-action="mic-toggle">🎙️ Bấm để nói</button>
+        <button class="btn-mic" data-action="mic-toggle"><i class="ph-duotone ph-microphone"></i> Bấm để nói</button>
         <p class="stage-label">${COPY.IDLE_SEARCH}</p>`}
       ${(S.ui === 'listening' || S.ui === 'processing') && S.interim ? `
         <p class="transcript" role="status" aria-live="polite">“${esc(S.interim)}”</p>` : ''}
@@ -599,7 +599,7 @@ function renderVoiceSheet() {
     <div class="chat" id="chat" aria-live="polite">
       ${S.chat.map(m => `
         <div class="msg ${m.from}">
-          ${m.from === 'ai' ? '<span class="msg-ava">🤖</span>' : ''}
+          ${m.from === 'ai' ? '<span class="msg-ava"><i class="ph-duotone ph-robot"></i></span>' : ''}
           <div class="bubble">
             <p>${esc(m.text)}</p>
             ${m.chips ? `<div class="chips-row">${m.chips.map(ch =>
@@ -619,13 +619,13 @@ function renderDraftSheet() {
   <section class="sheet draft-sheet" role="dialog" aria-label="Order Draft">
     <div class="sheet-grip"></div>
     <div class="sheet-head">
-      <b>🧾 Order Draft</b>
-      <button class="btn-x" data-action="close-draft" aria-label="Đóng">✕</button>
+      <b><i class="ph-duotone ph-receipt"></i> Order Draft</b>
+      <button class="btn-x" data-action="close-draft" aria-label="Đóng"><i class="ph-bold ph-x"></i></button>
     </div>
 
     ${!S.draft.length ? `
       <div class="empty-state">
-        <span>🛒</span>
+        <span><i class="ph-duotone ph-shopping-cart"></i></span>
         <p>${COPY.EMPTY}</p>
       </div>` : `
       <div class="d-list">
@@ -640,10 +640,10 @@ function renderDraftSheet() {
             </div>
             <div class="d-price">${fmtVND(d.price )}</div>
             <div class="d-ctrl">
-              <button data-action="dec-item" data-i="${i}" aria-label="Giảm ${esc(d.name)}">−</button>
+              <button data-action="dec-item" data-i="${i}" aria-label="Giảm ${esc(d.name)}"><i class="ph-bold ph-minus"></i></button>
               <span class="d-qty">${it.qty}</span>
-              <button data-action="inc-item" data-i="${i}" ${oos ? 'disabled' : ''} aria-label="Thêm ${esc(d.name)}">＋</button>
-              <button class="btn-x" data-action="remove-item" data-i="${i}" aria-label="Gỡ ${esc(d.name)}">🗑</button>
+              <button data-action="inc-item" data-i="${i}" ${oos ? 'disabled' : ''} aria-label="Thêm ${esc(d.name)}"><i class="ph-bold ph-plus"></i></button>
+              <button class="btn-x" data-action="remove-item" data-i="${i}" aria-label="Gỡ ${esc(d.name)}"><i class="ph-duotone ph-trash"></i></button>
             </div>
           </div>`;
         }).join('')}
@@ -656,7 +656,7 @@ function renderDraftSheet() {
 
     <button class="btn-primary btn-send" data-action="open-confirm"
       ${(!units || hasOos) ? 'disabled' : ''}>
-      ${hasOos ? '🔒  — có món hết hàng' : `Xác nhận gửi bếp · ${fmtVND(total)}`}
+      ${hasOos ? '<i class="ph-duotone ph-lock-key"></i>  — có món hết hàng' : `Xác nhận gửi bếp · ${fmtVND(total)}`}
     </button>
   </section>`;
 }
@@ -667,7 +667,7 @@ function renderConfirmModal() {
   return `
   <div class="overlay">
     <div class="modal" role="alertdialog" aria-modal="true" aria-label="Xác nhận gửi bếp">
-      <h3>🔔 Xác nhận gửi bếp</h3>
+      <h3><i class="ph-duotone ph-bell-ringing"></i> Xác nhận gửi bếp</h3>
       <p>${COPY.confirm(draftUnits())}</p>
       <p class="muted">${TABLE_INFO.label} · Tổng tạm tính: <b>${fmtVND(draftTotal())}</b></p>
       <div class="modal-actions">
@@ -685,7 +685,7 @@ function renderAmbiguousModal() {
   return `
   <div class="overlay">
     <div class="modal" role="alertdialog" aria-modal="true" aria-label="Làm rõ món gọi">
-      <h3>🤖 Câu lệnh có nhiều món phù hợp</h3>
+      <h3><i class="ph-duotone ph-robot"></i> Câu lệnh có nhiều món phù hợp</h3>
       <p>${esc(ambiguityQuestion(a))}</p>
       <div class="cand-list">
         ${a.candidates.map(id => {
@@ -716,7 +716,7 @@ function renderSuccessOverlay() {
   return `
   <div class="overlay success-ov">
     <div class="modal success-modal" role="status">
-      <div class="big-check">✓</div>
+      <div class="big-check"><i class="ph-bold ph-check"></i></div>
       <h3>${COPY.SUCCESS_HEAD}</h3>
       <p class="order-code">${o ? o.code : ''}</p>
       <p>${TABLE_INFO.label} · ${o ? fmtVND(orderTotal(o)) : ''}</p>
@@ -733,7 +733,7 @@ function renderKDS() {
   const done = S.orders.filter(o => o.status === 'served');
   return `
   <div class="role-head">
-    <div><h2>👨‍🍳 Bếp KDS</h2><p>Bếp trưởng Hùng · ${TABLE_INFO.label}</p></div>
+    <div><h2>👨‍<i class="ph-duotone ph-cooking-pot"></i> Bếp KDS</h2><p>Bếp trưởng Hùng · ${TABLE_INFO.label}</p></div>
     <span class="clock" data-clock>${fmtTime(Date.now())}</span>
   </div>
 
@@ -750,7 +750,7 @@ function renderKDS() {
 
   <h4 class="kds-sec">Đơn đang xử lý (${active.length})</h4>
   ${active.length ? active.map(renderTicket).join('') : `
-    <div class="empty-state small"><span>🍳</span><p>Chưa có đơn nào. Đơn khách gửi sẽ hiện tại đây.</p></div>`}
+    <div class="empty-state small"><span><i class="ph-duotone ph-cooking-pot"></i></span><p>Chưa có đơn nào. Đơn khách gửi sẽ hiện tại đây.</p></div>`}
   ${ready.length ? `<h4 class="kds-sec">Sẵn sàng — chờ phục vụ (${ready.length})</h4>
     ${ready.map(o => `
       <div class="done-row">
@@ -763,7 +763,7 @@ function renderKDS() {
     ${done.map(o => `
       <div class="done-row">
         <b>${o.code}</b><span>${o.items.map(it => `${it.qty}× ${esc(dishById(it.id).name)}`).join(' · ')}</span>
-        <span class="status-pill st-served">✓ ${STATUS_META.served.label} ${o.servedTs ? fmtTime(o.servedTs) : ''}</span>
+        <span class="status-pill st-served"><i class="ph-bold ph-check"></i> ${STATUS_META.served.label} ${o.servedTs ? fmtTime(o.servedTs) : ''}</span>
       </div>`).join('')}` : ''}`;
 }
 
@@ -784,8 +784,8 @@ function renderTicket(o) {
     </ul>
     <p class="t-foot">Tạm tính: <b>${fmtVND(orderTotal(o))}</b> · Nhận: ${fmtTime(o.placedTs)}</p>
     ${o.status === 'pending' ? `
-      <button class="btn-primary t-btn" data-action="kds-advance" data-code="${o.code}">▶ Bắt đầu nấu</button>`
-    : `<button class="btn-primary t-btn" data-action="kds-advance" data-code="${o.code}">✓ Hoàn tất — Chờ phục vụ</button>`}
+      <button class="btn-primary t-btn" data-action="kds-advance" data-code="${o.code}"><i class="ph-bold ph-play"></i> Bắt đầu nấu</button>`
+    : `<button class="btn-primary t-btn" data-action="kds-advance" data-code="${o.code}"><i class="ph-bold ph-check"></i> Hoàn tất — Chờ phục vụ</button>`}
   </article>`;
 }
 
@@ -797,7 +797,7 @@ function renderWaiter() {
   return `
   <div class="role-head">
     <div><h2>Waiter Tablet</h2><p>Chị Lan · ${TABLE_INFO.label}</p></div>
-    <span class="bell ${ready.length ? 'ring' : ''}">🔔${ready.length ? `<b>${ready.length}</b>` : ''}</span>
+    <span class="bell ${ready.length ? 'ring' : ''}"><i class="ph-duotone ph-bell-ringing"></i>${ready.length ? `<b>${ready.length}</b>` : ''}</span>
   </div>
 
   <h4 class="kds-sec">Sẵn sàng — chờ phục vụ (${ready.length})</h4>
@@ -814,7 +814,7 @@ function renderWaiter() {
       </ul>
       <button class="btn-primary t-btn" data-action="mark-served" data-code="${o.code}">Đã phục vụ — Bàn 06</button>
     </article>`).join('')
-  : `<div class="empty-state small"><span>🔔</span><p>Chưa có món nào sẵn sàng. Sẽ có âm báo khi bếp hoàn tất.</p></div>`}
+  : `<div class="empty-state small"><span><i class="ph-duotone ph-bell-ringing"></i></span><p>Chưa có món nào sẵn sàng. Sẽ có âm báo khi bếp hoàn tất.</p></div>`}
 
   <h4 class="kds-sec">Đang chế biến (${cooking.length})</h4>
   ${cooking.length ? cooking.map(o => `
@@ -842,18 +842,18 @@ function renderCashier() {
   
   return `
   <div class="role-head">
-    <div><h2>💵 Thu ngân (Cashier)</h2><p>Thanh toán & Đóng bàn · ${TABLE_INFO.label}</p></div>
+    <div><h2><i class="ph-duotone ph-money"></i> Thu ngân (Cashier)</h2><p>Thanh toán & Đóng bàn · ${TABLE_INFO.label}</p></div>
   </div>
   ${activeOrders.length ? `
     <div class="card" style="margin-top:15px; padding:15px;">
       ${renderBill()}
       <div style="margin-top:15px; display:flex; gap:10px;">
-        ${!S.isPaid ? `<button class="btn-primary" style="flex:1" data-action="pay-bill">💳 Xác nhận Khách đã Thanh toán (Pay)</button>` 
-                    : `<button class="btn-primary" style="flex:1; background:var(--ink)" data-action="close-table">🔒 Đóng bàn (Close) & Trừ Tồn kho</button>`}
+        ${!S.isPaid ? `<button class="btn-primary" style="flex:1" data-action="pay-bill"><i class="ph-duotone ph-credit-card"></i> Xác nhận Khách đã Thanh toán (Pay)</button>` 
+                    : `<button class="btn-primary" style="flex:1; background:var(--ink)" data-action="close-table"><i class="ph-duotone ph-lock-key"></i> Đóng bàn (Close) & Trừ Tồn kho</button>`}
       </div>
       ${S.isPaid ? `<p style="color:var(--green); font-weight:bold; margin-top:12px; text-align:center;">Thanh toán thành công!</p>` : ''}
     </div>
-  ` : `<div class="empty-state small"><span>🧹</span><p>Bàn trống, không có hóa đơn.</p></div>`}
+  ` : `<div class="empty-state small"><span><i class="ph-duotone ph-broom"></i></span><p>Bàn trống, không có hóa đơn.</p></div>`}
   `;
 }
 
@@ -867,7 +867,7 @@ function renderManager() {
   });
   return `
   <div class="role-head">
-    <div><h2>📊 Quản lý (Manager)</h2><p>Đối soát Tồn kho tự động (Inventory)</p></div>
+    <div><h2><i class="ph-duotone ph-chart-bar"></i> Quản lý (Manager)</h2><p>Đối soát Tồn kho tự động (Inventory)</p></div>
   </div>
   <div class="card" style="margin-top:15px; padding:15px;">
     <table style="width:100%; text-align:left; border-collapse:collapse; font-size:13.5px;">

@@ -25,9 +25,9 @@ const TABLE_INFO = {
 /* ---------- Menu Catalog (brief §4 — KHÔNG được thêm/bớt/sửa giá) ----------
    status: 'Available' | 'Out of Stock' (M04 cố định OOS — dùng cho Flow C / ADR-001)
    bestseller: gợi ý "món bán chạy" theo glossary (AI ưu tiên gợi ý khách mới) */
-const SVG_BOWL = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16M4 16h16M12 4v16"/></svg>`;
-const SVG_MEAT = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>`;
-const SVG_DRINK = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 4h8M10 4v16M14 4v16"/></svg>`;
+const SVG_BOWL = `<i class="ph-duotone ph-bowl-food" style="font-size:32px; color:var(--primary)"></i>`;
+const SVG_MEAT = `<i class="ph-duotone ph-meat" style="font-size:32px; color:var(--primary)"></i>`;
+const SVG_DRINK = `<i class="ph-duotone ph-brandy" style="font-size:32px; color:var(--primary)"></i>`;
 
 const CATALOG = [
   { id: 'M01', name: 'Phở bò tái lăn', price: 65000, status: 'Available', emoji: SVG_BOWL, bestseller: true,
@@ -44,11 +44,11 @@ const CATALOG = [
     kwStrong: ['set lau', 'lau'], kwWeak: ['gia dinh', 'set'] },
 ];
 
-const SVG_USER = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-8 8-8s8 4 8 8"/></svg>`;
-const SVG_CHEF = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M8 6h8M8 10h8M8 14h8"/></svg>`;
-const SVG_BELL = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`;
-const SVG_CASH = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12h.01"/></svg>`;
-const SVG_CHART = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>`;
+const SVG_USER = `<i class="ph-duotone ph-user" style="font-size:28px"></i>`;
+const SVG_CHEF = `<i class="ph-duotone ph-chef-hat" style="font-size:28px"></i>`;
+const SVG_BELL = `<i class="ph-duotone ph-bell" style="font-size:28px"></i>`;
+const SVG_CASH = `<i class="ph-duotone ph-wallet" style="font-size:28px"></i>`;
+const SVG_CHART = `<i class="ph-duotone ph-chart-bar" style="font-size:28px"></i>`;
 
 const ROLES = [
   { id: 'customer', emoji: SVG_USER, title: 'Khách gọi món', desc: 'E-Menu · AI Voice Assistant · Order Draft' },
