@@ -82,6 +82,7 @@ function freshState() {
     lastOos: null,       /* { id, suggestions:[id] } cho alert Flow C */
     voiceOpen: false, draftOpen: false,
     successOrder: null,
+    isPaid: false,
   };
 }
 function loadState() {
@@ -353,7 +354,7 @@ function render() {
       ${renderDemoBar()}
       ${S.ui === 'network-error' ? renderBanner() : ''}
       <main class="screen">
-        ${S.role === 'customer' ? renderCustomer() : S.role === 'kitchen' ? renderKDS() : renderWaiter()}
+        ${S.role === 'customer' ? renderCustomer() : S.role === 'kitchen' ? renderKDS() : S.role === 'waiter' ? renderWaiter() : S.role === 'cashier' ? renderCashier() : renderManager()}
       </main>
       ${S.role === 'customer' && !S.voiceOpen && !S.draftOpen && !busyOverlay ? renderStickyBar() : ''}
       ${S.role === 'customer' && !S.voiceOpen && !busyOverlay ? renderVoiceFab() : ''}
@@ -829,6 +830,56 @@ function renderWaiter() {
       </div>`).join('')}` : ''}`;
 }
 
+/* ===================== VAI 4 & 5 — CASHIER & MANAGER ===================== */
+function renderCashier() {
+  const activeOrders = S.orders.filter(o => o.status !== 'closed');
+  const totalAmt = activeOrders.reduce((sum, o) => sum + orderTotal(o), 0);
+  
+  return `
+  <div class="role-head">
+    <div><h2>💵 Thu ngân (Cashier)</h2><p>Thanh toán & Đóng bàn · ${TABLE_INFO.label}</p></div>
+  </div>
+  ${activeOrders.length ? `
+    <div class="card" style="margin-top:15px; padding:15px;">
+      ${renderBill()}
+      <div style="margin-top:15px; display:flex; gap:10px;">
+        ${!S.isPaid ? `<button class="btn-primary" style="flex:1" data-action="pay-bill">💳 Xác nhận Khách đã Thanh toán (Pay)</button>` 
+                    : `<button class="btn-primary" style="flex:1; background:var(--ink)" data-action="close-table">🔒 Đóng bàn (Close) & Trừ Tồn kho</button>`}
+      </div>
+      ${S.isPaid ? `<p style="color:var(--green); font-weight:bold; margin-top:12px; text-align:center;">Thanh toán thành công!</p>` : ''}
+    </div>
+  ` : `<div class="empty-state small"><span>🧹</span><p>Bàn trống, không có hóa đơn.</p></div>`}
+  `;
+}
+
+function renderManager() {
+  let beefSold = 0;
+  S.orders.filter(o => o.status === 'closed').forEach(o => {
+    o.items.forEach(it => {
+      // Giả lập Phở bò tái lăn (M01), Bò xào cần (M03), Bò sốt tiêu đen (M04) đều dùng thịt bò
+      if (['M01', 'M03', 'M04'].includes(it.id)) beefSold += it.qty;
+    });
+  });
+  return `
+  <div class="role-head">
+    <div><h2>📊 Quản lý (Manager)</h2><p>Đối soát Tồn kho tự động (Inventory)</p></div>
+  </div>
+  <div class="card" style="margin-top:15px; padding:15px;">
+    <table style="width:100%; text-align:left; border-collapse:collapse; font-size:13.5px;">
+      <tr style="border-bottom:1px solid var(--line); color:var(--muted); font-size:11px; text-transform:uppercase;">
+        <th style="padding:10px 0">Nguyên liệu</th><th>Tồn đầu</th><th>Đã xuất</th>
+      </tr>
+      <tr style="border-bottom:1px dashed var(--line);">
+        <td style="padding:12px 0; font-weight:600">Thịt Bò (Phần)</td>
+        <td>20</td>
+        <td style="color:var(--primary); font-weight:800; font-size:16px;">${beefSold}</td>
+      </tr>
+    </table>
+    <p style="font-size:12px; color:var(--muted); margin-top:12px;">*Số lượng Đã xuất tự động cộng dồn khi Thu ngân bấm "Đóng bàn".</p>
+  </div>
+  `;
+}
+
 /* ===================== SỰ KIỆN ===================== */
 document.addEventListener('click', e => {
   ensureAudio();
@@ -908,6 +959,17 @@ document.addEventListener('click', e => {
 
     /* REQ-RO-09 */
     case 'toggle-stock': toggleStock(id); break;
+
+    /* Cashier */
+    case 'pay-bill': 
+      S.isPaid = true; 
+      beep(SOUNDS.success); 
+      render(); persist(); break;
+    case 'close-table': 
+      S.orders.forEach(o => o.status = 'closed');
+      S.isPaid = false;
+      beep(SOUNDS.tap);
+      render(); persist(); break;
   }
 });
 

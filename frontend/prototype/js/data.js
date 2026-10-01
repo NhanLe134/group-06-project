@@ -45,12 +45,14 @@ const ROLES = [
   { id: 'customer', emoji: '🙋', title: 'Khách gọi món', desc: 'E-Menu · AI Voice Assistant · Order Draft · Gửi bếp' },
   { id: 'kitchen',  emoji: '👨‍🍳', title: 'Bếp KDS', desc: 'Nhận ticket · Chờ nấu → Đang làm → Đã xong' },
   { id: 'waiter',   emoji: '🤵',  title: 'Phục vụ Waiter', desc: 'Nhận alert món xong · Bấm “Đã phục vụ”' },
+  { id: 'cashier',  emoji: '💵', title: 'Thu ngân Cashier', desc: 'Thanh toán Pay → Đóng bàn Close' },
+  { id: 'manager',  emoji: '📊', title: 'Quản lý Manager', desc: 'Đối soát tồn kho Inventory' },
 ];
 
 /* ---------- Kịch bản thoại mẫu (brief §6.2 — fallback khi không có Web Speech) ---------- */
 const VOICE_SCENARIOS = [
   { tag: 'FLOW A', text: 'Cho 1 phở bò không hành và 2 trà đá' },
-  { tag: 'FLOW B', text: 'Cho 1 đĩa bò' },
+  { tag: 'Tư vấn (Preference)', text: 'Mình dị ứng hải sản, gợi ý món thịt bò đi' },
   { tag: 'FLOW C', text: 'Thêm 1 Bò sốt tiêu đen' },
   { tag: 'Thêm món', text: 'Cho 2 set lẩu gia đình' },
   { tag: 'Thêm món', text: 'Thêm 1 bún chả Hà Nội' },
