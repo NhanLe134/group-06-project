@@ -6,7 +6,7 @@
 :root {
   --primary: #FF5A36;
   --primary-soft: #FFF0ED;
-  --bg: #F8FAFC;
+  --bg: #F0F2F5;
   --card: #FFFFFF;
   --ink: #0F172A;
   --muted: #64748B;
@@ -47,8 +47,8 @@ h4 { font-size: 14px; margin: 16px 2px 8px; color: var(--muted); text-transform:
 }
 
 /* ---------- Screen 0 — Splash chọn vai ---------- */
-.splash-wrap { background: linear-gradient(135deg, #F8FAFC 0%, #E2E8F0 100%); }
-.splash { padding: 44px 22px 28px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+.splash-wrap { background: var(--bg); }
+.splash { padding: 60px 24px 40px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; max-width: 500px; width: 100%; margin: 0 auto; }
 .splash-logo { font-size: 52px; text-align: center; }
 .splash h1 { font-size: 24px; text-align: center; line-height: 1.25; }
 .splash-sub { text-align: center; color: var(--muted); font-size: 13px; }
@@ -57,12 +57,12 @@ h4 { font-size: 14px; margin: 16px 2px 8px; color: var(--muted); text-transform:
   border-radius: 12px; padding: 8px 16px; font-size: 13px; margin-top: 4px;
 }
 .splash-q { text-align: center; font-weight: 700; margin-top: 22px; }
-.role-card { box-shadow: var(--shadow-sm); transition: all 0.3s ease;
+.role-card { box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: transform .2s ease, box-shadow .2s ease;
   display: flex; align-items: center; gap: 14px; text-align: left;
-  background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 14px 16px; min-height: 72px; transition: transform .12s ease, box-shadow .12s ease;
+  background: #fff; border: none; border-radius: 12px;
+  padding: 14px 16px; min-height: 72px;
 }
-.role-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); border-color: var(--primary); }
+.role-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 .rc-emoji { font-size: 30px; }
 .rc-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
 .rc-text small { color: var(--muted); font-size: 12px; }
@@ -143,9 +143,9 @@ h4 { font-size: 14px; margin: 16px 2px 8px; color: var(--muted); text-transform:
 /* ---------- Thẻ món ---------- */
 .menu-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-top: 16px; }
 .card {
-  box-shadow: var(--shadow-sm); transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: transform .2s ease, box-shadow .2s ease;
   display: flex; align-items: center; gap: 12px;
-  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--card); border: none; border-radius: 16px;
   padding: 12px;
 }
 .thumb {
