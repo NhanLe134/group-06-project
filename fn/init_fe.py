@@ -8,9 +8,7 @@ directories = [
     "assets/css",
     "assets/js",
     "assets/images",
-    "pages/customer",
-    "pages/staff",
-    "pages/manager"
+    "pages"
 ]
 
 for d in directories:
@@ -41,62 +39,46 @@ portal_html = """<!DOCTYPE html>
   <div class="phone splash-wrap">
     <div class="splash" style="padding-top: 40px;">
       <div class="splash-logo"><i class="ph-duotone ph-storefront"></i></div>
-      <h1>Hệ Thống Smart Ordering</h1>
-      <p class="splash-sub">Cổng phân chia Workspace (Frontend Mới)</p>
+      <h1>Smart Restaurant Ordering</h1>
+      <p class="splash-sub">Cổng Phân chia Màn hình (FE Workspace)</p>
       
-      <p class="splash-q" style="margin-top: 10px;">Dành cho Khách hàng</p>
-      <a href="pages/customer/emenu.html" style="text-decoration:none; color:inherit;">
+      <p class="splash-q" style="margin-top: 10px;">Bạn là vai trò nào?</p>
+      
+      <a href="pages/customer.html" style="text-decoration:none; color:inherit;">
         <button class="role-card">
-          <span class="rc-emoji"><i class="ph-duotone ph-device-mobile"></i></span>
-          <span class="rc-text"><b>Khách: E-Menu</b><small>US-01: Nhàn</small></span>
-        </button>
-      </a>
-      <a href="pages/customer/voice.html" style="text-decoration:none; color:inherit;">
-        <button class="role-card">
-          <span class="rc-emoji"><i class="ph-duotone ph-microphone"></i></span>
-          <span class="rc-text"><b>Khách: Voice AI</b><small>US-02: Ny</small></span>
+          <span class="rc-emoji"><i class="ph-duotone ph-user"></i></span>
+          <span class="rc-text"><b>Khách gọi món</b><small>Phụ trách: Nhàn & Ny</small></span>
         </button>
       </a>
 
-      <p class="splash-q">Dành cho Vận hành</p>
-      <a href="pages/staff/kds.html" style="text-decoration:none; color:inherit;">
+      <a href="pages/kitchen.html" style="text-decoration:none; color:inherit;">
         <button class="role-card">
-          <span class="rc-emoji"><i class="ph-duotone ph-cooking-pot"></i></span>
-          <span class="rc-text"><b>Bếp: KDS</b><small>US-03: Nhã</small></span>
+          <span class="rc-emoji"><i class="ph-duotone ph-chef-hat"></i></span>
+          <span class="rc-text"><b>Bếp KDS</b><small>Phụ trách: Nhã</small></span>
         </button>
       </a>
-      <a href="pages/staff/waiter.html" style="text-decoration:none; color:inherit;">
+
+      <a href="pages/waiter.html" style="text-decoration:none; color:inherit;">
         <button class="role-card">
           <span class="rc-emoji"><i class="ph-duotone ph-bell-ringing"></i></span>
-          <span class="rc-text"><b>Phục vụ: Waiter</b><small>US-04: Trang</small></span>
-        </button>
-      </a>
-      <a href="pages/staff/cashier.html" style="text-decoration:none; color:inherit;">
-        <button class="role-card">
-          <span class="rc-emoji"><i class="ph-duotone ph-money"></i></span>
-          <span class="rc-text"><b>Thu ngân: Cashier</b><small>US-05: Nhàn</small></span>
+          <span class="rc-text"><b>Phục vụ Waiter</b><small>Phụ trách: Trang</small></span>
         </button>
       </a>
 
-      <p class="splash-q">Dành cho Quản lý</p>
-      <a href="pages/manager/dashboard.html" style="text-decoration:none; color:inherit;">
+      <a href="pages/cashier.html" style="text-decoration:none; color:inherit;">
         <button class="role-card">
-          <span class="rc-emoji"><i class="ph-duotone ph-chart-line-up"></i></span>
-          <span class="rc-text"><b>Quản lý: Dashboard</b><small>US-06: Trang</small></span>
+          <span class="rc-emoji"><i class="ph-duotone ph-wallet"></i></span>
+          <span class="rc-text"><b>Thu ngân Cashier</b><small>Phụ trách: Nhàn</small></span>
         </button>
       </a>
-      <a href="pages/manager/menu-cms.html" style="text-decoration:none; color:inherit;">
+
+      <a href="pages/manager.html" style="text-decoration:none; color:inherit;">
         <button class="role-card">
-          <span class="rc-emoji"><i class="ph-duotone ph-list-dashes"></i></span>
-          <span class="rc-text"><b>Quản lý: CMS Menu</b><small>US-07: Ny</small></span>
+          <span class="rc-emoji"><i class="ph-duotone ph-chart-bar"></i></span>
+          <span class="rc-text"><b>Quản lý Manager</b><small>Phụ trách: Trang, Ny, Nhã</small></span>
         </button>
       </a>
-      <a href="pages/manager/inventory.html" style="text-decoration:none; color:inherit;">
-        <button class="role-card">
-          <span class="rc-emoji"><i class="ph-duotone ph-archive"></i></span>
-          <span class="rc-text"><b>Quản lý: Tồn kho</b><small>US-08: Nhã</small></span>
-        </button>
-      </a>
+
     </div>
   </div>
 </body>
@@ -105,16 +87,20 @@ portal_html = """<!DOCTYPE html>
 with open(os.path.join(base_dir, "index.html"), "w", encoding="utf-8") as f:
     f.write(portal_html)
 
-# 3. Create individual pages
+# 3. Delete old directories if they exist
+old_dirs = ["pages/customer", "pages/staff", "pages/manager"]
+for d in old_dirs:
+    p = os.path.join(base_dir, d)
+    if os.path.exists(p):
+        shutil.rmtree(p)
+
+# 4. Create individual pages
 pages = {
-    "pages/customer/emenu.html": "Khách: E-Menu (US-01) - Nhàn",
-    "pages/customer/voice.html": "Khách: Voice AI (US-02) - Ny",
-    "pages/staff/kds.html": "Bếp: KDS (US-03) - Nhã",
-    "pages/staff/waiter.html": "Phục vụ: Waiter (US-04) - Trang",
-    "pages/staff/cashier.html": "Thu ngân: Cashier (US-05) - Nhàn",
-    "pages/manager/dashboard.html": "Quản lý: Dashboard (US-06) - Trang",
-    "pages/manager/menu-cms.html": "Quản lý: CMS Menu (US-07) - Ny",
-    "pages/manager/inventory.html": "Quản lý: Tồn kho (US-08) - Nhã"
+    "pages/customer.html": "Màn hình Khách hàng (Nhàn & Ny)",
+    "pages/kitchen.html": "Màn hình Bếp KDS (Nhã)",
+    "pages/waiter.html": "Màn hình Phục vụ Waiter (Trang)",
+    "pages/cashier.html": "Màn hình Thu ngân Cashier (Nhàn)",
+    "pages/manager.html": "Màn hình Quản lý Manager (Trang, Ny, Nhã)"
 }
 
 boilerplate = """<!DOCTYPE html>
@@ -127,14 +113,14 @@ boilerplate = """<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  <link rel="stylesheet" href="../../assets/css/global.css">
+  <link rel="stylesheet" href="../assets/css/global.css">
 </head>
 <body>
   <header class="topbar">
     <div class="brand-row">
       <span class="brand">Smart Ordering</span>
       <b>{title}</b>
-      <a href="../../index.html"><button class="btn-logout"><i class="ph-bold ph-house"></i> Về Portal</button></a>
+      <a href="../index.html"><button class="btn-logout"><i class="ph-bold ph-house"></i> Về Portal</button></a>
     </div>
   </header>
   
@@ -142,13 +128,17 @@ boilerplate = """<!DOCTYPE html>
     <div class="card">
       <div class="info">
         <h2>Không gian code của {title}</h2>
-        <p style="margin-top: 10px; color: var(--muted);">Bắt đầu thiết kế giao diện của bạn tại đây bằng cách sử dụng các class từ <b>global.css</b> (ví dụ: btn-primary, card, status-pill, v.v.)</p>
+        <p style="margin-top: 10px; color: var(--muted);">Bắt đầu thiết kế giao diện của bạn tại đây bằng cách sử dụng các class từ <b>global.css</b>.</p>
+        <div style="margin-top: 15px; padding: 10px; background: var(--primary-soft); border-radius: 8px;">
+            <p style="color: var(--primary); font-weight: 600;">*Lưu ý về "Code cũ đâu rồi?":</p>
+            <p style="margin-top: 5px; font-size: 14px;">Mớ code giao diện (HTML) cũ của bản Demo Prototype nằm trọn vẹn trong file <b>frontend/prototype/js/app.js</b> (trong các hàm render...). Bạn hãy mở file đó lên, copy các đoạn HTML tương ứng vứt thẳng vào đây là có ngay giao diện cũ nhé!</p>
+        </div>
       </div>
     </div>
   </div>
 
-  <script src="../../assets/js/mock-data.js"></script>
-  <script src="../../assets/js/utils.js"></script>
+  <script src="../assets/js/mock-data.js"></script>
+  <script src="../assets/js/utils.js"></script>
 </body>
 </html>
 """
@@ -157,4 +147,4 @@ for path, title in pages.items():
     with open(os.path.join(base_dir, path), "w", encoding="utf-8") as f:
         f.write(boilerplate.replace("{title}", title))
 
-print("fe_ofc initialized!")
+print("fe_ofc restructured to 5 roles!")
