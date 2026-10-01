@@ -70,8 +70,8 @@ h4 { font-size: 14px; margin: 16px 2px 8px; color: var(--muted); text-transform:
 .splash-note { text-align: center; color: var(--muted); font-size: 11px; margin-top: 10px; }
 
 /* ---------- Top bar + nút Đăng xuất (đổi vai qua Screen 0) ---------- */
-.topbar { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); box-shadow: var(--shadow-sm); border-bottom: 1px solid var(--line); padding: 10px 16px; z-index: 15; }
-.brand-row { display: flex; align-items: center; justify-content: space-between; gap: 15px;}
+.topbar { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); box-shadow: var(--shadow-sm); border-bottom: 1px solid var(--line); padding: 12px 24px; z-index: 15; }
+.brand-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; max-width: 1152px; margin: 0 auto; width: 100%;}
 .brand { font-weight: 800; font-size: 16px; letter-spacing: -0.02em;}
 .role-switcher {
   padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line);
@@ -109,7 +109,7 @@ h4 { font-size: 14px; margin: 16px 2px 8px; color: var(--muted); text-transform:
 .banner span { flex: 1; line-height: 1.4; }
 
 /* ---------- Khung màn hình ---------- */
-.screen { flex: 1; overflow-y: auto; padding: 14px 14px 120px; scrollbar-width: thin; }
+.screen { flex: 1; overflow-y: auto; padding: 24px; padding-bottom: 120px; max-width: 1200px; width: 100%; margin: 0 auto; scrollbar-width: thin; }
 
 /* ---------- Khách: tiêu đề + tìm kiếm + chips ---------- */
 .cust-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }

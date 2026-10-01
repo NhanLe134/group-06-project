@@ -733,7 +733,7 @@ function renderKDS() {
   const done = S.orders.filter(o => o.status === 'served');
   return `
   <div class="role-head">
-    <div><h2>👨‍<i class="ph-duotone ph-cooking-pot"></i> Bếp KDS</h2><p>Bếp trưởng Hùng · ${TABLE_INFO.label}</p></div>
+    <div><h2>Bếp KDS</h2><p>Bếp trưởng Hùng · ${TABLE_INFO.label}</p></div>
     <span class="clock" data-clock>${fmtTime(Date.now())}</span>
   </div>
 
@@ -842,7 +842,7 @@ function renderCashier() {
   
   return `
   <div class="role-head">
-    <div><h2><i class="ph-duotone ph-money"></i> Thu ngân (Cashier)</h2><p>Thanh toán & Đóng bàn · ${TABLE_INFO.label}</p></div>
+    <div><h2>Thu ngân (Cashier)</h2><p>Thanh toán & Đóng bàn · ${TABLE_INFO.label}</p></div>
   </div>
   ${activeOrders.length ? `
     <div class="card" style="margin-top:15px; padding:15px;">
@@ -867,7 +867,7 @@ function renderManager() {
   });
   return `
   <div class="role-head">
-    <div><h2><i class="ph-duotone ph-chart-bar"></i> Quản lý (Manager)</h2><p>Đối soát Tồn kho tự động (Inventory)</p></div>
+    <div><h2>Quản lý (Manager)</h2><p>Đối soát Tồn kho tự động (Inventory)</p></div>
   </div>
   <div class="card" style="margin-top:15px; padding:15px;">
     <table style="width:100%; text-align:left; border-collapse:collapse; font-size:13.5px;">
