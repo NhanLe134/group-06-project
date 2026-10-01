@@ -25,28 +25,37 @@ const TABLE_INFO = {
 /* ---------- Menu Catalog (brief §4 — KHÔNG được thêm/bớt/sửa giá) ----------
    status: 'Available' | 'Out of Stock' (M04 cố định OOS — dùng cho Flow C / ADR-001)
    bestseller: gợi ý "món bán chạy" theo glossary (AI ưu tiên gợi ý khách mới) */
+const SVG_BOWL = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16M4 16h16M12 4v16"/></svg>`;
+const SVG_MEAT = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>`;
+const SVG_DRINK = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 4h8M10 4v16M14 4v16"/></svg>`;
+
 const CATALOG = [
-  { id: 'M01', name: 'Phở bò tái lăn', price: 65000, status: 'Available', emoji: '🍜', bestseller: true,
+  { id: 'M01', name: 'Phở bò tái lăn', price: 65000, status: 'Available', emoji: SVG_BOWL, bestseller: true,
     kwStrong: ['pho bo', 'pho'], kwWeak: ['bo', 'tai lan'] },
-  { id: 'M02', name: 'Bún chả Hà Nội', price: 55000, status: 'Available', emoji: '🍢',
+  { id: 'M02', name: 'Bún chả Hà Nội', price: 55000, status: 'Available', emoji: SVG_MEAT,
     kwStrong: ['bun cha'], kwWeak: ['bun', 'cha', 'ha noi'] },
-  { id: 'M03', name: 'Bò xào cần', price: 85000, status: 'Available', emoji: '🥩',
+  { id: 'M03', name: 'Bò xào cần', price: 85000, status: 'Available', emoji: SVG_MEAT,
     kwStrong: ['bo xao can', 'bo xao'], kwWeak: ['bo', 'can tay'] },
-  { id: 'M04', name: 'Bò sốt tiêu đen', price: 120000, status: 'Out of Stock', emoji: '🥘',
+  { id: 'M04', name: 'Bò sốt tiêu đen', price: 120000, status: 'Out of Stock', emoji: SVG_MEAT,
     kwStrong: ['bo sot tieu den', 'bo sot'], kwWeak: ['bo', 'tieu den'] },
-  { id: 'M05', name: 'Trà đá', price: 5000, status: 'Available', emoji: '🫖',
+  { id: 'M05', name: 'Trà đá', price: 5000, status: 'Available', emoji: SVG_DRINK,
     kwStrong: ['tra da'], kwWeak: ['tra', 'nuoc'] },
-  { id: 'M06', name: 'Set lẩu 4 người', price: 350000, status: 'Available', emoji: '🍲', bestseller: true,
+  { id: 'M06', name: 'Set lẩu 4 người', price: 350000, status: 'Available', emoji: SVG_BOWL, bestseller: true,
     kwStrong: ['set lau', 'lau'], kwWeak: ['gia dinh', 'set'] },
 ];
 
-/* ---------- Vai (Role Switcher — brief §5.3 + Screen 0 bổ sung 2026-09-04) ---------- */
+const SVG_USER = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-8 8-8s8 4 8 8"/></svg>`;
+const SVG_CHEF = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M8 6h8M8 10h8M8 14h8"/></svg>`;
+const SVG_BELL = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`;
+const SVG_CASH = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12h.01"/></svg>`;
+const SVG_CHART = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>`;
+
 const ROLES = [
-  { id: 'customer', emoji: '🙋', title: 'Khách gọi món', desc: 'E-Menu · AI Voice Assistant · Order Draft · Gửi bếp' },
-  { id: 'kitchen',  emoji: '👨‍🍳', title: 'Bếp KDS', desc: 'Nhận ticket · Chờ nấu → Đang làm → Đã xong' },
-  { id: 'waiter',   emoji: '🤵',  title: 'Phục vụ Waiter', desc: 'Nhận alert món xong · Bấm “Đã phục vụ”' },
-  { id: 'cashier',  emoji: '💵', title: 'Thu ngân Cashier', desc: 'Thanh toán Pay → Đóng bàn Close' },
-  { id: 'manager',  emoji: '📊', title: 'Quản lý Manager', desc: 'Đối soát tồn kho Inventory' },
+  { id: 'customer', emoji: SVG_USER, title: 'Khách gọi món', desc: 'E-Menu · AI Voice Assistant · Order Draft' },
+  { id: 'kitchen',  emoji: SVG_CHEF, title: 'Bếp KDS', desc: 'Nhận ticket · Chờ nấu → Đang làm → Đã xong' },
+  { id: 'waiter',   emoji: SVG_BELL,  title: 'Phục vụ Waiter', desc: 'Nhận alert món xong · Bấm “Đã phục vụ”' },
+  { id: 'cashier',  emoji: SVG_CASH, title: 'Thu ngân Cashier', desc: 'Thanh toán Pay → Đóng bàn Close' },
+  { id: 'manager',  emoji: SVG_CHART, title: 'Quản lý Manager', desc: 'Đối soát tồn kho Inventory' },
 ];
 
 /* ---------- Kịch bản thoại mẫu (brief §6.2 — fallback khi không có Web Speech) ---------- */

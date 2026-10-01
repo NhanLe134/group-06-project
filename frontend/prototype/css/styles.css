@@ -35,24 +35,15 @@ button:focus-visible, input:focus-visible { outline: 3px solid #74c0fc; outline-
 h2 { font-size: 18px; }
 h4 { font-size: 14px; margin: 16px 2px 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
 
-/* ---------- Khung điện thoại 430px (brief §5.1) ---------- */
+/* ---------- Khung Responsive ---------- */
 .phone {
   position: relative;
-  width: min(430px, 100%);
-  margin: 0 auto;
+  width: 100%;
   height: 100dvh;
   background: var(--bg);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-@media (min-width: 480px) and (min-height: 700px) {
-  .phone {
-    height: min(900px, calc(100dvh - 36px));
-    border-radius: 32px;
-    border: 1px solid rgba(0, 0, 0, .08);
-    box-shadow: 0 30px 60px rgba(43, 39, 35, .25);
-  }
 }
 
 /* ---------- Screen 0 — Splash chọn vai ---------- */
@@ -79,14 +70,20 @@ h4 { font-size: 14px; margin: 16px 2px 8px; color: var(--muted); text-transform:
 .splash-note { text-align: center; color: var(--muted); font-size: 11px; margin-top: 10px; }
 
 /* ---------- Top bar + nút Đăng xuất (đổi vai qua Screen 0) ---------- */
-.topbar { background: #fff; border-bottom: 1px solid var(--line); padding: 10px 12px; z-index: 15; }
-.brand-row { display: flex; align-items: center; justify-content: space-between; }
-.brand { font-weight: 800; font-size: 15px; }
-.btn-logout {
-  min-height: 36px; padding: 4px 12px; border-radius: 999px;
-  border: 1px solid var(--line); font-size: 12px; color: var(--muted); background: var(--bg);
+.topbar { background: #fff; border-bottom: 1px solid var(--line); padding: 10px 16px; z-index: 15; }
+.brand-row { display: flex; align-items: center; justify-content: space-between; gap: 15px;}
+.brand { font-weight: 800; font-size: 16px; letter-spacing: -0.02em;}
+.role-switcher {
+  padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--bg); font-weight: 600; color: var(--ink); font-size: 13px;
+  cursor: pointer;
 }
-.btn-logout:hover { color: var(--red); border-color: var(--red); }
+.role-switcher:focus { border-color: var(--primary); outline: none; }
+.btn-logout {
+  min-height: 36px; padding: 4px 12px; border-radius: 8px;
+  border: 1px solid var(--line); font-size: 13px; color: var(--muted); background: #fff; font-weight: 600;
+}
+.btn-logout:hover { color: var(--red); border-color: var(--red); background: var(--red-soft); }
 
 /* ---------- Thanh demo ---------- */
 .demo-bar {
@@ -144,7 +141,7 @@ h4 { font-size: 14px; margin: 16px 2px 8px; color: var(--muted); text-transform:
 .chip-flow small { font-size: 10px; color: var(--primary); font-weight: 800; letter-spacing: .04em; }
 
 /* ---------- Thẻ món ---------- */
-.menu-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.menu-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-top: 16px; }
 .card {
   display: flex; align-items: center; gap: 12px;
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);

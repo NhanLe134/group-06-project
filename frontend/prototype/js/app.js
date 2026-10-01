@@ -391,8 +391,13 @@ function renderTopBar() {
   return `
   <header class="topbar">
     <div class="brand-row">
-      <span class="brand">🍽️ Smart Ordering</span>
-      <button class="btn-logout" data-action="logout" title="Đăng xuất / Đổi vai">⏻ Đăng xuất</button>
+      <span class="brand">Smart Ordering</span>
+      ${S.role ? `
+      <select class="role-switcher" onchange="window.switchRoleFast(this.value)">
+        ${ROLES.map(r => `<option value="${r.id}" ${S.role === r.id ? 'selected' : ''}>${r.title}</option>`).join('')}
+      </select>
+      ` : ''}
+      <button class="btn-logout" data-action="logout" title="Đăng xuất / Đổi vai">Thoát</button>
     </div>
   </header>`;
 }
@@ -972,6 +977,15 @@ document.addEventListener('click', e => {
       render(); persist(); break;
   }
 });
+
+window.switchRoleFast = function(role) {
+  S.role = role; 
+  closeAllPanels(); 
+  S.ui = 'idle'; 
+  if (S.role === 'customer' && !S.chat.length) aiSay(COPY.GREETING);
+  persist(); 
+  render();
+};
 
 /* Công tắc mô phỏng lỗi mạng */
 document.addEventListener('change', e => {
