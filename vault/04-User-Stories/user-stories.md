@@ -9,7 +9,8 @@
 |---|---|---|---|---|
 | EP1 | Guest Ordering Experience | US-01 | Khách lướt xem Menu và Thêm vào Giỏ hàng | 3 |
 | EP1 | Guest Ordering Experience | US-02 | Dùng giọng nói AI (Voice) để gọi món bổ sung | 3 |
-| EP1 | Guest Ordering Experience | US-05 | Khách hàng Thanh toán (Trả toàn bộ hoặc Chia Bill) | 2 |
+| EP1 | Guest Ordering Experience | US-05 | Thanh toán hóa đơn qua QR (Toàn bộ) | 1 |
+| EP1 | Guest Ordering Experience | US-09 | Khách xem Hóa đơn tạm tính của bàn | 1 |
 | EP2 | Kitchen & Table Operations | US-03 | Bếp nhận Order và Báo hoàn thành trên KDS | 3 |
 | EP2 | Kitchen & Table Operations | US-04 | Phục vụ bưng món và Cập nhật trạng thái | 2 |
 | EP3 | Restaurant Management & CMS | US-06 | Quản lý xem Dashboard Doanh thu | 2 |
@@ -62,6 +63,10 @@
   - **Given** Thiết bị của khách mất kết nối mạng hoặc API E-Menu trả lỗi trong khi khách đang thao tác,
   - **When** Khách bấm "+ Thêm" hoặc kéo làm mới danh sách món,
   - **Then** hệ thống hiển thị banner đỏ "Lỗi kết nối. Vui lòng kiểm tra mạng và thử lại; danh sách món chưa thay đổi" kèm nút "Thử lại"; trạng thái Order Draft được bảo toàn nguyên vẹn (không mất món đã chọn); khi mạng khôi phục, bấm "Thử lại" tải lại E-Menu và trạng thái tồn kho mới nhất thành công (tự động áp dụng lại `REQ-09`/`ADR-001` nếu có món đã chuyển OOS trong thời gian ngắt kết nối).
+
+- **AC6 (UX — Bộ đếm số lượng trên thẻ món — ADR-N06)**
+  - **Given** Khách đã thêm một món vào Order Draft với số lượng n,
+  - **Then** Nút "+ Thêm" trên thẻ món được thay bằng bộ đếm `− n +`; bấm `−` về 0 quay lại nút "+"; món hết hàng hiển thị bộ đếm nhưng nút `+` Disabled (`ADR-001`); chỉnh số lượng trong Order Draft cập nhật ngược bộ đếm.
 
 **Out of Scope:**
 - Gọi món bằng giọng nói AI (Voice-to-order, Clarification) — thuộc US-02.
@@ -118,44 +123,35 @@ Trải nghiệm rảnh tay có rủi ro nhận diện sai do môi trường ồn
 
 **Estimate:** 3 points
 
-## US-05 - Khách hàng Thanh toán (Trả toàn bộ hoặc Chia Bill)
+## US-05 - Thanh toán hóa đơn qua QR (Toàn bộ)
 
-**User Story:** *As a* Khách hàng (Customer), *I want* chọn thanh toán toàn bộ hoặc chia bill trực tiếp trên thiết bị, *so that* tôi có thể linh hoạt tự trả tiền phần của mình hoặc thanh toán chung mà không cần đến quầy.
+**User Story:** *As a* Khách hàng tại bàn (Customer), *I want* thanh toán toàn bộ hóa đơn trực tiếp bằng quét mã QR MoMo/VNPAY qua màn hình Thu ngân, *so that* tôi được thanh toán nhanh gọn, đúng tiền, không phải đợi cộng tiền thủ công.
 
 **Context:**
-- `REQ-03` (FR): Chức năng Split Bill (Chia tiền) theo người/món.
-- `REQ-04` (FR): Thanh toán bằng quét mã QR MoMo/VNPAY tại bàn.
-Tính năng thanh toán tại bàn cuối bữa ăn giúp giảm tải cho thu ngân.
+- `REQ-04` (FR): Thanh toán bằng quét mã QR MoMo/VNPAY tại bàn (`BR-RO-06`).
+- `NFR-RO-03`: Phân quyền (RBAC) — Thu ngân thực hiện thanh toán cho bàn trong ca của mình.
+- **Phạm vi (ADR-N08):** Chia Bill (`REQ-03`) đã cắt khỏi MVP ngày 2026-10-03 — chỉ thanh toán toàn bộ tại quầy Thu ngân.
 
 **Acceptance Criteria:**
 
-- **AC1 (Happy Path - Thanh toán toàn bộ)**
-  - **Given** Khách hàng bấm nút "Thanh toán" trong màn hình đơn hàng,
-  - **When** Khách chọn "Trả toàn bộ",
-  - **Then** Hệ thống sinh ra 1 mã QR duy nhất cho tổng hóa đơn để khách quét thanh toán.
+- **AC1 (Happy Path — Tạo QR thanh toán toàn bộ)**
+  - **When** Thu ngân bấm "Tạo mã thanh toán" cho bàn đang ăn,
+  - **Then** Hiển thị 1 mã QR động tương ứng tổng tiền hóa đơn để khách quét (`REQ-04`).
 
-- **AC2 (Happy Path - Chia Bill)**
-  - **Given** Khách hàng bấm "Thanh toán",
-  - **When** Khách chọn "Chia Bill" (Split Bill),
-  - **Then** Giao diện hiển thị 2 tùy chọn: "Chia đều" và "Chia theo món".
+- **AC2 (Happy Path — Xác nhận thanh toán → paid)**
+  - **When** Webhook cổng thanh toán xác nhận (mock: Thu ngân bấm "Xác nhận đã nhận tiền"),
+  - **Then** Trạng thái `paid` + thông báo "Thanh toán thành công! Cảm ơn quý khách", nút "Đóng bàn" xuất hiện.
 
-- **AC3 (Edge Case - Chia đều)**
-  - **Given** Tổng bill là 300,000 VND,
-  - **When** Khách chọn "Chia đều" cho 3 người,
-  - **Then** Hệ thống tự động tạo ra 3 mã QR tương ứng với mỗi mã là 100,000 VND.
+- **AC3 (Fallback — Cổng thanh toán lỗi)**
+  - **Then** Toast vàng "Không thể khởi tạo mã QR thanh toán. Vui lòng kiểm tra lại mạng hoặc thử lại"; giữ nguyên hóa đơn, được "Thử lại" không lặp đơn.
 
 **Out of Scope:**
-- Không hỗ trợ thanh toán thẻ Visa/Mastercard trực tuyến (giới hạn scope MVP).
+- Chia Bill theo người/món (`REQ-03`) — cắt theo ADR-N08; Visa/Mastercard; hóa đơn VAT.
 
 **Dependencies:**
-- Cổng thanh toán nội địa (VNPAY/MoMo API).
+- API Cổng thanh toán MoMo/VNPAY (Sandbox Gateway); WebSocket sự kiện xác nhận thanh toán.
 
-**Estimate:** 2 points
-
----
-
-# EPIC 2: KITCHEN & TABLE OPERATIONS (Vận hành Bếp & Phục vụ)
-*Mang lại giá trị cốt lõi: Tự động hóa luồng thông tin giữa Bếp và Nhân viên phục vụ để tăng tốc độ xoay vòng bàn.*
+**Estimate:** 1 point
 
 ## US-03 - Bếp nhận Order và Báo hoàn thành trên KDS
 
@@ -343,3 +339,45 @@ Quy trình chốt ca kho rất quan trọng để tránh thất thoát và chu�
 - Database Inventory API.
 
 **Estimate:** 1 point
+
+---
+
+## US-09 - Khách xem Hóa đơn tạm tính của bàn
+
+**User Story:** *As a* Khách hàng tại bàn (Customer), *I want* mở Hóa đơn tạm tính từ nút "Xem hóa đơn" trên E-Menu để xem toàn bộ món đã gọi kèm trạng thái phục vụ và tổng tiền, rồi yêu cầu thanh toán, *so that* tôi kiểm soát chi phí và được hệ thống hướng dẫn đúng thời điểm đi thanh toán mà không phải hỏi nhân viên.
+
+**Context:**
+- `BR-05`: Đơn sau khi gửi không thể tự hủy — Hóa đơn KHÔNG có nút hủy/xóa đơn.
+- US-07 (Price Snapshot): giá ghi nhận tại thời điểm đặt; biến động giá sau không ảnh hưởng đơn đã gửi.
+- US-04: Trạng thái `Đã phục vụ` / `Chưa phục vụ` lấy từ sự kiện Waiter bấm "Đã phục vụ".
+- **Phạm vi (ADR-N04, ADR-N05):** Timeline "Đơn đã gửi" đã cắt khỏi màn khách; Hóa đơn mở qua nút "Xem hóa đơn" ở tiêu đề E-Menu, kèm nút "Yêu cầu thanh toán".
+
+**Acceptance Criteria:**
+
+- **AC1 (Happy Path — Mở Hóa đơn từ E-Menu)**
+  - **When** Khách bấm nút "Xem hóa đơn" ở góc phải tiêu đề "E-Menu — Bàn 06",
+  - **Then** Mở trang Hóa đơn toàn màn hình: bảng Tên món (kèm ghi chú) / SL / Thành tiền / Trạng thái phục vụ + tổng; giá snapshot `CATALOG` tại thời điểm đặt.
+
+- **AC2 (Yêu cầu thanh toán khi còn món chưa phục vụ)**
+  - **Given** Tồn tại món có trạng thái khác `Đã phục vụ`,
+  - **When** Khách bấm "Yêu cầu thanh toán",
+  - **Then** Hiển thị cảnh báo (icon vàng): "Bạn còn món chờ phục vụ. Vui lòng đợi nhân viên bưng món ra đủ, kiểm tra lại hóa đơn rồi hãy yêu cầu thanh toán nhé. Nếu cần hỗ trợ gấp, xin gọi nhân viên!"
+
+- **AC3 (Yêu cầu thanh toán khi đã phục vụ đủ)**
+  - **Given** Toàn bộ món đã `Đã phục vụ`,
+  - **When** Khách bấm "Yêu cầu thanh toán",
+  - **Then** Hiển thị xác nhận (icon xanh): "Vui lòng đến quầy thu ngân để thanh toán. Xin cảm ơn!"
+
+- **AC4 (BR-05)** — Hóa đơn không có nút hủy/xóa đơn.
+
+- **AC5 (Edge Case — Bàn chưa có đơn)** — trang hóa đơn hiện trạng thái rỗng, nút "Yêu cầu thanh toán" Disabled.
+
+**Out of Scope:**
+- Timeline trạng thái trên màn khách (ADR-004) — đã cắt theo ADR-N04; QR thanh toán / chia bill — US-05.
+
+**Dependencies:**
+- API: `GET /orders?tableId=B06`.
+- Story phụ thuộc: US-01 (sinh đơn), US-04 (sự kiện "Đã phục vụ").
+- Component: BillView (full-screen), ProvisionalBill, PaymentRequestModal.
+
+**Estimate:** 2 points
