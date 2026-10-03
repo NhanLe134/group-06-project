@@ -32,14 +32,17 @@
         <a href="#" class="nav-item" data-tab="tab-menu-cms">
             <i class="ph-bold ph-book-open-text"></i> <span>Thực đơn (CMS)</span>
         </a>
+        <a href="#" class="nav-item" data-tab="tab-ingredients">
+            <i class="ph-bold ph-carrot"></i> <span>Thực phẩm</span>
+        </a>
         <a href="#" class="nav-item" data-tab="tab-inventory">
-            <i class="ph-bold ph-boxes"></i> <span>Kiểm kê Tồn kho</span>
+            <i class="ph-bold ph-clipboard-text"></i> <span>Phiếu Kiểm kê</span>
         </a>
       </nav>
 
       <div class="sidebar-footer">
           <div class="user-profile">
-              <img src="https://ui-avatars.com/api/?name=Manager&background=0D5C75&color=fff" alt="Avatar" class="avatar">
+              <img src="https://ui-avatars.com/api/?name=Manager&background=FF5A36&color=fff" alt="Avatar" class="avatar">
               <div class="user-info">
                   <b>Quản lý</b>
                   <span>Admin</span>
@@ -175,30 +178,93 @@
 
             <!-- TAB 3: INVENTORY -->
             <div id="tab-inventory" class="tab-pane">
-                <div class="alert alert-info">
-                    <i class="ph-fill ph-info"></i>
-                    <div>
-                        <b>Hướng dẫn Đối soát:</b> Điếm số lượng thực tế trong kho nhập vào cột "Tồn thực tế". Hệ thống tự tính độ lệch (Hao hụt).
-                    </div>
-                </div>
                 <div class="panel">
                     <div class="panel-header">
-                        <h3>Phiên kiểm kê: <span style="color: var(--color-primary)">Cuối ngày 10/10/2026</span></h3>
-                        <button class="btn btn-primary" onclick="saveInventory()"><i class="ph-bold ph-floppy-disk"></i> Lưu & Chốt ca</button>
+                        <h3>Danh sách Phiếu Kiểm kê</h3>
+                        <button class="btn btn-primary" onclick="alert('Mở form tạo phiếu kiểm kê')"><i class="ph-bold ph-plus"></i> Tạo Phiếu Kiểm Kê</button>
                     </div>
                     <div class="table-responsive">
-                        <table class="data-table" id="inventory-table">
+                        <table class="data-table" id="inventory-sessions-table">
                             <thead>
                                 <tr>
-                                    <th>Nguyên liệu / Hàng hóa</th>
-                                    <th>ĐVT</th>
-                                    <th>Tồn Hệ thống (A)</th>
-                                    <th>Tồn Thực tế (B)</th>
-                                    <th>Chênh lệch (B - A)</th>
+                                    <th>Mã Phiếu</th>
+                                    <th>Ngày Kiểm kê</th>
+                                    <th>Người phụ trách</th>
+                                    <th>Trạng thái</th>
+                                    <th>Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Render qua JS -->
+                                <tr>
+                                    <td>PKK-1010</td>
+                                    <td>10/10/2026 23:00</td>
+                                    <td>Quản lý Admin</td>
+                                    <td><span class="status-badge" style="background:#BBF7D0; color:#166534; padding:4px 8px; border-radius:12px; font-size:12px; font-weight:700">Đã chốt</span></td>
+                                    <td>
+                                        <button class="btn-icon" title="Xem chi tiết"><i class="ph-bold ph-eye"></i></button>
+                                        <button class="btn-icon" style="color:var(--color-danger)" title="Xóa phiếu"><i class="ph-bold ph-trash"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>PKK-1110</td>
+                                    <td>11/10/2026 23:00</td>
+                                    <td>Quản lý Admin</td>
+                                    <td><span class="status-badge" style="background:#FEF3C7; color:#D97706; padding:4px 8px; border-radius:12px; font-size:12px; font-weight:700">Đang nháp</span></td>
+                                    <td>
+                                        <button class="btn-icon" title="Tiếp tục kiểm"><i class="ph-bold ph-pencil-simple"></i></button>
+                                        <button class="btn-icon" style="color:var(--color-danger)" title="Xóa phiếu"><i class="ph-bold ph-trash"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: INGREDIENTS (THỰC PHẨM) -->
+            <div id="tab-ingredients" class="tab-pane">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="search-box">
+                            <i class="ph-bold ph-magnifying-glass"></i>
+                            <input type="text" placeholder="Tìm kiếm nguyên liệu...">
+                        </div>
+                        <div class="actions">
+                            <button class="btn btn-primary" onclick="alert('Chức năng thêm nguyên liệu')"><i class="ph-bold ph-plus"></i> Thêm nguyên liệu</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="ingredients-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã NVL</th>
+                                    <th>Tên nguyên liệu</th>
+                                    <th>Đơn vị tính</th>
+                                    <th>Nhóm</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>NVL001</td>
+                                    <td>Thịt bò Mỹ</td>
+                                    <td>Kg</td>
+                                    <td>Thịt tươi sống</td>
+                                    <td>
+                                        <button class="btn-icon" title="Sửa"><i class="ph-bold ph-pencil-simple"></i></button>
+                                        <button class="btn-icon" style="color:var(--color-danger)" title="Xóa"><i class="ph-bold ph-trash"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>NVL002</td>
+                                    <td>Gạo ST25</td>
+                                    <td>Kg</td>
+                                    <td>Nông sản</td>
+                                    <td>
+                                        <button class="btn-icon" title="Sửa"><i class="ph-bold ph-pencil-simple"></i></button>
+                                        <button class="btn-icon" style="color:var(--color-danger)" title="Xóa"><i class="ph-bold ph-trash"></i></button>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>

@@ -124,66 +124,75 @@ window.syncMenuToAI = function() {
 }
 
 // ==========================================
-// NGHIỆP VỤ: ĐỐI SOÁT TỒN KHO (INVENTORY - REQ-12)
+// NGHIỆP VỤ: THỰC PHẨM (NGUYÊN LIỆU)
 // ==========================================
-const inventoryData = [
-    { id: 'INV01', name: 'Thịt Bò Kobe (Kg)', unit: 'Kg', sysStock: 15.5 },
-    { id: 'INV02', name: 'Rượu Vang Đỏ (Chai)', unit: 'Chai', sysStock: 24 },
-    { id: 'INV03', name: 'Thịt Gà Ta (Con)', unit: 'Con', sysStock: 10 },
-    { id: 'INV04', name: 'Cá Hồi NaUy (Kg)', unit: 'Kg', sysStock: 8.2 }
+let ingredientsData = [
+    { id: 'NVL001', name: 'Thịt bò Mỹ', unit: 'Kg', category: 'Thịt tươi sống' },
+    { id: 'NVL002', name: 'Gạo ST25', unit: 'Kg', category: 'Nông sản' }
 ];
 
-const invTableBody = document.querySelector('#inventory-table tbody');
-
-function renderInventory() {
-    invTableBody.innerHTML = '';
-    inventoryData.forEach(item => {
+function renderIngredients() {
+    const tbody = document.querySelector('#ingredients-table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    ingredientsData.forEach(item => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td><b>${item.name}</b><br><small style="color: #94A3B8;">Mã: ${item.id}</small></td>
+            <td>${item.id}</td>
+            <td><b>${item.name}</b></td>
             <td>${item.unit}</td>
-            <td><b>${item.sysStock}</b></td>
+            <td>${item.category}</td>
             <td>
-                <input type="number" step="0.1" class="inv-input" data-id="${item.id}" placeholder="0" oninput="calculateDiff('${item.id}', ${item.sysStock}, this.value)">
+                <button class="btn-icon" title="Sửa" onclick="showToast('Tính năng', 'Tính năng sửa thực phẩm đang được bảo trì.', 'warning')"><i class="ph-bold ph-pencil-simple"></i></button>
+                <button class="btn-icon" style="color:var(--color-danger)" title="Xóa" onclick="deleteIngredient('${item.id}')"><i class="ph-bold ph-trash"></i></button>
             </td>
-            <td id="diff-${item.id}" class="diff-val zero">0</td>
         `;
-        invTableBody.appendChild(tr);
+        tbody.appendChild(tr);
     });
 }
 
-window.calculateDiff = function(id, sysStock, actualStr) {
-    const diffCell = document.getElementById(`diff-${id}`);
-    if (actualStr === '') {
-        diffCell.innerText = '0';
-        diffCell.className = 'diff-val zero';
-        return;
-    }
-    const actual = parseFloat(actualStr);
-    const diff = (actual - sysStock).toFixed(1);
-
-    if (diff < 0) {
-        diffCell.innerText = `${diff} (Hụt)`;
-        diffCell.className = 'diff-val negative';
-    } else if (diff > 0) {
-        diffCell.innerText = `+${diff} (Dư)`;
-        diffCell.className = 'diff-val positive';
-    } else {
-        diffCell.innerText = '0 (Khớp)';
-        diffCell.className = 'diff-val zero';
+window.deleteIngredient = function(id) {
+    if(confirm('Bạn có chắc chắn muốn xóa nguyên liệu này?')) {
+        ingredientsData = ingredientsData.filter(i => i.id !== id);
+        renderIngredients();
+        showToast('Xóa thành công', 'Nguyên liệu đã bị xóa.', 'success');
     }
 }
 
-window.saveInventory = function() {
-    let allFilled = true;
-    const inputs = document.querySelectorAll('.inv-input');
-    inputs.forEach(input => { if(input.value === '') allFilled = false; });
+// ==========================================
+// NGHIỆP VỤ: PHIẾU KIỂM KÊ (INVENTORY SESSIONS)
+// ==========================================
+let inventorySessionsData = [
+    { id: 'PKK-1010', date: '10/10/2026 23:00', manager: 'Quản lý Admin', status: 'Đã chốt', bg: '#BBF7D0', color: '#166534' },
+    { id: 'PKK-1110', date: '11/10/2026 23:00', manager: 'Quản lý Admin', status: 'Đang nháp', bg: '#FEF3C7', color: '#D97706' }
+];
 
-    if(!allFilled) {
-        showToast('Lỗi Kiểm kê', 'Vui lòng nhập đầy đủ số lượng tồn thực tế cho tất cả mặt hàng trước khi Chốt ca.', 'danger');
-        return;
+function renderInventorySessions() {
+    const tbody = document.querySelector('#inventory-sessions-table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    inventorySessionsData.forEach(session => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><b>${session.id}</b></td>
+            <td>${session.date}</td>
+            <td>${session.manager}</td>
+            <td><span class="status-badge" style="background:${session.bg}; color:${session.color}; padding:4px 8px; border-radius:12px; font-size:12px; font-weight:700">${session.status}</span></td>
+            <td>
+                <button class="btn-icon" title="${session.status === 'Đang nháp' ? 'Tiếp tục kiểm' : 'Xem chi tiết'}" onclick="showToast('Tính năng', 'Đang mở chi tiết phiếu kiểm kê...', 'primary')"><i class="ph-bold ${session.status === 'Đang nháp' ? 'ph-pencil-simple' : 'ph-eye'}"></i></button>
+                <button class="btn-icon" style="color:var(--color-danger)" title="Xóa phiếu" onclick="deleteSession('${session.id}')"><i class="ph-bold ph-trash"></i></button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+window.deleteSession = function(id) {
+    if(confirm('Bạn có chắc chắn muốn xóa phiếu kiểm kê này?')) {
+        inventorySessionsData = inventorySessionsData.filter(s => s.id !== id);
+        renderInventorySessions();
+        showToast('Xóa thành công', 'Phiếu kiểm kê đã bị xóa.', 'success');
     }
-    showToast('Lưu thành công', 'Đã lưu biên bản đối soát tồn kho và chốt ca thành công.', 'success');
 }
 
 // Hiển thị Toast
@@ -209,4 +218,5 @@ function showToast(title, msg, type = 'primary') {
 
 // Khởi tạo
 renderMenu();
-renderInventory();
+renderIngredients();
+renderInventorySessions();

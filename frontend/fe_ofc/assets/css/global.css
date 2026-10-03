@@ -31,7 +31,7 @@ body {
 }
 button { font: inherit; color: inherit; cursor: pointer; border: none; background: none; }
 button:disabled { cursor: not-allowed; opacity: .55; }
-button:focus-visible, input:focus-visible { outline: 3px solid #74c0fc; outline-offset: 2px; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
 h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
 h4 { font-size: 14px; margin: 16px 2px 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
 
@@ -49,7 +49,7 @@ h4 { font-size: 14px; margin: 16px 2px 8px; color: var(--muted); text-transform:
 /* ---------- Screen 0 — Splash chọn vai ---------- */
 .splash-wrap { background: var(--bg); }
 .splash { padding: 60px 24px 40px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; max-width: 500px; width: 100%; margin: 0 auto; }
-.splash-logo { font-size: 52px; text-align: center; }
+.splash-logo { font-size: 52px; text-align: center; color: var(--primary); }
 .splash h1 { font-size: 24px; text-align: center; line-height: 1.25; }
 .splash-sub { text-align: center; color: var(--muted); font-size: 13px; }
 .table-chip {
@@ -60,10 +60,10 @@ h4 { font-size: 14px; margin: 16px 2px 8px; color: var(--muted); text-transform:
 .role-card { box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: transform .2s ease, box-shadow .2s ease;
   display: flex; align-items: center; gap: 14px; text-align: left;
   background: #fff; border: none; border-radius: 12px;
-  padding: 14px 16px; min-height: 72px;
+  padding: 14px 16px; min-height: 72px; width: 100%;
 }
 .role-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-.rc-emoji { font-size: 30px; }
+.rc-emoji { font-size: 30px; color: var(--primary); opacity: 0.8; }
 .rc-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
 .rc-text small { color: var(--muted); font-size: 12px; }
 .rc-arrow { color: var(--primary); font-size: 24px; font-weight: 700; }

@@ -1,6 +1,6 @@
 :root {
   /* 1. BẢNG MÀU (COLORS) */
-  --color-primary: #0D5C75;       /* Nút chính, CTA */
+  --color-primary: #FF5A36;       /* Nút chính, CTA */
   --color-success: #15803D;       /* Xanh: Bàn Trống (Empty) / Thành công */
   --color-warning: #D97706;       /* Vàng: Bàn Cần dọn (Needs Cleaning) / Cảnh báo */
   --color-danger: #DC2626;        /* Đỏ: Bàn Đang ăn (Occupied) / Hủy món */
