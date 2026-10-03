@@ -2,46 +2,61 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Màn hình Thu ngân Cashier (Nhàn)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  <link rel="stylesheet" href="../assets/css/global.css">
+
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/cashier.css">
 </head>
-<body>
-  <header class="topbar">
+<body class="cashier-app">
+  <header class="topbar premium-header">
     <div class="brand-row">
-      <span class="brand">Smart Ordering</span>
-      <b>Màn hình Thu ngân Cashier (Nhàn)</b>
-      <a href="../index.html"><button class="btn-logout"><i class="ph-bold ph-house"></i> Về Portal</button></a>
-    </div>
-  </header>
-  
-  <div class="screen">
-    <div class="card">
-      <div class="info">
-
-        <!-- BẢNG PHÂN CÔNG NHIỆM VỤ -->
-        <div style="margin-top: 15px; padding: 15px; background: #fff8e6; border-left: 4px solid #f59f00; border-radius: 8px;">
-            <h4 style="margin-top:0; margin-bottom: 8px; color: #d9480f;">📋 Nhiệm vụ trang Thu ngân (Cashier)</h4>
-            <ul style="margin-left: 20px; font-size: 14px; line-height: 1.6; color: #495057;">
-                <li><b>Nhàn (US-05):</b> Code giao diện danh sách hóa đơn các bàn đang ăn, chi tiết hóa đơn (bill), nút bấm "Thanh toán" và "Đóng bàn (Close)".</li>
-            </ul>
+      <div class="brand-logo">
+        <i class="ph-fill ph-storefront"></i>
+        <span class="brand">Smart Ordering</span>
+      </div>
+      <div class="header-title-center">
+        <b>Thu ngân — Thanh toán &amp; Đóng bàn (US-05)</b>
+      </div>
+      <div class="header-right">
+        <div class="cashier-profile">
+          <img src="https://ui-avatars.com/api/?name=Cashier&background=0D5C75&color=fff" alt="Avatar" class="avatar">
+          <span>Ca Chiều (Quầy)</span>
         </div>
-
-        <h2>Không gian code của Màn hình Thu ngân Cashier (Nhàn)</h2>
-        <p style="margin-top: 10px; color: var(--muted);">Bắt đầu thiết kế giao diện của bạn tại đây bằng cách sử dụng các class từ <b>global.css</b>.</p>
-        <div style="margin-top: 15px; padding: 10px; background: var(--primary-soft); border-radius: 8px;">
-            <p style="color: var(--primary); font-weight: 600;">*Lưu ý về "Code cũ đâu rồi?":</p>
-            <p style="margin-top: 5px; font-size: 14px;">Mớ code giao diện (HTML) cũ của bản Demo Prototype nằm trọn vẹn trong file <b>frontend/prototype/js/app.js</b> (trong các hàm render...). Bạn hãy mở file đó lên, copy các đoạn HTML tương ứng vứt thẳng vào đây là có ngay giao diện cũ nhé!</p>
-        </div>
+        <a href="../index.html" class="btn-logout"><i class="ph-bold ph-sign-out"></i> Thoát</a>
       </div>
     </div>
-  </div>
+  </header>
+
+  <main class="cashier-layout">
+    <!-- Cột trái: danh sách hóa đơn các bàn đang ăn -->
+    <aside class="table-panel">
+      <div class="panel-head">
+        <h3><i class="ph-duotone ph-squares-four"></i> Danh sách bàn</h3>
+        <span class="badge" id="occupied-count">0</span>
+      </div>
+      <div class="table-list" id="table-list"></div>
+      <div class="sim-box">
+        <label class="sim-toggle">
+          <input type="checkbox" id="err-sim">
+          <span>Mô phỏng lỗi cổng thanh toán (AC5)</span>
+        </label>
+      </div>
+    </aside>
+
+    <!-- Cột phải: chi tiết hóa đơn + thanh toán — render tự động -->
+    <section class="detail-panel" id="detail-panel"></section>
+  </main>
+
+  <!-- Toast thông báo (AC4/AC5) -->
+  <div class="toast-container" id="toast-container"></div>
 
   <script src="../assets/js/mock-data.js"></script>
   <script src="../assets/js/utils.js"></script>
+  <script src="../assets/js/cashier.js"></script>
 </body>
 </html>
