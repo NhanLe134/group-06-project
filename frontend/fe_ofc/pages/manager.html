@@ -150,9 +150,6 @@
                             <input type="text" placeholder="Tìm kiếm món ăn...">
                         </div>
                         <div class="actions">
-                            <button class="btn btn-outline" id="btn-sync-ai" onclick="syncMenuToAI()">
-                                <i class="ph-bold ph-arrows-clockwise"></i> Đồng bộ AI Assistant
-                            </button>
                             <button class="btn btn-primary" onclick="openAddMenuModal()"><i class="ph-bold ph-plus"></i> Thêm món mới</button>
                         </div>
                     </div>
@@ -160,11 +157,13 @@
                         <table class="data-table" id="menu-table">
                             <thead>
                                 <tr>
+                                    <th>STT</th>
                                     <th>Hình ảnh</th>
                                     <th>Tên món ăn</th>
                                     <th>Danh mục</th>
-                                    <th>Giá bán</th>
-                                    <th>Trạng thái (Khách/AI thấy)</th>
+                                    <th>Giá bán <details class="table-filter"><summary aria-label="Lọc giá bán"><i class="ph-bold ph-funnel"></i></summary><div class="filter-menu"><button type="button" data-filter="price" data-value="all">Tất cả</button><button type="button" data-filter="price" data-value="high-low">Cao đến thấp</button><button type="button" data-filter="price" data-value="low-high">Thấp đến cao</button></div></details></th>
+                                    <th>Trạng thái <details class="table-filter"><summary aria-label="Lọc trạng thái"><i class="ph-bold ph-caret-down"></i></summary><div class="filter-menu"><button type="button" data-filter="status" data-value="all">Tất cả</button><button type="button" data-filter="status" data-value="Đang bán">Đang bán</button><button type="button" data-filter="status" data-value="Tạm ẩn">Tạm ẩn</button></div></details></th>
+                                    <th>Số lượng tồn <details class="table-filter"><summary aria-label="Lọc số lượng tồn"><i class="ph-bold ph-caret-down"></i></summary><div class="filter-menu"><button type="button" data-filter="stock" data-value="all">Tất cả</button><button type="button" data-filter="stock" data-value="out">Hết hàng</button><button type="button" data-filter="stock" data-value="low">Sắp hết (&lt;20)</button><button type="button" data-filter="stock" data-value="available">Còn hàng</button></div></details></th>
                                     <th>Thao tác</th>
                                 </tr>
                             </thead>
@@ -278,39 +277,210 @@
   <!-- MODAL: THÊM MÓN MỚI -->
   <div class="modal-overlay" id="add-menu-modal" style="display: none;">
       <div class="modal-content form-modal">
-          <div class="modal-header">
+          <div class="modal-header modal-header--orange">
               <h3><i class="ph-bold ph-plus-circle"></i> Thêm Món Mới vào Thực Đơn</h3>
-              <button class="btn-icon" onclick="closeAddMenuModal()"><i class="ph-bold ph-x"></i></button>
+              <button class="btn-icon btn-icon--light" onclick="closeAddMenuModal()"><i class="ph-bold ph-x"></i></button>
           </div>
           <div class="modal-body">
+              <!-- Tên món -->
               <div class="form-group">
                   <label>Tên món ăn <span class="required">*</span></label>
-                  <input type="text" id="menu-name" class="form-control" placeholder="VD: Sườn sụn rang muối">
+                  <input type="text" id="menu-name" class="form-control" placeholder="VD: Sườn sụn rang muối" required>
               </div>
+
+              <!-- Danh mục -->
               <div class="form-group">
                   <label>Danh mục <span class="required">*</span></label>
-                  <select id="menu-category" class="form-control">
+                  <select id="menu-category" class="form-control" required>
                       <option value="Món chính">Món chính</option>
                       <option value="Khai vị">Khai vị</option>
                       <option value="Tráng miệng">Tráng miệng</option>
                       <option value="Đồ uống">Đồ uống</option>
                   </select>
               </div>
+
+              <!-- Số lượng tồn — chỉ hiện khi chọn Đồ uống -->
+              <div class="form-group" id="menu-stock-group" hidden>
+                  <label for="menu-stock">Số lượng tồn</label>
+                  <input type="number" min="0" id="menu-stock" class="form-control" placeholder="Nhập số lượng tồn">
+              </div>
+
+              <!-- Giá bán -->
               <div class="form-group">
                   <label>Giá bán (VNĐ) <span class="required">*</span></label>
-                  <input type="number" id="menu-price" class="form-control" placeholder="VD: 150000">
+                  <input type="number" id="menu-price" class="form-control" placeholder="VD: 150000" required>
               </div>
+
+              <!-- Hình ảnh — cho phép tải lên -->
               <div class="form-group">
                   <label>Hình ảnh Minh họa</label>
-                  <div class="upload-box">
-                      <i class="ph-duotone ph-image"></i>
-                      <p>Click hoặc Kéo thả ảnh vào đây</p>
+                  <div class="upload-box" id="upload-box" onclick="document.getElementById('menu-image-input').click()">
+                      <i class="ph-duotone ph-image" id="upload-icon"></i>
+                      <img id="upload-preview" src="" alt="Xem trước ảnh" style="display:none; max-height:120px; max-width:100%; border-radius:8px; margin-bottom:8px;">
+                      <p id="upload-label">Click hoặc Kéo thả ảnh vào đây</p>
+                      <input type="file" id="menu-image-input" accept="image/*" style="display:none" onchange="previewMenuImage(event)">
+                  </div>
+              </div>
+
+              <!-- Mô tả (liên kết Smart Ordering) -->
+              <div class="form-group">
+                  <label>Mô tả <span class="required">*</span></label>
+                  <textarea id="menu-description" class="form-control" rows="3" placeholder="Mô tả ngắn về món ăn..." required></textarea>
+              </div>
+
+              <!-- Thông tin phục vụ Smart Ordering -->
+              <div class="smart-ordering-section">
+                  <div class="smart-ordering-header">
+                      <i class="ph-bold ph-robot"></i>
+                      <span>Thông tin phục vụ Smart Ordering</span>
+                  </div>
+                  <div class="smart-ordering-body">
+                      <div class="form-group">
+                          <label>Thành phần <span class="required">*</span></label>
+                          <input type="text" id="menu-ingredients" class="form-control" placeholder="VD: Thịt bò, rau xà lách, cà chua..." required>
+                      </div>
+                      <div class="form-group">
+                          <label>Độ cay <span class="required">*</span></label>
+                          <select id="menu-spicy" class="form-control" required>
+                              <option value="Không cay">Không cay</option>
+                              <option value="Cay nhẹ">Cay nhẹ</option>
+                              <option value="Cay vừa">Cay vừa</option>
+                              <option value="Cay nhiều">Cay nhiều</option>
+                          </select>
+                      </div>
+                      <div class="form-group">
+                          <label>Loại món <span class="required">*</span></label>
+                          <div class="radio-group">
+                              <label class="radio-option">
+                                  <input type="radio" name="menu-diet" value="Mặn" checked> Mặn
+                              </label>
+                              <label class="radio-option">
+                                  <input type="radio" name="menu-diet" value="Chay"> Chay
+                              </label>
+                          </div>
+                      </div>
+                      <div class="form-group">
+                          <label>Thông tin dị ứng <span class="required">*</span></label>
+                          <input type="text" id="menu-allergens" class="form-control" placeholder="VD: Hải sản, đậu phộng, sữa..." required>
+                      </div>
                   </div>
               </div>
           </div>
           <div class="modal-footer">
               <button class="btn btn-outline" onclick="closeAddMenuModal()">Hủy bỏ</button>
-              <button class="btn btn-primary" onclick="submitAddMenu()"><i class="ph-bold ph-floppy-disk"></i> Lưu & Áp dụng</button>
+              <button class="btn btn-primary" onclick="submitAddMenu()"><i class="ph-bold ph-floppy-disk"></i> Lưu</button>
+          </div>
+      </div>
+  </div>
+
+  <div class="modal-overlay" id="menu-detail-modal" style="display:none;">
+      <div class="modal-content form-modal">
+          <div class="modal-header modal-header--orange">
+              <h3><i class="ph-bold ph-eye"></i> Chi tiết món ăn</h3>
+              <button class="btn-icon btn-icon--light" onclick="closeMenuDetail()" aria-label="Đóng"><i class="ph-bold ph-x"></i></button>
+          </div>
+          <div class="modal-body modal-body--detail" id="menu-detail-body"></div>
+          <div class="modal-footer">
+              <button class="btn btn-outline" onclick="closeMenuDetail()">Đóng</button>
+              <button class="btn btn-primary" id="detail-edit-btn"><i class="ph-bold ph-pencil-simple"></i> Sửa món</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- MODAL: SỬA MÓN -->
+  <div class="modal-overlay" id="edit-menu-modal" style="display:none;">
+      <div class="modal-content form-modal">
+          <div class="modal-header modal-header--orange">
+              <h3><i class="ph-bold ph-pencil-simple"></i> Sửa Thông Tin Món Ăn</h3>
+              <button class="btn-icon btn-icon--light" onclick="closeEditMenuModal()"><i class="ph-bold ph-x"></i></button>
+          </div>
+          <div class="modal-body">
+              <input type="hidden" id="edit-menu-id">
+
+              <div class="form-group">
+                  <label>Tên món ăn <span class="required">*</span></label>
+                  <input type="text" id="edit-menu-name" class="form-control" placeholder="VD: Sườn sụn rang muối" required>
+              </div>
+
+              <div class="form-group">
+                  <label>Danh mục <span class="required">*</span></label>
+                  <select id="edit-menu-category" class="form-control" required>
+                      <option value="Món chính">Món chính</option>
+                      <option value="Khai vị">Khai vị</option>
+                      <option value="Tráng miệng">Tráng miệng</option>
+                      <option value="Đồ uống">Đồ uống</option>
+                  </select>
+              </div>
+
+              <div class="form-group" id="edit-stock-group" hidden>
+                  <label for="edit-menu-stock">Số lượng tồn</label>
+                  <input type="number" min="0" id="edit-menu-stock" class="form-control" placeholder="Nhập số lượng tồn">
+              </div>
+
+              <div class="form-group">
+                  <label>Giá bán (VNĐ) <span class="required">*</span></label>
+                  <input type="number" id="edit-menu-price" class="form-control" placeholder="VD: 150000" required>
+              </div>
+
+              <div class="form-group">
+                  <label>Trạng thái <span class="required">*</span></label>
+                  <select id="edit-menu-status" class="form-control" required>
+                      <option value="Đang bán">Đang bán</option>
+                      <option value="Tạm ẩn">Tạm ẩn</option>
+                  </select>
+              </div>
+
+              <div class="form-group">
+                  <label>Hình ảnh Minh họa</label>
+                  <div class="upload-box" id="edit-upload-box" onclick="document.getElementById('edit-image-input').click()">
+                      <i class="ph-duotone ph-image" id="edit-upload-icon"></i>
+                      <img id="edit-upload-preview" src="" alt="Xem trước ảnh" style="display:none; max-height:120px; max-width:100%; border-radius:8px; margin-bottom:8px;">
+                      <p id="edit-upload-label">Click hoặc Kéo thả ảnh vào đây</p>
+                      <input type="file" id="edit-image-input" accept="image/*" style="display:none" onchange="previewEditImage(event)">
+                  </div>
+              </div>
+
+              <div class="form-group">
+                  <label>Mô tả <span class="required">*</span></label>
+                  <textarea id="edit-menu-description" class="form-control" rows="3" placeholder="Mô tả ngắn về món ăn..." required></textarea>
+              </div>
+
+              <div class="smart-ordering-section">
+                  <div class="smart-ordering-header">
+                      <i class="ph-bold ph-robot"></i>
+                      <span>Thông tin phục vụ Smart Ordering</span>
+                  </div>
+                  <div class="smart-ordering-body">
+                      <div class="form-group">
+                          <label>Thành phần <span class="required">*</span></label>
+                          <input type="text" id="edit-menu-ingredients" class="form-control" placeholder="VD: Thịt bò, rau xà lách, cà chua..." required>
+                      </div>
+                      <div class="form-group">
+                          <label>Độ cay <span class="required">*</span></label>
+                          <select id="edit-menu-spicy" class="form-control" required>
+                              <option value="Không cay">Không cay</option>
+                              <option value="Cay nhẹ">Cay nhẹ</option>
+                              <option value="Cay vừa">Cay vừa</option>
+                              <option value="Cay nhiều">Cay nhiều</option>
+                          </select>
+                      </div>
+                      <div class="form-group">
+                          <label>Loại món <span class="required">*</span></label>
+                          <div class="radio-group">
+                              <label class="radio-option"><input type="radio" name="edit-menu-diet" value="Mặn"> Mặn</label>
+                              <label class="radio-option"><input type="radio" name="edit-menu-diet" value="Chay"> Chay</label>
+                          </div>
+                      </div>
+                      <div class="form-group">
+                          <label>Thông tin dị ứng <span class="required">*</span></label>
+                          <input type="text" id="edit-menu-allergens" class="form-control" placeholder="VD: Hải sản, đậu phộng, sữa..." required>
+                      </div>
+                  </div>
+              </div>
+          </div>
+          <div class="modal-footer">
+              <button class="btn btn-outline" onclick="closeEditMenuModal()">Hủy bỏ</button>
+              <button class="btn btn-primary" onclick="submitEditMenu()"><i class="ph-bold ph-floppy-disk"></i> Lưu thay đổi</button>
           </div>
       </div>
   </div>

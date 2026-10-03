@@ -11,6 +11,7 @@
 
   <link rel="stylesheet" href="../assets/css/design-system.css">
   <link rel="stylesheet" href="../assets/css/customer.css">
+  <link rel="stylesheet" href="../assets/css/voice.css">
 </head>
 <body class="customer-app">
   <header class="cust-topbar">
@@ -44,8 +45,20 @@
     <div class="cat-row" id="cat-row"></div>
     <div class="menu-grid" id="menu-grid"></div>
 
-    <!-- US-02 (Ny): Trợ lý Voice AI — nút micro FAB + popup chat sẽ bổ sung tại đây -->
+    <!-- US-02 (Ny): Trợ lý Voice AI — FAB micro -->
+    <button class="voice-fab" id="voice-fab" aria-label="Mở trợ lý gọi món bằng giọng nói">
+      <i class="ph-duotone ph-microphone"></i>
+    </button>
   </main>
+
+  <!-- Voice Sheet Overlay -->
+  <div class="voice-sheet-overlay" id="voice-sheet-overlay"></div>
+
+  <!-- Voice Sheet (US-02) -->
+  <section class="voice-sheet" id="voice-sheet" role="dialog" aria-label="Trợ lý gọi món AI">
+    <div class="sheet-grip"></div>
+    <div class="voice-sheet-inner" id="voice-sheet-inner"></div>
+  </section>
 
   <!-- Sticky Bottom Bar: tóm tắt bản nháp + nút mở Order Draft -->
   <div class="cust-stickybar">
@@ -131,5 +144,6 @@
   <script src="../assets/js/mock-data.js"></script>
   <script src="../assets/js/utils.js"></script>
   <script src="../assets/js/customer.js"></script>
+  <script src="../assets/js/voice.js"></script>
 </body>
 </html>
