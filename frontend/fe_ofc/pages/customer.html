@@ -21,7 +21,7 @@
       </div>
       <div class="cust-table-chip">
         <i class="ph-duotone ph-map-pin"></i>
-        Bàn 06 · Lầu 1 · Anh Tuấn + gia đình 4 người
+        Bàn 06
       </div>
       <a href="../index.html" class="btn-home"><i class="ph-bold ph-house"></i> Về Portal</a>
     </div>
@@ -29,8 +29,9 @@
 
   <main class="cust-screen">
     <div class="cust-head">
-      <div>
+      <div class="cust-head-row">
         <h2><i class="ph-duotone ph-fork-knife"></i> E-Menu — Bàn 06</h2>
+        <button class="btn-view-bill" id="btn-view-bill"><i class="ph-duotone ph-receipt"></i> Xem hóa đơn</button>
       </div>
     </div>
 
@@ -70,7 +71,6 @@
       <div class="modal-icon teal"><i class="ph-duotone ph-bell-ringing"></i></div>
       <h3>Xác nhận gửi bếp</h3>
       <p id="confirm-text"></p>
-      <p>Bàn 06 · Tổng tạm tính: <b id="confirm-total" style="color: var(--color-primary);"></b></p>
       <div class="modal-actions">
         <button class="btn-ghost" id="btn-cancel-confirm">Hủy bỏ</button>
         <button class="btn-primary" id="btn-confirm-send">Xác nhận</button>
@@ -83,9 +83,6 @@
     <div class="modal">
       <div class="modal-icon green"><i class="ph-bold ph-check"></i></div>
       <h3>Đã gửi đơn xuống bếp thành công!</h3>
-      <p class="order-code" id="success-code"></p>
-      <p>Bàn 06 · <b id="success-total"></b></p>
-      <p>Theo dõi tiến độ món ở mục của Waiter / Bếp KDS nhé.</p>
       <div class="modal-actions">
         <button class="btn-primary" id="btn-close-success">Tiếp tục gọi món</button>
       </div>
@@ -103,6 +100,30 @@
       <div class="modal-actions">
         <button class="btn-ghost" id="btn-note-clear">Xóa ghi chú</button>
         <button class="btn-primary" id="btn-note-save">Lưu ghi chú</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- US-09: Trang xem Hóa đơn tạm tính (mở qua nút "Xem hóa đơn" trên E-Menu) -->
+  <section class="bill-view" id="bill-view" hidden>
+    <header class="bill-view-head">
+      <button class="btn-x" id="btn-close-bill" aria-label="Quay lại E-Menu"><i class="ph-bold ph-arrow-left"></i></button>
+      <b><i class="ph-duotone ph-receipt"></i> Hóa đơn tạm tính — Bàn 06</b>
+    </header>
+    <div class="bill-view-body" id="bill-body"></div>
+    <div class="bill-view-foot">
+      <button class="btn-primary btn-send" id="btn-request-pay"><i class="ph-duotone ph-hand-coins"></i> Yêu cầu thanh toán</button>
+    </div>
+  </section>
+
+  <!-- US-09: Modal kết quả "Yêu cầu thanh toán" -->
+  <div class="modal-overlay" id="pay-modal" style="display: none;" role="alertdialog" aria-modal="true" aria-label="Yêu cầu thanh toán">
+    <div class="modal">
+      <div class="modal-icon teal" id="pay-icon"></div>
+      <h3 id="pay-title"></h3>
+      <p id="pay-msg"></p>
+      <div class="modal-actions">
+        <button class="btn-primary" id="btn-pay-close">Đã hiểu</button>
       </div>
     </div>
   </div>

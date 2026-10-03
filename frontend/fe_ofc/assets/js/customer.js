@@ -14,6 +14,9 @@
 'use strict';
 
 const $ = (sel, el = document) => el.querySelector(sel);
+/* Gán textContent an toàn — nếu phần tử không tồn tại trong HTML (bị xóa/tùy chọn)
+ * thì bỏ qua thay vì văng TypeError làm hỏng cả luồng (A-N03, A-N17, A-N19) */
+const setText = (sel, value) => { const el = $(sel); if (el) el.textContent = value; };
 
 /* Escape chuỗi người dùng nhập (ghi chú món) trước khi nhúng vào HTML */
 const esc = s => String(s).replace(/[&<>"']/g,
@@ -44,6 +47,7 @@ let searchText = '';
 let draftOpen = false;
 let orderSeq = 1;
 let editingNoteIdx = null;   /* index món đang mở modal ghi chú, null = đóng */
+let orders = [];             /* US-09: [{ code, items, status, placedTs }] */
 
 /* ----- Truy vấn dữ liệu ----- */
 const dishById = id => CATALOG.find(d => d.id === id);
@@ -51,6 +55,8 @@ const isOos = id => dishById(id).status === 'Out of Stock';
 const draftUnits = () => draft.reduce((n, it) => n + it.qty, 0);
 const draftTotal = () => draft.reduce((n, it) => n + it.qty * dishById(it.id).price, 0);
 const draftHasOos = () => draft.some(it => isOos(it.id));
+/* Tổng số phần của 1 món đang nằm trong giỏ (gộp các dòng ghi chú khác nhau) */
+const menuQty = id => draft.filter(it => it.id === id).reduce((n, it) => n + it.qty, 0);
 
 /* Bỏ dấu tiếng Việt để tìm kiếm không phụ thuộc dấu */
 const norm = t => String(t).toLowerCase().normalize('NFD')
@@ -75,6 +81,7 @@ function renderMenu() {
 
   $('#menu-grid').innerHTML = dishes.length ? dishes.map(d => {
     const oos = isOos(d.id);
+    const q = menuQty(d.id);   /* ADR-N06: món đã trong giỏ → hiển thị bộ đếm − qty + */
     return `
     <article class="menu-card ${oos ? 'oos' : ''}">
       <div class="menu-thumb">${d.emoji}</div>
@@ -84,11 +91,17 @@ function renderMenu() {
         <p class="menu-price">${fmtVND(d.price)}</p>
         ${oos ? '<span class="badge-oos">Hết hàng</span>' : ''}
       </div>
-      <button class="btn-add" data-add="${d.id}" ${oos ? 'disabled' : ''}
-        aria-label="Thêm ${d.name} vào đơn"
-        title="${oos ? 'Món này hiện đã hết, vui lòng chọn món khác.' : 'Thêm vào Order Draft'}">
-        <i class="ph-bold ph-plus"></i>
-      </button>
+      ${q === 0
+        ? `<button class="btn-add" data-add="${d.id}" ${oos ? 'disabled' : ''}
+            aria-label="Thêm ${d.name} vào đơn"
+            title="${oos ? 'Món này hiện đã hết, vui lòng chọn món khác.' : 'Thêm vào Order Draft'}">
+            <i class="ph-bold ph-plus"></i>
+          </button>`
+        : `<div class="qty-ctrl" aria-label="${d.name} đã có ${q} phần trong giỏ">
+            <button data-dec-menu="${d.id}" aria-label="Giảm ${d.name}"><i class="ph-bold ph-minus"></i></button>
+            <span class="qty-num">${q}</span>
+            <button data-inc-menu="${d.id}" ${oos ? 'disabled' : ''} aria-label="Thêm ${d.name}"><i class="ph-bold ph-plus"></i></button>
+          </div>`}
     </article>`;
   }).join('') : `
     <div class="menu-empty">
@@ -162,7 +175,7 @@ function renderDraft() {
     <button class="btn-primary btn-send" data-open-confirm ${(!draftUnits() || hasOos) ? 'disabled' : ''}>
       ${hasOos
         ? '<i class="ph-duotone ph-lock-key"></i> Xác nhận gửi bếp — có món hết hàng'
-        : `<i class="ph-duotone ph-bell-ringing"></i> Xác nhận gửi bếp · ${fmtVND(draftTotal())}`}
+        : `<i class="ph-duotone ph-bell-ringing"></i> Xác nhận gửi bếp`}
     </button>`;
 }
 
@@ -191,7 +204,8 @@ function openConfirm() {
   if (!draft.length || draftHasOos()) return;   /* ADR-001 — chặn thêm 1 lớp */
   $('#confirm-text').textContent =
     `Xác nhận gửi ${draftUnits()} món xuống bếp? Đơn sau khi gửi sẽ không thể tự hủy trên máy.`;
-  $('#confirm-total').textContent = fmtVND(draftTotal());
+  /* confirm-total là tùy chọn (có thể bị bỏ khỏi HTML) */
+  setText('#confirm-total', fmtVND(draftTotal()));
   $('#confirm-modal').style.display = 'grid';
 }
 function closeConfirm() { $('#confirm-modal').style.display = 'none'; }
@@ -201,13 +215,89 @@ function sendToKitchen() {
   const code = `#${TABLE_INFO.code}-${String(orderSeq).padStart(3, '0')}`;
   const total = draftTotal();
   orderSeq += 1;
+  /* US-09: lưu đơn đã gửi (giá snapshot từ CATALOG tại thời điểm đặt) */
+  orders.unshift({
+    code,
+    items: draft.map(x => ({ ...x })),
+    status: 'pending',
+    placedTs: Date.now(),
+  });
   draft = [];
   closeConfirm();
   closeDraft();
   renderStickyBar();
-  $('#success-code').textContent = code;
-  $('#success-total').textContent = fmtVND(total);
+  renderMenu();   /* ADR-N06: giỏ đã trống → bộ đếm trên thẻ món về lại nút "+" cho vòng gọi mới */
+  /* success-code / success-total là tùy chọn — popup vẫn phải mở dù phần tử bị xóa */
+  setText('#success-code', code);
+  setText('#success-total', fmtVND(total));
   $('#success-modal').style.display = 'grid';
+}
+
+/* ----- US-09: Trang xem Hóa đơn tạm tính (ADR-N05) ----- */
+const orderTotal = o => o.items.reduce((n, it) => n + it.qty * dishById(it.id).price, 0);
+
+/* Bảng hóa đơn — toàn bộ món đã gọi, giá snapshot CATALOG (US-07) */
+function buildBillTable() {
+  const rows = [];
+  orders.forEach(o => {
+    const served = o.status === 'served';
+    o.items.forEach(it => {
+      const d = dishById(it.id);
+      rows.push(`
+      <tr>
+        <td>${d.name}${it.note ? `<small>${esc(it.note)}</small>` : ''}</td>
+        <td class="num">${it.qty}</td>
+        <td class="num">${fmtVND(d.price * it.qty)}</td>
+        <td><span class="status-pill ${served ? 'st-served' : 'st-pending'}">${served ? 'Đã phục vụ' : 'Chưa phục vụ'}</span></td>
+      </tr>`);
+    });
+  });
+  const totalQty = orders.reduce((n, o) => n + o.items.reduce((m, it) => m + it.qty, 0), 0);
+  const totalAmt = orders.reduce((n, o) => n + orderTotal(o), 0);
+  return `
+    <div class="bill">
+      <table class="bill-table">
+        <thead><tr><th>Món</th><th class="num">SL</th><th class="num">Thành tiền</th><th>Trạng thái</th></tr></thead>
+        <tbody>${rows.join('')}</tbody>
+      </table>
+      <div class="bill-foot">
+        <span>Tổng số món: <b>${totalQty}</b></span>
+        <span>Tổng thành tiền: <b>${fmtVND(totalAmt)}</b></span>
+      </div>
+    </div>`;
+}
+
+function openBillView() {
+  const body = $('#bill-body');
+  if (!orders.length) {
+    body.innerHTML = `
+      <div class="draft-empty">
+        <i class="ph-duotone ph-receipt"></i>
+        <p>Bàn chưa gọi món nào. Hãy chọn món từ E-Menu trước nhé!</p>
+      </div>`;
+    $('#btn-request-pay').disabled = true;
+  } else {
+    body.innerHTML = buildBillTable();
+    $('#btn-request-pay').disabled = false;
+  }
+  $('#bill-view').hidden = false;
+}
+
+/* Yêu cầu thanh toán: còn món chưa phục vụ → cảnh báo; đã phục vụ hết → hướng dẫn ra quầy */
+function requestPayment() {
+  const icon = $('#pay-icon'), title = $('#pay-title'), msg = $('#pay-msg');
+  if (orders.some(o => o.status !== 'served')) {
+    icon.className = 'modal-icon warn';
+    icon.innerHTML = '<i class="ph-fill ph-warning-circle"></i>';
+    title.textContent = 'Chưa thể thanh toán';
+    msg.textContent = 'Bạn còn món chờ phục vụ. Vui lòng đợi nhân viên bưng món ra đủ, kiểm tra lại hóa đơn rồi hãy yêu cầu thanh toán nhé. Nếu cần hỗ trợ gấp, xin gọi nhân viên!';
+  } else {
+    icon.className = 'modal-icon green';
+    icon.innerHTML = '<i class="ph-bold ph-check"></i>';
+    title.textContent = 'Hoàn tất gọi món';
+    msg.textContent = 'Vui lòng đến quầy thu ngân để thanh toán. Xin cảm ơn!';
+  }
+  $('#pay-modal').style.display = 'grid';
 }
 
 /* ----- Ghi chú từng món (ADR-N01) ----- */
@@ -267,8 +357,23 @@ $('#search-input').addEventListener('input', e => {
 
 $('#menu-grid').addEventListener('click', e => {
   const btn = e.target.closest('[data-add]');
-  if (!btn || btn.disabled) return;
-  addToDraft(btn.dataset.add);
+  const incM = e.target.closest('[data-inc-menu]');
+  const decM = e.target.closest('[data-dec-menu]');
+
+  if (btn && !btn.disabled) {                    /* thêm lần đầu (ADR-N06) */
+    addToDraft(btn.dataset.add);
+  } else if (incM && !incM.disabled) {           /* tăng từ bộ đếm trên thẻ */
+    addToDraft(incM.dataset.incMenu);
+  } else if (decM) {                             /* giảm: ưu tiên dòng không ghi chú */
+    const id = decM.dataset.decMenu;
+    const lines = draft.map((it, i) => ({ it, i })).filter(x => x.it.id === id);
+    const target = lines.find(x => !x.it.note) || lines[lines.length - 1];
+    if (!target) return;
+    target.it.qty -= 1;
+    if (target.it.qty <= 0) draft.splice(target.i, 1);
+  } else return;
+
+  renderMenu();          /* cập nhật lại nút "+" ↔ bộ đếm */
   renderStickyBar();
   if (draftOpen) renderDraft();
 });
@@ -293,6 +398,7 @@ $('#draft-body').addEventListener('click', e => {
   else return;
   renderDraft();
   renderStickyBar();
+  renderMenu();   /* đồng bộ bộ đếm số lượng trên thẻ món (ADR-N06) */
 });
 
 /* Modal ghi chú món */
@@ -315,6 +421,12 @@ $('#btn-confirm-send').addEventListener('click', sendToKitchen);
 $('#btn-close-success').addEventListener('click', () => {
   $('#success-modal').style.display = 'none';
 });
+
+/* ----- Trang hóa đơn + yêu cầu thanh toán ----- */
+$('#btn-view-bill').addEventListener('click', openBillView);
+$('#btn-close-bill').addEventListener('click', () => { $('#bill-view').hidden = true; });
+$('#btn-request-pay').addEventListener('click', requestPayment);
+$('#btn-pay-close').addEventListener('click', () => { $('#pay-modal').style.display = 'none'; });
 
 /* ===================== KHỞI TẠO ===================== */
 renderCategories();

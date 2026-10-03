@@ -14,7 +14,7 @@
    chủ đạo teal của design-system — mọi icon món ăn tự đồng bộ màu. */
 .customer-app {
   --primary: var(--color-primary);
-  --primary-dark: #0A4A5E;
+  --primary-dark: #FF5A36;
   --primary-soft: #E7F1F5;
 
   background-color: var(--color-neutral-bg);
@@ -24,6 +24,7 @@
   flex-direction: column;
   -webkit-tap-highlight-color: transparent;
   overflow-x: hidden; /* chặn scroll ngang tuyệt đối trên điện thoại */
+  touch-action: manipulation; /* chặn double-tap zoom, vẫn cho pinch-zoom 2 ngón */
 }
 
 /* Reset box-sizing — design-system.css không có reset toàn cục, nếu bỏ đoạn này
@@ -285,6 +286,36 @@
 .btn-add:hover:not(:disabled) { background: var(--primary-dark); }
 .btn-add:disabled { background: #CBD5E1; box-shadow: none; cursor: not-allowed; }
 
+/* Bộ đếm số lượng trên thẻ món — thay nút "+" khi món đã vào giỏ (ADR-N06) */
+.qty-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+.qty-ctrl button {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1.5px solid #E2E8F0;
+  background: #F8FAFC;
+  color: var(--color-text-main);
+  font-size: 16px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.qty-ctrl button:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
+.qty-ctrl button:disabled { opacity: 0.4; cursor: not-allowed; }
+.qty-num {
+  min-width: 20px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--color-primary);
+}
+
 .menu-empty {
   grid-column: 1 / -1;
   text-align: center;
@@ -520,6 +551,7 @@
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .modal {
   width: 100%;
+  max-width: 400px;   /* mobile full-width, desktop vừa đủ — không giãn theo toàn màn hình */
   background: var(--color-neutral-card);
   border-radius: 20px;
   padding: 22px 18px;
@@ -603,13 +635,134 @@
   background: #F8FAFC;
   padding: 12px 14px;
   font: inherit;
-  font-size: 14px;
+  /* ≥16px trên mobile — iOS Safari tự zoom trang khi focus vào ô nhập < 16px */
+  font-size: 16px;
   color: var(--color-text-main);
   resize: none;
   outline: none;
   transition: border-color 0.2s;
 }
 .note-input:focus { border-color: var(--color-primary); background: #fff; }
+
+/* ---------- US-09: Nút "Xem hóa đơn" + trang hóa đơn (ADR-N05) ---------- */
+.cust-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;   /* dãn full hàng ở mọi breakpoint — tránh co giữa khi cha là flex column + align-items:center */
+}
+.btn-view-bill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--color-primary);
+  background: var(--color-neutral-card);
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: none;
+  white-space: nowrap;
+}
+.btn-view-bill:hover { background: var(--color-primary); color: #fff; }
+.btn-view-bill { margin-left: auto; }   /* đẩy nút sát mép phải kể cả khi justify-content bị ghi đè */
+
+/* Trang xem hóa đơn — full màn hình, đè lên E-Menu và sticky bar */
+.bill-view {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--color-neutral-bg);
+  display: flex;
+  flex-direction: column;
+}
+.bill-view[hidden] { display: none; }
+.bill-view-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  padding-top: calc(10px + env(safe-area-inset-top, 0px));
+  background: var(--color-neutral-card);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.bill-view-head b {
+  flex: 1;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-main);
+}
+.bill-view-head b i { color: var(--color-primary); }
+.bill-view-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 14px;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+}
+.bill-view-foot {
+  padding: 12px 14px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  background: var(--color-neutral-card);
+  border-top: 1px solid #E2E8F0;
+}
+.modal-icon.warn { color: var(--color-warning); background: #FEF3C7; }
+
+/* Pill trạng thái (đồng bộ palette status-* của trang Waiter) */
+.status-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.st-pending { background: #FEF3C7; color: var(--color-warning); }
+.st-cooking { background: #FDE68A; color: #92400E; }
+.st-ready { background: #DCFCE7; color: var(--color-success); border: 1px solid #BBF7D0; }
+.st-served { background: #E0F2FE; color: #0369A1; }
+
+/* Bảng hóa đơn tạm tính */
+.bill {
+  background: var(--color-neutral-card);
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  padding: 4px 14px 12px;
+}
+.bill-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.bill-table th {
+  text-align: left;
+  color: var(--color-text-muted);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 10px 6px 8px;
+  border-bottom: 1px solid #E2E8F0;
+}
+.bill-table th.num { text-align: center; }
+.bill-table td { padding: 9px 6px; border-bottom: 1px dashed #E2E8F0; vertical-align: top; color: var(--color-text-main); }
+.bill-table td.num { text-align: center; white-space: nowrap; font-weight: 600; }
+.bill-table small { display: block; color: var(--color-text-muted); font-size: 11px; }
+.bill-table .status-pill { font-size: 10px; }
+.bill-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding-top: 10px;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+  flex-wrap: wrap;
+}
+.bill-foot b { color: var(--color-primary); font-size: 14px; }
 
 /* ===================== MÀN HÌNH LỚN HƠN (nâng cấp dần) ===================== */
 
@@ -657,8 +810,31 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .cust-head { flex-direction: row; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  /* Hàng tiêu đề đã tự căn 2 bên qua .cust-head-row (space-between + margin-left:auto)
+     ở mọi kích thước màn hình — chỉ cần căn giữa dọc cho thẳng hàng với nút */
+  .cust-head { align-items: center; }
   .cat-row { flex-wrap: wrap; overflow: visible; margin-right: 0; padding-right: 0; }
+
+  /* ---- Thu nhỏ nhẹ typography/icon cho màn hình lớn ----
+     Chuẩn tham chiếu: chip phân loại (13px) — giữ nguyên.
+     Các phần cỡ điện thoại (thiết kế cho màn retina cầm tay) giảm ~1-2px cho hài hòa. */
+  .cust-head h2 { font-size: 17px; }
+  .cust-head h2 i { font-size: 19px; }
+  .btn-view-bill { min-height: 36px; padding: 6px 12px; font-size: 12.5px; }
+  .btn-view-bill i { font-size: 15px; }
+  .cust-search input { min-height: 42px; font-size: 14px; }
+  .cust-search i { font-size: 16px; }
+  .note-input { font-size: 14px; }   /* desktop không có auto-zoom, thu nhỏ như phần còn lại */
+  .menu-info h3 { font-size: 14px; }
+  .menu-price { font-size: 13px; }
+  .menu-thumb { width: 48px; height: 48px; font-size: 24px; }
+  .btn-add { width: 38px; height: 38px; font-size: 19px; }
+  .qty-ctrl button { width: 34px; height: 34px; font-size: 15px; }
+  .qty-num { font-size: 13px; }
+  .badge-hot { font-size: 10px; }
+  .badge-oos { font-size: 10.5px; }
+  .btn-primary { min-height: 42px; font-size: 13.5px; }
+  .sb-info b { font-size: 14px; }
 }
 
 /* ===================== ĐIỆN THOẠI: ẨN THANH CUỘN =====================

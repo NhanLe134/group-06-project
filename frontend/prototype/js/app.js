@@ -669,7 +669,6 @@ function renderConfirmModal() {
     <div class="modal" role="alertdialog" aria-modal="true" aria-label="Xác nhận gửi bếp">
       <h3><i class="ph-duotone ph-bell-ringing"></i> Xác nhận gửi bếp</h3>
       <p>${COPY.confirm(draftUnits())}</p>
-      <p class="muted">${TABLE_INFO.label} · Tổng tạm tính: <b>${fmtVND(draftTotal())}</b></p>
       <div class="modal-actions">
         <button class="btn-ghost" data-action="cancel-confirm">Hủy bỏ</button>
         <button class="btn-primary" data-action="confirm-send">Xác nhận</button>
