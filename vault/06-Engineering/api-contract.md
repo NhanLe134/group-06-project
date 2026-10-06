@@ -246,16 +246,18 @@ Phát khi `POST /menu/items/{id}/out-of-stock` được gọi — broadcast toà
 
 ## 6. KDS REST API (US-03) — đã triển khai
 
+> **Từ 2026-10-07 (ADR-ARCH-004):** mọi `id` và khóa ngoại trong Mục 6–7 là **chuỗi mã** do database sinh (`MON005`, `HD-20261007-0003`, `CTM-20261007-0004`…), không còn là UUID. Tham số đường dẫn `{id}` nhận đúng chuỗi này; mã không tồn tại → 404.
+
 > Thêm 2026-10-06 cùng `story-spec-us03-kds.md`. Code: `backend/app/routers/kds.py`, `backend/app/routers/menu.py`, nghiệp vụ ở `backend/app/services/kds.py`. Tên trường theo bảng thật trên Supabase (`frontend/fe_ofc/dtb.md`, ADR-ARCH-003). **Auth: TBD** — chưa có JWT, xem Story Spec Mục 7.
 
 **Đối tượng `KdsItem`** (1 dòng `chitietmon` kèm tên bàn, tên món):
 
 ```json
 {
-  "id": "8c3d1a2b-...",
-  "hoadon_id": "20ab3f...",
+  "id": "CTM-20261007-0004",
+  "hoadon_id": "HD-20261007-0003",
   "ban": "Bàn 04",
-  "thucdon_id": "3a2b1c0d-...",
+  "thucdon_id": "MON005",
   "tenmon": "Bún chả Hà Nội",
   "soluong": 1,
   "ghichu": "Ít cay",
@@ -288,3 +290,25 @@ Phát khi `POST /menu/items/{id}/out-of-stock` được gọi — broadcast toà
 | `ITEM_READY` | `{ "chitietmon_id": "...", "ban": "Bàn 01", "tenmon": "Phở bò tái lăn", "soluong": 2 }` | Món chuyển sang `da_xong` (US-03 AC2) — màn hình Phục vụ dùng để báo "Ting!" |
 
 > Sự kiện `TICKET_OVERDUE` (Mục 5.1) **chưa triển khai** — chưa có job quét món chờ quá 15 phút.
+
+## 7. Đối soát tồn kho & Đóng ca (US-08) — đã triển khai
+
+> Thêm 2026-10-06 cùng `story-spec-us08-inventory.md`. Code: `backend/app/routers/inventory.py`, nghiệp vụ `backend/app/services/inventory.py`. Bảng `phieukiemke`, `chitietkiemke` (migration 006). **Auth:** chốt ca bắt buộc PIN tài khoản `QUAN_LY`; các API còn lại TBD (chưa có JWT).
+
+**Đối tượng `Shift`** (phiếu kiểm kê): `id` (= mã phiếu, vd. `PKK-20261007-0001`), `maphieu` (giữ để tương thích, bằng `id`), `trangthai (nhap | da_chot), tuluc, giotao, giochot, nguoichot, so_mon, so_mon_hao_hut, tong_hao_hut` — thời gian trả kèm múi giờ UTC. `ShiftDetail` = `Shift` + `lines[]`:
+
+```json
+{ "thucdon_id": "MON002", "tenmon": "Trà đá", "tondauca": 50, "daban": 2, "tonlythuyet": 48,
+  "tonthucte": 47, "chenhlech": -1, "lydo": "Vỡ 1 chai" }
+```
+
+| Method | Path | Body | Response | Lỗi |
+| :--- | :--- | :--- | :--- | :--- |
+| GET | `/inventory/shifts` | — | `Shift[]`, mới nhất trước | — |
+| POST | `/inventory/shifts` | — | 201 `ShiftDetail` (phiếu nháp, chụp tồn đầu ca món có `soluongton`) | 409 `SHIFT_DRAFT_EXISTS`; 409 `NO_TRACKED_ITEMS` |
+| GET | `/inventory/shifts/{id}` | — | `ShiftDetail` (nháp: B, C tính trực tiếp) | 404 `SHIFT_NOT_FOUND` |
+| PUT | `/inventory/shifts/{id}/lines` | `{ "lines": [{ "thucdon_id", "tonthucte": int ≥ 0 \| null, "lydo" }] }` | `ShiftDetail` | 404; 409 `SHIFT_CLOSED`; 422 `UNKNOWN_ITEM`; 422 số âm |
+| POST | `/inventory/shifts/{id}/close` | `{ "lines": [...], "manager_pin": "1234" }` | `ShiftDetail` (`da_chot`); `thucdon.soluongton = tonthucte`; phát `ITEM_OOS_BROADCAST` cho món đổi còn/hết | 404; 409 `SHIFT_CLOSED`; 422 `ACTUAL_STOCK_MISSING` (`details` = tên món); 422 `LOSS_REASON_REQUIRED` (`details` = `[{thucdon_id, tenmon}]`); 403 `INVALID_MANAGER_PIN` |
+| DELETE | `/inventory/shifts/{id}` | — | 204 | 404; 409 `SHIFT_CLOSED` (BR-07) |
+
+Body lỗi có thể kèm `details` (mở rộng body chuẩn ở đầu tài liệu) để client chỉ ra đúng dòng vi phạm.

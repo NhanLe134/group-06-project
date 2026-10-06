@@ -1,4 +1,3 @@
-import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
@@ -22,7 +21,7 @@ async def list_menu_items(db: Db) -> list[MenuItemOut]:
     return [MenuItemOut.from_thucdon(mon) for mon in result.scalars().all()]
 
 
-async def _broadcast_availability(db: AsyncSession, mon: MenuItemOut) -> None:
+async def broadcast_availability(db: AsyncSession, mon: MenuItemOut) -> None:
     # REQ-09 / BR-03: đồng bộ E-Menu, POS, KDS (api-contract.md Mục 5.2)
     await manager.publish(
         MENU_OOS_CHANNEL,
@@ -36,26 +35,26 @@ async def _broadcast_availability(db: AsyncSession, mon: MenuItemOut) -> None:
     )
 
 
-async def _set_availability(db: AsyncSession, item_id: uuid.UUID, available: bool) -> MenuItemOut:
+async def _set_availability(db: AsyncSession, item_id: str, available: bool) -> MenuItemOut:
     mon = MenuItemOut.from_thucdon(await kds_service.set_menu_availability(db, item_id, available))
-    await _broadcast_availability(db, mon)
+    await broadcast_availability(db, mon)
     return mon
 
 
 @router.post("/items/{item_id}/out-of-stock", response_model=MenuItemOut)
-async def mark_out_of_stock(item_id: uuid.UUID, db: Db) -> MenuItemOut:
+async def mark_out_of_stock(item_id: str, db: Db) -> MenuItemOut:
     """US-03 AC3: Bếp đánh dấu Hết hàng → thucdon.trangthaiban = false."""
     return await _set_availability(db, item_id, False)
 
 
 @router.post("/items/{item_id}/in-stock", response_model=MenuItemOut)
-async def mark_in_stock(item_id: uuid.UUID, db: Db) -> MenuItemOut:
+async def mark_in_stock(item_id: str, db: Db) -> MenuItemOut:
     """Mở bán lại món đã báo hết (409 STOCK_EMPTY nếu món đếm số lượng đang = 0)."""
     return await _set_availability(db, item_id, True)
 
 
 @router.patch("/items/{item_id}/stock", response_model=MenuItemOut)
-async def update_stock(item_id: uuid.UUID, body: StockUpdateIn, db: Db) -> MenuItemOut:
+async def update_stock(item_id: str, body: StockUpdateIn, db: Db) -> MenuItemOut:
     """Cập nhật số lượng tồn của món bán nguyên đơn vị (đồ uống chai/lon...).
 
     Về 0 → món tự thành Hết hàng; nhập lại > 0 → bán lại (nếu không bị tắt bán thủ công).
@@ -64,5 +63,5 @@ async def update_stock(item_id: uuid.UUID, body: StockUpdateIn, db: Db) -> MenuI
     truoc = (await kds_service.get_menu_item(db, item_id)).het_hang
     mon = MenuItemOut.from_thucdon(await kds_service.set_menu_stock(db, item_id, body.stock))
     if (mon.status == "out_of_stock") != truoc:
-        await _broadcast_availability(db, mon)
+        await broadcast_availability(db, mon)
     return mon

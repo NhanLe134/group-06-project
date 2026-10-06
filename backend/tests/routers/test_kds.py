@@ -96,9 +96,7 @@ async def test_update_status_rejects_unknown_value(client: AsyncClient, db_sessi
 
 
 async def test_update_status_404(client: AsyncClient):
-    resp = await client.patch(
-        "/kds/items/00000000-0000-0000-0000-000000000000/status", json={"trangthai": "dang_nau"}
-    )
+    resp = await client.patch("/kds/items/KHONG-TON-TAI/status", json={"trangthai": "dang_nau"})
     assert resp.status_code == 404
     assert resp.json()["error_code"] == "ORDER_ITEM_NOT_FOUND"
 
@@ -178,7 +176,7 @@ async def test_mark_out_of_stock_then_in_stock(client: AsyncClient, db_session: 
 
 
 async def test_mark_out_of_stock_404(client: AsyncClient):
-    resp = await client.post("/menu/items/00000000-0000-0000-0000-000000000000/out-of-stock")
+    resp = await client.post("/menu/items/KHONG-TON-TAI/out-of-stock")
     assert resp.status_code == 404
     assert resp.json()["error_code"] == "MENU_ITEM_NOT_FOUND"
 

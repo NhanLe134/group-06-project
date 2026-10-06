@@ -1,6 +1,6 @@
 # Data Model — Restaurant Smart Ordering System (PostgreSQL 18)
 
-> Vai trò: System Architect. ERD hỗ trợ PostgreSQL 18, dùng `uuid` (mở rộng `pgcrypto`/`gen_random_uuid()`) làm khóa chính để tránh lộ số thứ tự đơn hàng qua QR/URL.
+> Vai trò: System Architect. ERD hỗ trợ PostgreSQL 18. ~~Dùng `uuid` làm khóa chính để tránh lộ số thứ tự đơn hàng qua QR/URL.~~ **Cập nhật 2026-10-07 (ADR-ARCH-004):** khóa chính là `VARCHAR` dạng mã đọc được do database tự sinh (`MON001`, `HD-20261007-0001`…) — xem Mục 5. Mã tuần tự dễ đoán, nên QR/URL cho khách phải dùng token phiên riêng thay vì `id`.
 > Nguồn tham chiếu: `vault/06-Engineering/architecture.md`, `vault/01-Requirements/requirements.md`, `vault/04-User-Stories/user-stories.md`, `vault/01-Requirements/glossary.md`.
 
 ## 1. ERD (Mermaid)
@@ -255,3 +255,5 @@ EXECUTE FUNCTION purge_voice_transcripts_on_session_close();
 5. Hầu hết bảng chưa có audit fields (`created_at`, `updated_at`) theo quy ước ở Mục 3; `thucdon` chưa có cột mô tả món.
 6. Giá trị hợp lệ của các cột `trangthai` / `vaitro` đã được nhóm định nghĩa trong script tạo bảng (dạng comment, xem `frontend/fe_ofc/dtb.md`) nhưng DB **chưa có ràng buộc CHECK** — backend phải tự kiểm tra; nên bổ sung CHECK khi schema ổn định. Lưu ý cho KDS: `kitchen.html` và AC2/AC4 của US-03 đang dùng `PENDING`/`COOKING`/`READY` và vai trò `CHEF`/`MANAGER`/`WAITER`; khi nối API cần ánh xạ sang giá trị DB: `cho_nau`/`dang_nau`/`da_xong` và `BEP`/`QUAN_LY`/`PHUC_VU`.
 7. **Tồn kho theo số lượng (2026-10-06, migration 002):** `thucdon.soluongton` cho món bán nguyên đơn vị. Hiện cập nhật bằng `PATCH /menu/items/{id}/stock`. **Chưa có:** tự trừ `soluongton` khi chốt đơn và chặn đặt vượt số lượng tồn — thuộc luồng `POST /orders/confirm` (story đặt món), cần làm trong cùng transaction để tránh bán âm.
+8. **Đối soát tồn kho & đóng ca (US-08, migration 006):** thêm bảng `phieukiemke` + `chitietkiemke` (không có trong ERD Mục 1 — ERD dùng `INVENTORY_ITEMS` cho nguyên liệu). Model: `backend/app/models/inventory.py`. Chi tiết cột: `frontend/fe_ofc/dtb.md` mục 10–11. Story Spec: `story-spec-us08-inventory.md`.
+9. **Khóa chính dạng mã (2026-10-07, migration 007, ADR-ARCH-004):** `id` của 11 bảng đổi từ UUID sang `VARCHAR(30)` do database tự sinh — `NV001`, `MON001`, `NL001`, `CT001`; `PB-`, `HD-`, `CTM-`, `HM-`, `GN-`, `PKK-`, `CTKK-` + `YYYYMMDD` (giờ VN) + số 4 chữ số chạy liên tục. Khóa ngoại cũng là mã (vd. `chitietmon.thucdon_id = MON005`). Bỏ cột `phieukiemke.maphieu` (trùng với `id`). Quy tắc chi tiết: `frontend/fe_ofc/dtb.md`.

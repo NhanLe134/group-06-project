@@ -464,40 +464,268 @@ window.deleteIngredient = function(id) {
 }
 
 // ==========================================
-// NGHIỆP VỤ: PHIẾU KIỂM KÊ (INVENTORY SESSIONS)
+// NGHIỆP VỤ: PHIẾU KIỂM KÊ — US-08 Đối soát tồn kho & Đóng ca
+// Dữ liệu thật qua FastAPI (API_BASE_URL trong config.js) — bảng phieukiemke / chitietkiemke.
+// Spec: vault/06-Engineering/story-spec-us08-inventory.md
 // ==========================================
-let inventorySessionsData = [
-    { id: 'PKK-1010', date: '10/10/2026 23:00', manager: 'Quản lý Admin', status: 'Đã chốt', bg: '#BBF7D0', color: '#166534' },
-    { id: 'PKK-1110', date: '11/10/2026 23:00', manager: 'Quản lý Admin', status: 'Đang nháp', bg: '#FEF3C7', color: '#D97706' }
-];
+const INV_API = ((window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || 'http://localhost:8000') + '/inventory/shifts';
+const INV_LOSS_MSG = 'Vui lòng nhập lý do hao hụt trước khi chốt ca';
+let invCurrent = null;   // phiếu đang mở (chi tiết từ API)
 
-function renderInventorySessions() {
+const invEsc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const invTime = iso => {
+    if (!iso) return '';
+    const d = new Date(iso), p = n => String(n).padStart(2, '0');
+    return `${p(d.getDate())}/${p(d.getMonth() + 1)} ${p(d.getHours())}:${p(d.getMinutes())}`;   // giờ máy (VN)
+};
+
+async function invApi(method, path = '', body) {
+    let res;
+    try {
+        res = await fetch(INV_API + path, {
+            method,
+            headers: body ? { 'Content-Type': 'application/json' } : undefined,
+            body: body ? JSON.stringify(body) : undefined,
+        });
+    } catch {
+        throw { status: 0, error_code: 'NETWORK', message: 'Không kết nối được máy chủ. Kiểm tra backend đang chạy.' };
+    }
+    if (res.status === 204) return null;
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+        const message = (data && (data.message || (Array.isArray(data.detail) ? 'Dữ liệu nhập không hợp lệ' : data.detail))) || `Lỗi máy chủ (HTTP ${res.status})`;
+        throw { status: res.status, error_code: data && data.error_code, message, details: data && data.details };
+    }
+    return data;
+}
+
+// ---------- Danh sách phiếu ----------
+async function renderInventorySessions() {
     const tbody = document.querySelector('#inventory-sessions-table tbody');
     if (!tbody) return;
-    tbody.innerHTML = '';
-    inventorySessionsData.forEach(session => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td><b>${session.id}</b></td>
-            <td>${session.date}</td>
-            <td>${session.manager}</td>
-            <td><span class="status-badge" style="background:${session.bg}; color:${session.color}; padding:4px 8px; border-radius:12px; font-size:12px; font-weight:700">${session.status}</span></td>
+    let shifts;
+    try {
+        shifts = await invApi('GET');
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="inv-empty">${invEsc(err.message)} <button class="btn btn-outline" onclick="renderInventorySessions()">Thử lại</button></td></tr>`;
+        return;
+    }
+    if (!shifts.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="inv-empty">Chưa có phiếu kiểm kê nào. Bấm “Tạo Phiếu Kiểm Kê” khi kết thúc ca.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = shifts.map(s => {
+        const closed = s.trangthai === 'da_chot';
+        const loss = s.so_mon_hao_hut ? `<span class="diff-val negative">${s.tong_hao_hut} (${s.so_mon_hao_hut} món)</span>` : '<span class="diff-val zero">0</span>';
+        return `
+        <tr>
+            <td><b>${invEsc(s.maphieu)}</b></td>
+            <td>${invTime(s.tuluc)} → ${closed ? invTime(s.giochot) : 'hiện tại'}</td>
+            <td>${closed ? invEsc(s.nguoichot || '—') : '—'}</td>
+            <td>${loss}</td>
+            <td><span class="status-badge inv-badge ${closed ? 'inv-badge--closed' : 'inv-badge--draft'}">${closed ? 'Đã chốt' : 'Đang nháp'}</span></td>
             <td>
-                <button class="btn-icon" title="${session.status === 'Đang nháp' ? 'Tiếp tục kiểm' : 'Xem chi tiết'}" onclick="showToast('Tính năng', 'Đang mở chi tiết phiếu kiểm kê...', 'primary')"><i class="ph-bold ${session.status === 'Đang nháp' ? 'ph-pencil-simple' : 'ph-eye'}"></i></button>
-                <button class="btn-icon" style="color:var(--color-danger)" title="Xóa phiếu" onclick="deleteSession('${session.id}')"><i class="ph-bold ph-trash"></i></button>
+                <button class="btn-icon" title="${closed ? 'Xem chi tiết' : 'Tiếp tục kiểm'}" onclick="openInventoryShift('${s.id}')"><i class="ph-bold ${closed ? 'ph-eye' : 'ph-pencil-simple'}"></i></button>
+                ${closed ? '' : `<button class="btn-icon" style="color:var(--color-danger)" title="Xóa phiếu" onclick="deleteSession('${s.id}', '${invEsc(s.maphieu)}')"><i class="ph-bold ph-trash"></i></button>`}
             </td>
-        `;
-        tbody.appendChild(tr);
+        </tr>`;
+    }).join('');
+}
+
+window.createInventoryShift = async function() {
+    const btn = document.getElementById('inv-create-btn');
+    btn.disabled = true;
+    try {
+        const shift = await invApi('POST');
+        showToast('Đã tạo phiếu', `Phiếu ${shift.maphieu} — nhập tồn thực tế cho từng món.`, 'success');
+        showInventoryDetail(shift);
+        renderInventorySessions();
+    } catch (err) {
+        if (err.error_code === 'SHIFT_DRAFT_EXISTS') {
+            // Đã có phiếu nháp → mở luôn phiếu đó thay vì báo lỗi
+            const shifts = await invApi('GET').catch(() => []);
+            const draft = shifts.find(s => s.trangthai === 'nhap');
+            showToast('Đang có phiếu chưa chốt', 'Mở phiếu đang kiểm để tiếp tục.', 'warning');
+            if (draft) openInventoryShift(draft.id);
+        } else {
+            showToast('Không tạo được phiếu', err.message, 'danger');
+        }
+    } finally {
+        btn.disabled = false;
+    }
+};
+
+window.deleteSession = async function(id, code) {
+    if (!confirm(`Xóa phiếu nháp ${code}? Số liệu đã nhập sẽ mất.`)) return;
+    try {
+        await invApi('DELETE', `/${id}`);
+        showToast('Xóa thành công', 'Phiếu kiểm kê nháp đã bị xóa.', 'success');
+        if (invCurrent && invCurrent.id === id) closeInventoryDetail();
+        renderInventorySessions();
+    } catch (err) {
+        showToast('Không xóa được', err.message, 'danger');
+    }
+};
+
+// ---------- Bảng đối soát ----------
+window.openInventoryShift = async function(id) {
+    try {
+        showInventoryDetail(await invApi('GET', `/${id}`));
+    } catch (err) {
+        showToast('Không mở được phiếu', err.message, 'danger');
+    }
+};
+
+window.closeInventoryDetail = function() {
+    invCurrent = null;
+    document.getElementById('inv-detail-panel').style.display = 'none';
+    document.getElementById('inv-list-panel').style.display = '';
+};
+
+function showInventoryDetail(shift) {
+    invCurrent = shift;
+    const closed = shift.trangthai === 'da_chot';
+    document.getElementById('inv-list-panel').style.display = 'none';
+    document.getElementById('inv-detail-panel').style.display = '';
+    document.getElementById('inv-detail-title').innerHTML =
+        `${invEsc(shift.maphieu)} <span class="status-badge inv-badge ${closed ? 'inv-badge--closed' : 'inv-badge--draft'}">${closed ? 'Đã chốt · chỉ xem' : 'Đang nháp'}</span>`;
+    document.getElementById('inv-detail-period').textContent =
+        `Kỳ: ${invTime(shift.tuluc)} → ${closed ? invTime(shift.giochot) + ' · Người chốt: ' + (shift.nguoichot || '—') : 'hiện tại'}`;
+
+    document.querySelector('#inv-lines-table tbody').innerHTML = shift.lines.map(l => `
+        <tr data-dish="${l.thucdon_id}" data-c="${l.tonlythuyet}">
+            <td><b>${invEsc(l.tenmon)}</b></td>
+            <td class="num">${l.tondauca}</td>
+            <td class="num">${l.daban}</td>
+            <td class="num"><b>${l.tonlythuyet}</b></td>
+            <td class="num">${closed ? `<b>${l.tonthucte}</b>`
+                : `<input type="number" min="0" step="1" class="inv-input" value="${l.tonthucte ?? ''}" aria-label="Tồn thực tế ${invEsc(l.tenmon)}" oninput="onInventoryInput(this)">`}</td>
+            <td class="num diff-cell"></td>
+            <td>${closed ? invEsc(l.lydo || '—')
+                : `<input type="text" class="form-control inv-reason" value="${invEsc(l.lydo || '')}" placeholder="VD: Vỡ 1 chai" aria-label="Lý do hao hụt ${invEsc(l.tenmon)}" oninput="onInventoryInput(this)">
+                   <span class="inv-field-error"></span>`}</td>
+        </tr>`).join('') || '<tr><td colspan="7" class="inv-empty">Phiếu không có món nào.</td></tr>';
+    document.querySelectorAll('#inv-lines-table tbody tr[data-dish]').forEach(tr => updateInventoryRow(tr, closed ? shift.lines.find(l => l.thucdon_id === tr.dataset.dish) : null));
+
+    document.getElementById('inv-detail-actions').innerHTML = closed ? '' : `
+        <button class="btn btn-outline" onclick="saveInventoryDraft()"><i class="ph-bold ph-floppy-disk"></i> Lưu nháp</button>
+        <button class="btn btn-primary" onclick="requestInventoryClose()"><i class="ph-bold ph-lock-key"></i> Xác nhận Đóng ca</button>`;
+}
+
+/* AC2 — tính chênh lệch ngay khi nhập; hao hụt thì tô dòng và mở ô lý do */
+function updateInventoryRow(tr, savedLine) {
+    const c = Number(tr.dataset.c);
+    let diff = null;
+    if (savedLine) diff = savedLine.chenhlech;
+    else {
+        const raw = tr.querySelector('.inv-input').value;
+        diff = raw === '' ? null : Number(raw) - c;
+    }
+    const cell = tr.querySelector('.diff-cell');
+    tr.classList.toggle('inv-row-loss', diff !== null && diff < 0);
+    tr.classList.toggle('inv-row-surplus', diff !== null && diff > 0);
+    if (diff === null) cell.innerHTML = '<span class="diff-val zero">—</span>';
+    else if (diff < 0) cell.innerHTML = `<span class="diff-val negative">Hao hụt: ${-diff}</span>`;
+    else if (diff > 0) cell.innerHTML = `<span class="diff-val positive">Dư: ${diff}</span>`;
+    else cell.innerHTML = '<span class="diff-val zero">Khớp</span>';
+}
+
+window.onInventoryInput = function(el) {
+    const tr = el.closest('tr');
+    updateInventoryRow(tr);
+    const err = tr.querySelector('.inv-field-error');
+    if (err && el.classList.contains('inv-reason') && el.value.trim()) { err.textContent = ''; el.classList.remove('is-invalid'); }
+};
+
+function collectInventoryLines() {
+    return [...document.querySelectorAll('#inv-lines-table tbody tr[data-dish]')].map(tr => {
+        const raw = tr.querySelector('.inv-input').value;
+        return {
+            thucdon_id: tr.dataset.dish,
+            tonthucte: raw === '' ? null : Number(raw),
+            lydo: tr.querySelector('.inv-reason').value.trim() || null,
+        };
     });
 }
 
-window.deleteSession = function(id) {
-    if(confirm('Bạn có chắc chắn muốn xóa phiếu kiểm kê này?')) {
-        inventorySessionsData = inventorySessionsData.filter(s => s.id !== id);
-        renderInventorySessions();
-        showToast('Xóa thành công', 'Phiếu kiểm kê đã bị xóa.', 'success');
-    }
+/* AC4 — chặn ngay trên giao diện, KHÔNG gọi API khi còn dòng sai */
+function validateInventoryLines(lines) {
+    let ok = true;
+    document.querySelectorAll('#inv-lines-table tbody tr[data-dish]').forEach((tr, i) => {
+        const line = lines[i];
+        const input = tr.querySelector('.inv-input');
+        const reason = tr.querySelector('.inv-reason');
+        const err = tr.querySelector('.inv-field-error');
+        input.classList.toggle('is-invalid', line.tonthucte === null || line.tonthucte < 0 || !Number.isInteger(line.tonthucte));
+        let msg = '';
+        if (line.tonthucte === null) msg = 'Nhập tồn thực tế';
+        else if (line.tonthucte < 0 || !Number.isInteger(line.tonthucte)) msg = 'Tồn thực tế phải là số nguyên ≥ 0';
+        else if (line.tonthucte < Number(tr.dataset.c) && !line.lydo) msg = INV_LOSS_MSG;
+        reason.classList.toggle('is-invalid', msg === INV_LOSS_MSG);
+        err.textContent = msg;
+        if (msg) ok = false;
+    });
+    return ok;
 }
+
+window.saveInventoryDraft = async function() {
+    try {
+        const lines = collectInventoryLines().map(l => ({ ...l, tonthucte: Number.isInteger(l.tonthucte) && l.tonthucte >= 0 ? l.tonthucte : null }));
+        showInventoryDetail(await invApi('PUT', `/${invCurrent.id}/lines`, { lines }));
+        showToast('Đã lưu nháp', 'Số liệu kiểm kê đã được lưu, có thể chốt sau.', 'success');
+    } catch (err) {
+        showToast('Không lưu được', err.message, 'danger');
+    }
+};
+
+window.requestInventoryClose = function() {
+    if (!validateInventoryLines(collectInventoryLines())) {
+        showToast('Chưa thể chốt ca', 'Kiểm tra các dòng báo đỏ trong bảng đối soát.', 'danger');
+        return;
+    }
+    document.getElementById('inv-pin-input').value = '';
+    document.getElementById('inv-pin-error').textContent = '';
+    document.getElementById('inv-pin-modal').style.display = 'flex';
+    document.getElementById('inv-pin-input').focus();
+};
+
+window.closeInventoryPinModal = function() {
+    document.getElementById('inv-pin-modal').style.display = 'none';
+};
+
+/* AC3 + AC5 — gửi PIN Quản lý, chốt ca, chuyển phiếu sang chỉ xem */
+window.submitInventoryClose = async function() {
+    const pin = document.getElementById('inv-pin-input').value.trim();
+    const pinErr = document.getElementById('inv-pin-error');
+    if (!pin) { pinErr.textContent = 'Nhập mã PIN Quản lý'; return; }
+    const btn = document.getElementById('inv-pin-submit');
+    btn.disabled = true;
+    try {
+        const shift = await invApi('POST', `/${invCurrent.id}/close`, { lines: collectInventoryLines(), manager_pin: pin });
+        closeInventoryPinModal();
+        showInventoryDetail(shift);
+        renderInventorySessions();
+        showToast('Đã chốt ca', `Phiếu ${shift.maphieu} đã khóa. Tồn thực tế là tồn đầu ca tiếp theo.`, 'success');
+    } catch (err) {
+        if (err.error_code === 'INVALID_MANAGER_PIN') { pinErr.textContent = err.message; return; }
+        closeInventoryPinModal();
+        if (err.error_code === 'LOSS_REASON_REQUIRED' && Array.isArray(err.details)) {
+            // Server kiểm tra lại AC4 — chỉ ra đúng dòng vi phạm
+            err.details.forEach(d => {
+                const tr = document.querySelector(`#inv-lines-table tr[data-dish="${d.thucdon_id}"]`);
+                if (tr) { tr.querySelector('.inv-field-error').textContent = INV_LOSS_MSG; tr.querySelector('.inv-reason').classList.add('is-invalid'); }
+            });
+        }
+        showToast('Không chốt được ca', err.message, 'danger');
+    } finally {
+        btn.disabled = false;
+    }
+};
+
+document.getElementById('inv-pin-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitInventoryClose();
+    if (e.key === 'Escape') closeInventoryPinModal();
+});
 
 // Hiển thị Toast
 function showToast(title, msg, type = 'primary') {

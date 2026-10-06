@@ -7,7 +7,9 @@ from app.config import settings
 
 
 class Base(DeclarativeBase):
-    pass
+    # Đọc lại ngay giá trị DB tự sinh (id dạng mã, giờ gọi món...) sau khi insert,
+    # tránh lazy-load ngầm trong async session
+    __mapper_args__ = {"eager_defaults": True}
 
 
 def _connect_args(url: str) -> dict:

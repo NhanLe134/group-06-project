@@ -1,5 +1,3 @@
-import uuid
-
 from pydantic import BaseModel, Field
 
 from app.models.menu import ThucDon
@@ -9,7 +7,7 @@ class MenuItemOut(BaseModel):
     """Hợp đồng API `GET /menu` giữ nguyên tên trường tiếng Anh (frontend đang dùng);
     dữ liệu đọc từ bảng `thucdon` trên Supabase và đổi tên ở đây."""
 
-    id: uuid.UUID
+    id: str
     name: str
     description: str | None
     price: float

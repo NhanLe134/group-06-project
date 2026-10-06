@@ -3,8 +3,6 @@
 Story Spec: vault/06-Engineering/story-spec-us03-kds.md
 """
 
-import uuid
-
 from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -63,14 +61,14 @@ async def list_items(db: AsyncSession) -> list[KdsItemOut]:
     return [_to_out(r) for r in rows.all()]
 
 
-async def get_item(db: AsyncSession, item_id: uuid.UUID) -> KdsItemOut:
+async def get_item(db: AsyncSession, item_id: str) -> KdsItemOut:
     row = (await db.execute(_item_query().where(ChiTietMon.id == item_id))).first()
     if row is None:
         raise ApiError(404, "ORDER_ITEM_NOT_FOUND", "Không tìm thấy món này.")
     return _to_out(row)
 
 
-async def _load_for_update(db: AsyncSession, item_id: uuid.UUID) -> tuple[ChiTietMon, bool]:
+async def _load_for_update(db: AsyncSession, item_id: str) -> tuple[ChiTietMon, bool]:
     row = (
         await db.execute(
             select(ChiTietMon, ThucDon.trangthaiban, ThucDon.soluongton)
@@ -98,7 +96,7 @@ def _check_transition(item: ChiTietMon, het_hang: bool, target: str) -> None:
         raise ApiError(409, "ITEM_OUT_OF_STOCK", "Món đã hết hàng — chỉ có thể xóa khỏi hàng đợi.")
 
 
-async def update_status(db: AsyncSession, item_id: uuid.UUID, target: str) -> KdsItemOut:
+async def update_status(db: AsyncSession, item_id: str, target: str) -> KdsItemOut:
     item, het_hang = await _load_for_update(db, item_id)
     _check_transition(item, het_hang, target)
     item.trangthai = target
@@ -107,7 +105,7 @@ async def update_status(db: AsyncSession, item_id: uuid.UUID, target: str) -> Kd
 
 
 async def split_item(
-    db: AsyncSession, item_id: uuid.UUID, soluong: int, target: str
+    db: AsyncSession, item_id: str, soluong: int, target: str
 ) -> tuple[KdsItemOut, KdsItemOut]:
     """Nấu/Xong từng phần: tách `soluong` suất sang dòng mới với trạng thái `target`."""
     item, het_hang = await _load_for_update(db, item_id)
@@ -133,7 +131,7 @@ async def split_item(
     return await get_item(db, item.id), await get_item(db, part.id)
 
 
-async def cancel_out_of_stock(db: AsyncSession, item_id: uuid.UUID) -> KdsItemOut:
+async def cancel_out_of_stock(db: AsyncSession, item_id: str) -> KdsItemOut:
     """Xóa khỏi hàng đợi món CHỜ NẤU mà nguyên liệu đã hết (A-26) — ghi loghuymon."""
     item, het_hang = await _load_for_update(db, item_id)
     if (item.trangthai or CHO_NAU) != CHO_NAU or not het_hang:
@@ -148,21 +146,21 @@ async def cancel_out_of_stock(db: AsyncSession, item_id: uuid.UUID) -> KdsItemOu
     return await get_item(db, item_id)
 
 
-async def _get_menu_item(db: AsyncSession, mon_id: uuid.UUID) -> ThucDon:
+async def _get_menu_item(db: AsyncSession, mon_id: str) -> ThucDon:
     mon = await db.get(ThucDon, mon_id, with_for_update=True)
     if mon is None:
         raise ApiError(404, "MENU_ITEM_NOT_FOUND", "Không tìm thấy món trong thực đơn.")
     return mon
 
 
-async def get_menu_item(db: AsyncSession, mon_id: uuid.UUID) -> ThucDon:
+async def get_menu_item(db: AsyncSession, mon_id: str) -> ThucDon:
     mon = await db.get(ThucDon, mon_id)
     if mon is None:
         raise ApiError(404, "MENU_ITEM_NOT_FOUND", "Không tìm thấy món trong thực đơn.")
     return mon
 
 
-async def set_menu_availability(db: AsyncSession, mon_id: uuid.UUID, available: bool) -> ThucDon:
+async def set_menu_availability(db: AsyncSession, mon_id: str, available: bool) -> ThucDon:
     mon = await _get_menu_item(db, mon_id)
     if available and mon.soluongton == 0:
         # Đồ uống đã hết số lượng: mở bán lại mà không nhập thêm tồn thì E-Menu vẫn báo hết
@@ -175,7 +173,7 @@ async def set_menu_availability(db: AsyncSession, mon_id: uuid.UUID, available: 
     return mon
 
 
-async def set_menu_stock(db: AsyncSession, mon_id: uuid.UUID, stock: int | None) -> ThucDon:
+async def set_menu_stock(db: AsyncSession, mon_id: str, stock: int | None) -> ThucDon:
     """Đặt số lượng tồn (đồ uống chai/lon...). NULL = món không đếm số lượng."""
     mon = await _get_menu_item(db, mon_id)
     mon.soluongton = stock
@@ -184,7 +182,7 @@ async def set_menu_stock(db: AsyncSession, mon_id: uuid.UUID, stock: int | None)
     return mon
 
 
-async def draft_sessions_with_item(db: AsyncSession, mon_id: uuid.UUID) -> list[str]:
+async def draft_sessions_with_item(db: AsyncSession, mon_id: str) -> list[str]:
     """Phiên bàn đang có món này trong hóa đơn nháp (để client làm mờ — ADR-001)."""
     rows = await db.execute(
         select(HoaDon.phienban_id)

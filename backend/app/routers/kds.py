@@ -1,6 +1,5 @@
 """US-03 — API cho màn hình Bếp KDS. Spec: vault/06-Engineering/story-spec-us03-kds.md."""
 
-import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
@@ -45,7 +44,7 @@ async def list_items(db: Db) -> list[KdsItemOut]:
 
 
 @router.patch("/items/{item_id}/status", response_model=KdsItemOut)
-async def update_status(item_id: uuid.UUID, body: StatusUpdateIn, db: Db) -> KdsItemOut:
+async def update_status(item_id: str, body: StatusUpdateIn, db: Db) -> KdsItemOut:
     """AC2 — đổi trạng thái 1 thẻ món (kéo thả hoặc bấm nút)."""
     item = await service.update_status(db, item_id, body.trangthai)
     await _notify([item], "status")
@@ -53,7 +52,7 @@ async def update_status(item_id: uuid.UUID, body: StatusUpdateIn, db: Db) -> Kds
 
 
 @router.post("/items/{item_id}/split", response_model=SplitOut)
-async def split_item(item_id: uuid.UUID, body: SplitIn, db: Db) -> SplitOut:
+async def split_item(item_id: str, body: SplitIn, db: Db) -> SplitOut:
     """Nấu/Xong từng phần (vd. 5/10 suất): tách dòng mới mang trạng thái mới."""
     goc, moi = await service.split_item(db, item_id, body.soluong, body.trangthai)
     await _notify([goc, moi], "split")
@@ -61,7 +60,7 @@ async def split_item(item_id: uuid.UUID, body: SplitIn, db: Db) -> SplitOut:
 
 
 @router.post("/items/{item_id}/cancel-out-of-stock", response_model=KdsItemOut)
-async def cancel_out_of_stock(item_id: uuid.UUID, db: Db) -> KdsItemOut:
+async def cancel_out_of_stock(item_id: str, db: Db) -> KdsItemOut:
     """Xóa món chờ nấu đã hết nguyên liệu khỏi hàng đợi (trạng thái da_huy + loghuymon)."""
     item = await service.cancel_out_of_stock(db, item_id)
     await _notify([item], "cancel_out_of_stock")

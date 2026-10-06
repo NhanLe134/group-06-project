@@ -3,6 +3,11 @@
 Dưới đây là cấu trúc CSDL của hệ thống Smart Restaurant được trình bày dưới dạng bảng để dễ đọc và dễ tra cứu, không cần phải đọc code SQL.
 
 > **Nguồn sự thật:** database PostgreSQL trên **Supabase** (ADR-ARCH-003, `vault/06-Engineering/architecture.md`). Tên bảng, tên cột, kiểu dữ liệu, giá trị mặc định và khóa ngoại dưới đây được lấy trực tiếp từ Supabase ngày 2026-10-06. Backend ánh xạ đúng các bảng này tại `backend/app/models/`. Bảng ánh xạ với ERD thiết kế (tên tiếng Anh) xem `vault/06-Engineering/data-model.md` Mục 5.
+
+> **Quy tắc mã khóa chính (từ 2026-10-07, migration `007_id_varchar.sql`, ADR-ARCH-004):** `id` mọi bảng là `VARCHAR(30)` do **database tự sinh** (không truyền khi thêm dòng):
+> - **Danh mục** — tiền tố + số 3 chữ số: `NV001` (nguoidung), `MON001` (thucdon), `NL001` (tonkho), `CT001` (congthuc).
+> - **Giao dịch** — tiền tố-`YYYYMMDD`-số 4 chữ số: `PB` (phienban), `HD` (hoadon), `CTM` (chitietmon), `HM` (loghuymon), `GN` (loggiongnoi), `PKK` (phieukiemke), `CTKK` (chitietkiemke). Ví dụ `HD-20261007-0001`.
+> - Ngày = ngày tạo theo giờ Việt Nam; số thứ tự **chạy liên tục** (không reset theo ngày); hết chữ số thì số tự dài thêm. Khóa ngoại cũng mang mã (vd. `chitietmon.thucdon_id = MON005`).
 >
 > **Lưu ý về giá trị trạng thái:** các giá trị hợp lệ của cột `trangthai` / `vaitro` lấy theo script tạo bảng của nhóm (ghi ở dạng comment). Database **chưa có ràng buộc CHECK** nên chưa tự chặn giá trị sai — backend phải kiểm tra. Giá trị in **đậm** là giá trị mặc định.
 
@@ -13,7 +18,7 @@ Lưu trữ thông tin nhân viên và phân quyền RBAC (Role-Based Access Cont
 
 | Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
 | :--- | :--- | :--- | :--- |
-| `id` | UUID | Primary Key, Default `uuid_generate_v4()` | Mã định danh duy nhất của nhân viên. |
+| `id` | VARCHAR(30) | Primary Key, Default `sinh_ma_danh_muc('NV')` | Mã định danh duy nhất của nhân viên, VD: `NV001`. |
 | `hoten` | VARCHAR | Not Null | Tên hiển thị của nhân viên. |
 | `vaitro` | VARCHAR | Not Null — `QUAN_LY`, `PHUC_VU`, `BEP`, `THU_NGAN` | Vai trò của nhân viên trong hệ thống (Quản lý, Phục vụ, Bếp, Thu ngân). |
 | `mapin` | VARCHAR | | Mã PIN 4 số (VD: 1234) dùng để Quản lý duyệt lệnh Hủy món. |
@@ -26,7 +31,7 @@ Danh sách các món ăn xuất hiện trên E-Menu của Khách và Tablet củ
 
 | Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
 | :--- | :--- | :--- | :--- |
-| `id` | UUID | Primary Key, Default `uuid_generate_v4()` | Mã định danh món ăn. |
+| `id` | VARCHAR(30) | Primary Key, Default `sinh_ma_danh_muc('MON')` | Mã định danh món ăn, VD: `MON001`. |
 | `tenmon` | VARCHAR | Not Null | Tên món (VD: Lẩu Thái Tomyum, Bò Lúc Lắc). |
 | `phanloai` | VARCHAR | Not Null | Phân loại (Món chính, Khai vị, Đồ uống...). |
 | `giaban` | INT | Not Null | Giá bán ra (AI phải dựa vào đây để báo giá, không tự bịa). |
@@ -41,7 +46,7 @@ Quản lý các nguyên liệu thô dùng để chế biến hoặc hàng hóa c
 
 | Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
 | :--- | :--- | :--- | :--- |
-| `id` | UUID | Primary Key, Default `uuid_generate_v4()` | Mã định danh nguyên liệu. |
+| `id` | VARCHAR(30) | Primary Key, Default `sinh_ma_danh_muc('NL')` | Mã định danh nguyên liệu, VD: `NL001`. |
 | `tennguyenlieu` | VARCHAR | Not Null | Tên nguyên liệu (VD: Bò Kobe, Tôm Sú, Vang Đỏ). |
 | `donvitinh` | VARCHAR | Not Null | Đơn vị tính (Kg, Gram, Chai, Lít). |
 | `tonhethong` | DECIMAL | Default 0 | Tồn kho hệ thống tự động tính toán (Tồn lý thuyết). |
@@ -54,9 +59,9 @@ Là bảng trung gian kết nối `thucdon` và `tonkho`, dùng để trừ kho 
 
 | Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
 | :--- | :--- | :--- | :--- |
-| `id` | UUID | Primary Key, Default `uuid_generate_v4()` | Mã định danh công thức. |
-| `thucdon_id` | UUID | Foreign Key → `thucdon.id` (ON DELETE CASCADE) | Liên kết tới món ăn thành phẩm (VD: Lẩu Thái). |
-| `tonkho_id` | UUID | Foreign Key → `tonkho.id` (ON DELETE CASCADE) | Liên kết tới nguyên liệu thô (VD: Tôm Sú). |
+| `id` | VARCHAR(30) | Primary Key, Default `sinh_ma_danh_muc('CT')` | Mã định danh công thức, VD: `CT001`. |
+| `thucdon_id` | VARCHAR(30) | Foreign Key → `thucdon.id` (ON DELETE CASCADE) | Liên kết tới món ăn thành phẩm (VD: Lẩu Thái). |
+| `tonkho_id` | VARCHAR(30) | Foreign Key → `tonkho.id` (ON DELETE CASCADE) | Liên kết tới nguyên liệu thô (VD: Tôm Sú). |
 | `dinhluong` | DECIMAL | Not Null | Định lượng cần thiết (VD: 0.5 kg để nấu 1 lẩu). |
 
 ---
@@ -66,7 +71,7 @@ Quản lý trạng thái hiện tại của các bàn trong nhà hàng.
 
 | Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
 | :--- | :--- | :--- | :--- |
-| `id` | UUID | Primary Key, Default `uuid_generate_v4()` | Mã định danh phiên bàn. |
+| `id` | VARCHAR(30) | Primary Key, Default `sinh_ma_giao_dich('PB')` | Mã định danh phiên bàn, VD: `PB-20261007-0001`. |
 | `tenban` | VARCHAR | Not Null | Tên bàn (VD: Bàn 01, Bàn VIP 2). |
 | `trangthai` | VARCHAR | Default **`trong`** — **`trong`**, `dang_phuc_vu`, `dang_don_dep` | Trạng thái hiện tại của bàn (Trống, Đang phục vụ, Đang dọn dẹp). |
 | `giobatdau` | TIMESTAMP | | Thời gian bắt đầu ngồi. |
@@ -79,8 +84,8 @@ Quản lý tổng tiền và trạng thái thanh toán của toàn bộ hóa đ�
 
 | Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
 | :--- | :--- | :--- | :--- |
-| `id` | UUID | Primary Key, Default `uuid_generate_v4()` | Mã định danh hóa đơn. |
-| `phienban_id` | UUID | Foreign Key → `phienban.id` (ON DELETE CASCADE) | Liên kết với phiên bàn hiện tại. |
+| `id` | VARCHAR(30) | Primary Key, Default `sinh_ma_giao_dich('HD')` | Mã định danh hóa đơn, VD: `HD-20261007-0001`. |
+| `phienban_id` | VARCHAR(30) | Foreign Key → `phienban.id` (ON DELETE CASCADE) | Liên kết với phiên bàn hiện tại. |
 | `tongtien` | INT | Default 0 | Tổng tiền cần thanh toán. |
 | `trangthai` | VARCHAR | Default **`ban_nhap`** — **`ban_nhap`**, `da_chot`, `da_thanh_toan`, `da_huy` | Trạng thái hóa đơn (Bản nháp, Đã chốt, Đã trả tiền, Đã hủy). |
 | `thoigian` | TIMESTAMP | Default `NOW()` | Thời điểm tạo hóa đơn. |
@@ -93,9 +98,9 @@ Quản lý từng món ăn nhỏ bên trong hóa đơn. Đây là bảng quan tr
 
 | Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
 | :--- | :--- | :--- | :--- |
-| `id` | UUID | Primary Key, Default `uuid_generate_v4()` | Mã định danh chi tiết món. |
-| `hoadon_id` | UUID | Foreign Key → `hoadon.id` (ON DELETE CASCADE) | Liên kết với Hóa đơn tổng. |
-| `thucdon_id` | UUID | Foreign Key → `thucdon.id` | Liên kết với tên món trong Thực đơn. |
+| `id` | VARCHAR(30) | Primary Key, Default `sinh_ma_giao_dich('CTM')` | Mã định danh chi tiết món, VD: `CTM-20261007-0001`. |
+| `hoadon_id` | VARCHAR(30) | Foreign Key → `hoadon.id` (ON DELETE CASCADE) | Liên kết với Hóa đơn tổng. |
+| `thucdon_id` | VARCHAR(30) | Foreign Key → `thucdon.id` | Liên kết với tên món trong Thực đơn. |
 | `soluong` | INT | Default 1 | Số lượng gọi (VD: x2 Lẩu Thái). |
 | `trangthai` | VARCHAR | Default **`cho_nau`** — **`cho_nau`**, `dang_nau`, `da_xong`, `da_phuc_vu`, `da_huy` | Tiến trình làm món (Chờ nấu, Đang nấu, Đã xong — chờ bưng, Đã phục vụ, Đã hủy). |
 | `ghichu` | TEXT | | Ghi chú của khách (VD: Không hành, Ít cay). |
@@ -108,9 +113,9 @@ Lưu lại bằng chứng và nguyên nhân mỗi khi có thao tác hủy món.
 
 | Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
 | :--- | :--- | :--- | :--- |
-| `id` | UUID | Primary Key, Default `uuid_generate_v4()` | Mã định danh log. |
-| `chitietmon_id` | UUID | Foreign Key → `chitietmon.id` (ON DELETE CASCADE) | Liên kết tới món ăn bị hủy. |
-| `nguoiduyet_id` | UUID | Foreign Key → `nguoidung.id` | Liên kết tới Quản lý đã nhập mã PIN duyệt hủy. |
+| `id` | VARCHAR(30) | Primary Key, Default `sinh_ma_giao_dich('HM')` | Mã định danh log, VD: `HM-20261007-0001`. |
+| `chitietmon_id` | VARCHAR(30) | Foreign Key → `chitietmon.id` (ON DELETE CASCADE) | Liên kết tới món ăn bị hủy. |
+| `nguoiduyet_id` | VARCHAR(30) | Foreign Key → `nguoidung.id` | Liên kết tới Quản lý đã nhập mã PIN duyệt hủy. |
 | `lydohuy` | TEXT | Not Null | Lý do hủy (Khách đổi ý, Hết đồ, Khách phàn nàn...). |
 
 ---
@@ -120,10 +125,41 @@ Lưu trữ nội dung chat/voice giữa Khách và AI để đối soát nếu x
 
 | Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
 | :--- | :--- | :--- | :--- |
-| `id` | UUID | Primary Key, Default `uuid_generate_v4()` | Mã định danh log voice. |
-| `phienban_id` | UUID | Foreign Key → `phienban.id` (ON DELETE CASCADE) | Liên kết với phiên bàn (Để cuối ca bàn đó tự động bị xóa đi). |
+| `id` | VARCHAR(30) | Primary Key, Default `sinh_ma_giao_dich('GN')` | Mã định danh log voice, VD: `GN-20261007-0001`. |
+| `phienban_id` | VARCHAR(30) | Foreign Key → `phienban.id` (ON DELETE CASCADE) | Liên kết với phiên bàn (Để cuối ca bàn đó tự động bị xóa đi). |
 | `vanbangoc` | TEXT | Not Null | Bản ghi nguyên văn lời khách nói (VD: "Cho chị 1 bò lúc lắc"). |
 | `ydinhai` | JSONB | | Lệnh JSON cấu trúc do AI bóc tách ra được. |
+
+---
+
+### 10. Bảng `phieukiemke` (Phiếu kiểm kê / Đóng ca — US-08)
+1 phiếu = 1 ca kiểm kê. Thêm bằng migration `backend/db/migrations/006_kiemke.sql`.
+
+| Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
+| :--- | :--- | :--- | :--- |
+| `id` | VARCHAR(30) | Primary Key, Default `sinh_ma_giao_dich('PKK')` | Mã định danh phiếu, VD: `PKK-20261007-0001`. |
+| `trangthai` | VARCHAR | Not Null, Default **`nhap`**, Check `nhap` / `da_chot` | Đang kiểm (nháp) hoặc Đã chốt — **phiếu đã chốt không sửa, không xóa (BR-07)**. Chỉ được có 1 phiếu `nhap` tại một thời điểm (unique index). |
+| `tuluc` | TIMESTAMP | Not Null | Đầu kỳ (UTC): giờ chốt phiếu trước, hoặc 00:00 giờ VN nếu là phiếu đầu tiên. |
+| `giotao` | TIMESTAMP | Not Null, Default `now()` | Lúc tạo phiếu. |
+| `giochot` | TIMESTAMP | | Lúc chốt ca (cuối kỳ). |
+| `nguoichot_id` | VARCHAR(30) | Foreign Key → `nguoidung.id` (ON DELETE SET NULL) | Quản lý đã nhập PIN chốt ca (audit trail). |
+
+---
+
+### 11. Bảng `chitietkiemke` (Dòng đối soát — US-08)
+1 dòng = 1 món **đếm số lượng** (`thucdon.soluongton` khác NULL) trong phiếu.
+
+| Tên cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
+| :--- | :--- | :--- | :--- |
+| `id` | VARCHAR(30) | Primary Key, Default `sinh_ma_giao_dich('CTKK')` | Mã định danh dòng, VD: `CTKK-20261007-0001`. |
+| `phieukiemke_id` | VARCHAR(30) | Not Null, Foreign Key → `phieukiemke.id` (ON DELETE CASCADE) | Phiếu chứa dòng này. |
+| `thucdon_id` | VARCHAR(30) | Not Null, Foreign Key → `thucdon.id`; Unique cùng `phieukiemke_id` | Món được kiểm. |
+| `tondauca` | INT | Not Null, Check `>= 0` | **A** — tồn đầu ca (chụp `thucdon.soluongton` lúc tạo phiếu). |
+| `daban` | INT | | **B** — số đã bán trong kỳ (lưu khi chốt; lúc nháp tính trực tiếp từ `chitietmon`). |
+| `tonlythuyet` | INT | | **C = A − B** (lưu khi chốt). |
+| `tonthucte` | INT | Check `>= 0` | Số kiểm đếm thực tế — khi chốt sẽ ghi vào `thucdon.soluongton` (tồn đầu ca sau). |
+| `chenhlech` | INT | | `tonthucte − C`: **âm = hao hụt**, dương = dư. |
+| `lydo` | TEXT | | Lý do hao hụt — **bắt buộc khi chênh lệch âm** (US-08 AC4). |
 
 ---
 

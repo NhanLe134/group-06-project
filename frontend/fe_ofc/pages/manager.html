@@ -175,48 +175,65 @@
                 </div>
             </div>
 
-            <!-- TAB 3: INVENTORY -->
+            <!-- TAB 3: INVENTORY — US-08 Đối soát tồn kho & Đóng ca (dữ liệu thật qua API /inventory/shifts) -->
             <div id="tab-inventory" class="tab-pane">
-                <div class="panel">
+                <!-- Danh sách phiếu -->
+                <div class="panel" id="inv-list-panel">
                     <div class="panel-header">
                         <h3>Danh sách Phiếu Kiểm kê</h3>
-                        <button class="btn btn-primary" onclick="alert('Mở form tạo phiếu kiểm kê')"><i class="ph-bold ph-plus"></i> Tạo Phiếu Kiểm Kê</button>
+                        <button class="btn btn-primary" id="inv-create-btn" onclick="createInventoryShift()"><i class="ph-bold ph-plus"></i> Tạo Phiếu Kiểm Kê</button>
                     </div>
                     <div class="table-responsive">
                         <table class="data-table" id="inventory-sessions-table">
                             <thead>
                                 <tr>
                                     <th>Mã Phiếu</th>
-                                    <th>Ngày Kiểm kê</th>
-                                    <th>Người phụ trách</th>
+                                    <th>Kỳ kiểm kê</th>
+                                    <th>Người chốt</th>
+                                    <th>Hao hụt</th>
                                     <th>Trạng thái</th>
                                     <th>Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td>PKK-1010</td>
-                                    <td>10/10/2026 23:00</td>
-                                    <td>Quản lý Admin</td>
-                                    <td><span class="status-badge" style="background:#BBF7D0; color:#166534; padding:4px 8px; border-radius:12px; font-size:12px; font-weight:700">Đã chốt</span></td>
-                                    <td>
-                                        <button class="btn-icon" title="Xem chi tiết"><i class="ph-bold ph-eye"></i></button>
-                                        <button class="btn-icon" style="color:var(--color-danger)" title="Xóa phiếu"><i class="ph-bold ph-trash"></i></button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>PKK-1110</td>
-                                    <td>11/10/2026 23:00</td>
-                                    <td>Quản lý Admin</td>
-                                    <td><span class="status-badge" style="background:#FEF3C7; color:#D97706; padding:4px 8px; border-radius:12px; font-size:12px; font-weight:700">Đang nháp</span></td>
-                                    <td>
-                                        <button class="btn-icon" title="Tiếp tục kiểm"><i class="ph-bold ph-pencil-simple"></i></button>
-                                        <button class="btn-icon" style="color:var(--color-danger)" title="Xóa phiếu"><i class="ph-bold ph-trash"></i></button>
-                                    </td>
-                                </tr>
+                                <tr><td colspan="6" class="inv-empty">Đang tải phiếu kiểm kê…</td></tr>
                             </tbody>
                         </table>
                     </div>
+                </div>
+
+                <!-- Bảng đối soát của 1 phiếu (AC1–AC4) -->
+                <div class="panel" id="inv-detail-panel" style="display: none;">
+                    <div class="panel-header">
+                        <div>
+                            <h3 id="inv-detail-title">Phiếu kiểm kê</h3>
+                            <p class="inv-period" id="inv-detail-period"></p>
+                        </div>
+                        <button class="btn btn-outline" onclick="closeInventoryDetail()"><i class="ph-bold ph-arrow-left"></i> Danh sách phiếu</button>
+                    </div>
+                    <div class="panel-body inv-note-wrap">
+                        <div class="alert alert-info inv-note">
+                            <i class="ph-bold ph-info"></i>
+                            <span>Chỉ đối soát các món <b>đếm số lượng</b> (nước uống chai/lon…). <b>Tồn lý thuyết = Tồn đầu ca − Đã bán.</b> Nhập tồn thực tế sau khi kiểm đếm; dòng hao hụt bắt buộc ghi lý do.</span>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="inv-lines-table">
+                            <thead>
+                                <tr>
+                                    <th>Món</th>
+                                    <th class="num">Tồn đầu ca (A)</th>
+                                    <th class="num">Đã bán (B)</th>
+                                    <th class="num">Tồn lý thuyết (C = A − B)</th>
+                                    <th class="num">Tồn thực tế</th>
+                                    <th class="num">Chênh lệch</th>
+                                    <th>Lý do hao hụt</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer" id="inv-detail-actions"></div>
                 </div>
             </div>
 
@@ -485,8 +502,32 @@
       </div>
   </div>
 
+  <!-- MODAL: PIN QUẢN LÝ KHI CHỐT CA (US-08 AC5 — Manager Override) -->
+  <div class="modal-overlay" id="inv-pin-modal" style="display: none;">
+      <div class="modal-content form-modal">
+          <div class="modal-header modal-header--orange">
+              <h3><i class="ph-bold ph-lock-key"></i> Xác nhận Đóng ca</h3>
+              <button class="btn-icon btn-icon--light" onclick="closeInventoryPinModal()" aria-label="Đóng"><i class="ph-bold ph-x"></i></button>
+          </div>
+          <div class="modal-body">
+              <p class="inv-pin-text">Cần quyền Quản lý. Vui lòng yêu cầu Quản lý nhập mã PIN để tiếp tục thao tác này.</p>
+              <p class="inv-pin-warn"><i class="ph-bold ph-warning"></i> Sau khi chốt, phiếu sẽ bị khóa (chỉ xem) và tồn thực tế được dùng làm tồn đầu ca tiếp theo.</p>
+              <div class="form-group">
+                  <label for="inv-pin-input">Mã PIN Quản lý <span class="required">*</span></label>
+                  <input type="password" id="inv-pin-input" class="form-control" inputmode="numeric" autocomplete="off" placeholder="••••">
+                  <span class="inv-field-error" id="inv-pin-error"></span>
+              </div>
+          </div>
+          <div class="modal-footer">
+              <button class="btn btn-outline" onclick="closeInventoryPinModal()">Hủy bỏ</button>
+              <button class="btn btn-primary" id="inv-pin-submit" onclick="submitInventoryClose()"><i class="ph-bold ph-check-circle"></i> Xác nhận Đóng ca</button>
+          </div>
+      </div>
+  </div>
+
   <div id="toast-container" class="toast-container"></div>
 
+  <script src="../assets/js/config.js"></script>
   <script src="../assets/js/manager.js"></script>
 </body>
 </html>

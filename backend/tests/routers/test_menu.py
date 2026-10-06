@@ -116,7 +116,5 @@ async def test_in_stock_rejected_when_count_is_zero(client: AsyncClient, db_sess
 
 
 async def test_update_stock_404(client: AsyncClient):
-    resp = await client.patch(
-        "/menu/items/00000000-0000-0000-0000-000000000000/stock", json={"stock": 5}
-    )
+    resp = await client.patch("/menu/items/KHONG-TON-TAI/stock", json={"stock": 5})
     assert resp.status_code == 404

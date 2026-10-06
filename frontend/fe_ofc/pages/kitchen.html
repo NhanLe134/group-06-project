@@ -312,7 +312,7 @@
     return {
       id: x.id,
       hoadonId: x.hoadon_id,
-      orderCode: x.hoadon_id ? '#' + x.hoadon_id.slice(0, 6).toUpperCase() : '',
+      orderCode: x.hoadon_id || '',                     /* mã hóa đơn, vd. HD-20261006-0001 (migration 007) */
       table: x.ban || 'Không rõ bàn',
       dishId: x.thucdon_id,
       dishName: x.tenmon || 'Món đã xóa khỏi thực đơn',

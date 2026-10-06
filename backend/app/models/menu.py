@@ -3,10 +3,19 @@
 Xem ADR-ARCH-003, vault/06-Engineering/data-model.md Mục 5 và frontend/fe_ofc/dtb.md.
 """
 
-import uuid
 from decimal import Decimal
 
-from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Integer, Numeric, String, Text, true
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    FetchedValue,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    true,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
@@ -28,7 +37,8 @@ class ThucDon(Base):
         CheckConstraint("soluongton >= 0", name="thucdon_soluongton_khong_am"),  # migration 002
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    # Mã do database tự sinh (migration 007, ADR-ARCH-004), vd. MON001, HD-20261006-0001
+    id: Mapped[str] = mapped_column(String(30), primary_key=True, server_default=FetchedValue())
     tenmon: Mapped[str] = mapped_column(String)
     phanloai: Mapped[str] = mapped_column(String)
     giaban: Mapped[int] = mapped_column(Integer)
@@ -47,7 +57,8 @@ class TonKho(Base):
 
     __tablename__ = "tonkho"
 
-    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    # Mã do database tự sinh (migration 007, ADR-ARCH-004), vd. MON001, HD-20261006-0001
+    id: Mapped[str] = mapped_column(String(30), primary_key=True, server_default=FetchedValue())
     tennguyenlieu: Mapped[str] = mapped_column(String)
     donvitinh: Mapped[str] = mapped_column(String)
     tonhethong: Mapped[Decimal | None] = mapped_column(Numeric, server_default="0")
@@ -59,11 +70,12 @@ class CongThuc(Base):
 
     __tablename__ = "congthuc"
 
-    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    thucdon_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("thucdon.id", ondelete="CASCADE"), default=None
+    # Mã do database tự sinh (migration 007, ADR-ARCH-004), vd. MON001, HD-20261006-0001
+    id: Mapped[str] = mapped_column(String(30), primary_key=True, server_default=FetchedValue())
+    thucdon_id: Mapped[str | None] = mapped_column(
+        String(30), ForeignKey("thucdon.id", ondelete="CASCADE"), default=None
     )
-    tonkho_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("tonkho.id", ondelete="CASCADE"), default=None
+    tonkho_id: Mapped[str | None] = mapped_column(
+        String(30), ForeignKey("tonkho.id", ondelete="CASCADE"), default=None
     )
     dinhluong: Mapped[Decimal] = mapped_column(Numeric)

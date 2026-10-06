@@ -3,10 +3,9 @@
 Xem ADR-ARCH-003, vault/06-Engineering/data-model.md Mục 5 và frontend/fe_ofc/dtb.md.
 """
 
-import uuid
 from typing import Any
 
-from sqlalchemy import JSON, ForeignKey, Text
+from sqlalchemy import JSON, FetchedValue, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -21,9 +20,10 @@ class LogGiongNoi(Base):
 
     __tablename__ = "loggiongnoi"
 
-    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    phienban_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("phienban.id", ondelete="CASCADE"), default=None
+    # Mã do database tự sinh (migration 007, ADR-ARCH-004), vd. MON001, HD-20261006-0001
+    id: Mapped[str] = mapped_column(String(30), primary_key=True, server_default=FetchedValue())
+    phienban_id: Mapped[str | None] = mapped_column(
+        String(30), ForeignKey("phienban.id", ondelete="CASCADE"), default=None
     )
     vanbangoc: Mapped[str] = mapped_column(Text)
     # jsonb trên Postgres/Supabase; JSON thường khi test bằng SQLite in-memory

@@ -3,10 +3,9 @@
 Xem ADR-ARCH-003, vault/06-Engineering/data-model.md Mục 5 và frontend/fe_ofc/dtb.md.
 """
 
-import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, func
+from sqlalchemy import DateTime, FetchedValue, ForeignKey, Index, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
@@ -17,7 +16,8 @@ class PhienBan(Base):
 
     __tablename__ = "phienban"
 
-    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    # Mã do database tự sinh (migration 007, ADR-ARCH-004), vd. MON001, HD-20261006-0001
+    id: Mapped[str] = mapped_column(String(30), primary_key=True, server_default=FetchedValue())
     tenban: Mapped[str] = mapped_column(String)
     trangthai: Mapped[str | None] = mapped_column(String, server_default="trong")
     giobatdau: Mapped[datetime | None] = mapped_column(DateTime(timezone=False), default=None)
@@ -29,9 +29,10 @@ class HoaDon(Base):
 
     __tablename__ = "hoadon"
 
-    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    phienban_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("phienban.id", ondelete="CASCADE"), default=None
+    # Mã do database tự sinh (migration 007, ADR-ARCH-004), vd. MON001, HD-20261006-0001
+    id: Mapped[str] = mapped_column(String(30), primary_key=True, server_default=FetchedValue())
+    phienban_id: Mapped[str | None] = mapped_column(
+        String(30), ForeignKey("phienban.id", ondelete="CASCADE"), default=None
     )
     tongtien: Mapped[int | None] = mapped_column(Integer, server_default="0")
     trangthai: Mapped[str | None] = mapped_column(String, server_default="ban_nhap")
@@ -56,11 +57,14 @@ class ChiTietMon(Base):
     # tránh lazy-load ngầm trong async session
     __mapper_args__ = {"eager_defaults": True}
 
-    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    hoadon_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("hoadon.id", ondelete="CASCADE"), default=None
+    # Mã do database tự sinh (migration 007, ADR-ARCH-004), vd. MON001, HD-20261006-0001
+    id: Mapped[str] = mapped_column(String(30), primary_key=True, server_default=FetchedValue())
+    hoadon_id: Mapped[str | None] = mapped_column(
+        String(30), ForeignKey("hoadon.id", ondelete="CASCADE"), default=None
     )
-    thucdon_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("thucdon.id"), default=None)
+    thucdon_id: Mapped[str | None] = mapped_column(
+        String(30), ForeignKey("thucdon.id"), default=None
+    )
     soluong: Mapped[int | None] = mapped_column(Integer, server_default="1")
     trangthai: Mapped[str | None] = mapped_column(String, server_default="cho_nau")
     ghichu: Mapped[str | None] = mapped_column(Text, default=None)

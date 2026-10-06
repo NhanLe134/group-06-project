@@ -3,6 +3,8 @@
 - Thực đơn: chỉ thêm khi bảng `thucdon` đang TRỐNG — 6 món catalog chuẩn của prototype
   (docs/05-Design/prototype-brief.md §4, frontend/fe_ofc/assets/js/mock-data.js).
 - Đơn demo: các bàn có hậu tố "(demo)" để dễ nhận biết và xóa, không đụng dữ liệu thật.
+  Chạy lại không tạo trùng: đã có bàn "(demo)" thì bỏ qua phần đơn.
+- Tài khoản "Quản lý Demo (demo)" vai trò QUAN_LY, PIN 1234 — để thử chốt ca US-08 (AC5).
 
 Chạy trong thư mục backend:
     uv run python -m scripts.seed_demo            # thêm dữ liệu demo
@@ -16,7 +18,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import delete, func, select
 
 from app.db import async_session_factory, engine
-from app.models import ChiTietMon, HoaDon, PhienBan, ThucDon
+from app.models import ChiTietMon, HoaDon, NguoiDung, PhienBan, ThucDon
 
 # (tên, phân loại, giá, đang bán, số lượng tồn — None = món nấu, không đếm số lượng)
 CATALOG = [
@@ -36,6 +38,7 @@ DEMO_ORDERS = [
     ("Bàn 07 (demo)", "Bò xào cần", 10, None, "cho_nau", 4),
 ]
 DEMO_SUFFIX = "(demo)"
+DEMO_MANAGER = ("Quản lý Demo (demo)", "QUAN_LY", "1234")
 
 
 async def seed() -> None:
@@ -51,6 +54,16 @@ async def seed() -> None:
             print(f"Đã thêm {len(CATALOG)} món vào thucdon.")
         else:
             print("thucdon đã có dữ liệu — giữ nguyên, không thêm món.")
+
+        hoten, vaitro, pin = DEMO_MANAGER
+        if await db.scalar(select(NguoiDung.id).where(NguoiDung.hoten == hoten)) is None:
+            db.add(NguoiDung(hoten=hoten, vaitro=vaitro, mapin=pin))
+            print(f"Đã thêm tài khoản {hoten} (PIN {pin}).")
+
+        if await db.scalar(select(PhienBan.id).where(PhienBan.tenban.like(f"%{DEMO_SUFFIX}"))):
+            await db.commit()
+            print("Đã có đơn demo — bỏ qua (chạy --xoa-demo trước nếu muốn tạo lại).")
+            return
 
         mon_theo_ten = {m.tenmon: m for m in (await db.execute(select(ThucDon))).scalars()}
         now = datetime.now(UTC).replace(tzinfo=None)  # cột TIMESTAMP lưu giờ UTC
@@ -83,8 +96,10 @@ async def clear_demo() -> None:
     async with async_session_factory() as db:
         # ON DELETE CASCADE: phienban → hoadon → chitietmon → loghuymon
         result = await db.execute(delete(PhienBan).where(PhienBan.tenban.like(f"%{DEMO_SUFFIX}")))
+        # phieukiemke.nguoichot_id là ON DELETE SET NULL nên xóa tài khoản demo không mất phiếu
+        users = await db.execute(delete(NguoiDung).where(NguoiDung.hoten.like(f"%{DEMO_SUFFIX}")))
         await db.commit()
-        print(f"Đã xóa {result.rowcount} bàn demo.")
+        print(f"Đã xóa {result.rowcount} bàn demo, {users.rowcount} tài khoản demo.")
 
 
 async def main() -> None:
