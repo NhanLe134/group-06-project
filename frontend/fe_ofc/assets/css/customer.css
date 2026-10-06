@@ -167,6 +167,17 @@
   padding-right: 14px;
 }
 .cat-row::-webkit-scrollbar { display: none; }
+
+/* ---------- Nhóm món theo phân loại (ADR-N09) ---------- */
+/* Điểm neo khi bấm chip: chừa lại chiều cao topbar sticky */
+.cat-section { scroll-margin-top: 76px; }
+.cat-heading {
+  margin: 26px 0 2px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text-main);
+}
 .cat-chip {
   display: inline-flex;
   align-items: center;
@@ -202,6 +213,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  height: 100px;            /* cố định chiều cao — mọi thẻ đều bằng nhau */
+  overflow: hidden;
   background: var(--color-neutral-card);
   border: 1.5px solid transparent;
   border-radius: 16px;
@@ -492,12 +505,12 @@
 .d-price { font-weight: 800; font-size: 13px; color: var(--color-primary); white-space: nowrap; }
 .d-ctrl { display: flex; align-items: center; gap: 4px; flex: none; }
 .d-ctrl button {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
   border: 1px solid #E2E8F0;
   background: #F8FAFC;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--color-text-main);
   cursor: pointer;
@@ -507,8 +520,7 @@
 }
 .d-ctrl button:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
 .d-ctrl button:disabled { opacity: 0.4; cursor: not-allowed; }
-.d-ctrl .d-remove:hover { border-color: var(--color-danger); color: var(--color-danger); background: #FEF2F2; }
-.d-qty { min-width: 22px; text-align: center; font-weight: 800; color: var(--color-text-main); }
+.d-qty { min-width: 20px; text-align: center; font-weight: 800; font-size: 14px; color: var(--color-text-main); }
 
 /* Cảnh báo ADR-001 — món hết hàng đang nằm trong draft */
 .adr-warn {
@@ -766,19 +778,21 @@
 
 /* ===================== MÀN HÌNH LỚN HƠN (nâng cấp dần) ===================== */
 
-/* Tablet ≥560px: grid 2 cột, nới lề */
+/* Tablet ≥560px: các nhóm xếp dọc, món trong nhóm xếp ngang */
 @media (min-width: 560px) {
   .cust-screen { padding: 20px 20px calc(110px + env(safe-area-inset-bottom, 0px)); }
-  .menu-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  #menu-grid { display: block; }   /* khung ngoài: nhóm xếp dọc */
+  .menu-grid { grid-template-columns: repeat(auto-fill, 300px); gap: 14px; }
   .sheet-body { padding: 6px 20px 16px; }
   .sheet-footer { padding: 12px 20px 16px; }
 }
 
-/* Desktop ≥900px: khung trang chuẩn, grid 3 cột,
+/* Desktop ≥900px: khung trang chuẩn,
    Order Draft về dạng bottom-sheet giữa màn hình như thiết kế gốc */
 @media (min-width: 900px) {
   .cust-screen { padding-bottom: 110px; }
-  .menu-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  #menu-grid { display: block; }   /* nhóm xếp dọc, món trong nhóm ngang */
+  .menu-grid { grid-template-columns: repeat(auto-fill, 320px); gap: 16px; }
 
   /* Draft sheet: thu về giữa màn hình, không kéo dài full desktop */
   .draft-sheet {

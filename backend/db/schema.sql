@@ -49,7 +49,6 @@ CREATE TABLE PhienBan (
     Id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     TenBan VARCHAR NOT NULL,
     TrangThai VARCHAR DEFAULT 'trong', -- trong, dang_phuc_vu, dang_don_dep
-    SoKhach INT DEFAULT 0,
     GioBatDau TIMESTAMP,
     GioKetThuc TIMESTAMP
 );
@@ -59,7 +58,9 @@ CREATE TABLE HoaDon (
     Id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     PhienBan_Id UUID REFERENCES PhienBan(Id) ON DELETE CASCADE,
     TongTien INT DEFAULT 0,
-    TrangThai VARCHAR DEFAULT 'ban_nhap' -- ban_nhap, da_chot, da_thanh_toan, da_huy
+    TrangThai VARCHAR DEFAULT 'ban_nhap', -- ban_nhap, da_chot, da_thanh_toan, da_huy
+    ThoiGian TIMESTAMP DEFAULT NOW(),
+    ThoiGian_ThanhToan TIMESTAMP
 );
 
 -- 7. Bảng ChiTietMon (Chi tiết từng món - Kết nối KDS)

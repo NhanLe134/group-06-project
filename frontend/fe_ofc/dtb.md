@@ -69,7 +69,6 @@ Quản lý trạng thái hiện tại của các bàn trong nhà hàng.
 | `id` | UUID | Primary Key, Default `uuid_generate_v4()` | Mã định danh phiên bàn. |
 | `tenban` | VARCHAR | Not Null | Tên bàn (VD: Bàn 01, Bàn VIP 2). |
 | `trangthai` | VARCHAR | Default **`trong`** — **`trong`**, `dang_phuc_vu`, `dang_don_dep` | Trạng thái hiện tại của bàn (Trống, Đang phục vụ, Đang dọn dẹp). |
-| `sokhach` | INT | Default 0 | Số lượng khách đang ngồi tại bàn. |
 | `giobatdau` | TIMESTAMP | | Thời gian bắt đầu ngồi. |
 | `gioketthuc` | TIMESTAMP | | Thời gian khách đứng dậy thanh toán rời đi. |
 
@@ -84,6 +83,8 @@ Quản lý tổng tiền và trạng thái thanh toán của toàn bộ hóa đ�
 | `phienban_id` | UUID | Foreign Key → `phienban.id` (ON DELETE CASCADE) | Liên kết với phiên bàn hiện tại. |
 | `tongtien` | INT | Default 0 | Tổng tiền cần thanh toán. |
 | `trangthai` | VARCHAR | Default **`ban_nhap`** — **`ban_nhap`**, `da_chot`, `da_thanh_toan`, `da_huy` | Trạng thái hóa đơn (Bản nháp, Đã chốt, Đã trả tiền, Đã hủy). |
+| `thoigian` | TIMESTAMP | Default `NOW()` | Thời điểm tạo hóa đơn. |
+| `thoigian_thanhtoan` | TIMESTAMP | | Thời điểm Thu ngân hoàn tất thanh toán & đóng bàn. |
 
 ---
 
@@ -136,7 +137,7 @@ Dùng khi đọc lại các tài liệu cũ (vault, user story) còn ghi tên ti
 | `menu_items` | `thucdon` | `name`→`tenmon`, `category`→`phanloai`, `price`→`giaban`, `is_active`→`trangthaiban`, `image_url`→`anhminhhoa` |
 | `inventory` | `tonkho` | `ingredient_name`→`tennguyenlieu`, `unit`→`donvitinh`, `system_stock`→`tonhethong`, `actual_stock`→`tonthucte` |
 | `recipes` | `congthuc` | `menu_item_id`→`thucdon_id`, `inventory_id`→`tonkho_id`, `quantity_required`→`dinhluong` |
-| `table_sessions` | `phienban` | `table_name`→`tenban`, `status`→`trangthai`, `pax`→`sokhach`, `started_at`→`giobatdau`, `ended_at`→`gioketthuc` |
+| `table_sessions` | `phienban` | `table_name`→`tenban`, `status`→`trangthai`, `started_at`→`giobatdau`, `ended_at`→`gioketthuc` |
 | `orders` | `hoadon` | `session_id`→`phienban_id`, `total_amount`→`tongtien`, `status`→`trangthai` |
 | `order_items` | `chitietmon` | `order_id`→`hoadon_id`, `menu_item_id`→`thucdon_id`, `quantity`→`soluong`, `status`→`trangthai`, `special_instructions`→`ghichu` |
 | `void_refund_logs` | `loghuymon` | `order_item_id`→`chitietmon_id`, `manager_id`→`nguoiduyet_id`, `reason`→`lydohuy` |

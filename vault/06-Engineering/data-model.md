@@ -237,8 +237,8 @@ EXECUTE FUNCTION purge_voice_transcripts_on_session_close();
 | `MENU_ITEMS` | `thucdon` | `ThucDon` | `tenmon`, `phanloai`, `giaban`, `trangthaiban` (false = Hết hàng), `anhminhhoa`, `soluongton` (tồn theo số lượng cho đồ uống; NULL = không đếm; 0 = Hết hàng) |
 | `INVENTORY_ITEMS` | `tonkho` | `TonKho` | `tennguyenlieu`, `donvitinh`, `tonhethong`, `tonthucte` |
 | `MENU_ITEM_INGREDIENTS` | `congthuc` | `CongThuc` | `thucdon_id`, `tonkho_id`, `dinhluong` |
-| `TABLES` + `TABLE_SESSIONS` | `phienban` | `PhienBan` | `tenban`, `trangthai`, `sokhach`, `giobatdau`, `gioketthuc` |
-| `ORDERS` | `hoadon` | `HoaDon` | `phienban_id`, `tongtien`, `trangthai` |
+| `TABLES` + `TABLE_SESSIONS` | `phienban` | `PhienBan` | `tenban`, `trangthai`, `giobatdau`, `gioketthuc` |
+| `ORDERS` | `hoadon` | `HoaDon` | `phienban_id`, `tongtien`, `trangthai`, `thoigian`, `thoigian_thanhtoan` |
 | `ORDER_ITEMS` | `chitietmon` | `ChiTietMon` | `hoadon_id`, `thucdon_id`, `soluong`, `trangthai` (trạng thái món trên KDS), `ghichu`, `giogoimon` |
 | `USERS` | `nguoidung` | `NguoiDung` | `hoten`, `vaitro`, `mapin`, `ngaytao` |
 | `VOID_REFUND_LOGS` | `loghuymon` | `LogHuyMon` | `chitietmon_id`, `nguoiduyet_id`, `lydohuy` |

@@ -36,13 +36,12 @@ const CATEGORY_MAP = {
 const CATEGORIES = [
   { id: 'all',   label: 'Tất cả',    icon: 'ph-squares-four' },
   { id: 'main',  label: 'Món chính', icon: 'ph-bowl-food' },
-  { id: 'drink', label: 'Đồ uống',   icon: 'ph-brandy' },
   { id: 'set',   label: 'Set lẩu',   icon: 'ph-users-three' },
+  { id: 'drink', label: 'Đồ uống',   icon: 'ph-brandy' },
 ];
 
 /* ----- State bản nháp (Order Draft — bản nháp DUY NHẤT của bàn) ----- */
 let draft = [];            /* [{ id, qty, note }] */
-let activeCat = 'all';
 let searchText = '';
 let draftOpen = false;
 let orderSeq = 1;
@@ -66,23 +65,22 @@ const norm = t => String(t).toLowerCase().normalize('NFD')
 
 function renderCategories() {
   $('#cat-row').innerHTML = CATEGORIES.map(c => `
-    <button class="cat-chip ${c.id === activeCat ? 'active' : ''}" data-cat="${c.id}">
+    <button class="cat-chip" data-cat="${c.id}">
       <i class="ph-bold ${c.icon}"></i> ${c.label}
     </button>`).join('');
+  setActiveChip('all');
 }
 
-function renderMenu() {
-  const kw = norm(searchText);
-  const dishes = CATALOG.filter(d => {
-    const inCat = activeCat === 'all' || CATEGORY_MAP[d.id] === activeCat;
-    const inSearch = !kw || norm(d.name).includes(kw);
-    return inCat && inSearch;
-  });
+/* Chip phân loại đang active (nền cam) — điều khiển bởi click + scroll-spy */
+function setActiveChip(cat) {
+  document.querySelectorAll('.cat-chip').forEach(ch =>
+    ch.classList.toggle('active', ch.dataset.cat === cat));
+}
 
-  $('#menu-grid').innerHTML = dishes.length ? dishes.map(d => {
-    const oos = isOos(d.id);
-    const q = menuQty(d.id);   /* ADR-N06: món đã trong giỏ → hiển thị bộ đếm − qty + */
-    return `
+function renderCard(d) {
+  const oos = isOos(d.id);
+  const q = menuQty(d.id);   /* ADR-N06: món đã trong giỏ → hiển thị bộ đếm − qty + */
+  return `
     <article class="menu-card ${oos ? 'oos' : ''}">
       <div class="menu-thumb">${d.emoji}</div>
       <div class="menu-info">
@@ -103,12 +101,49 @@ function renderMenu() {
             <button data-inc-menu="${d.id}" ${oos ? 'disabled' : ''} aria-label="Thêm ${d.name}"><i class="ph-bold ph-plus"></i></button>
           </div>`}
     </article>`;
-  }).join('') : `
+}
+
+/* ADR-N09: danh sách món chia nhóm theo phân loại (Món chính → Set lẩu → Đồ uống),
+   mỗi nhóm có tiêu đề riêng; tìm kiếm lọc trong từng nhóm, nhóm trống thì ẩn */
+function renderMenu() {
+  const kw = norm(searchText);
+  const match = d => !kw || norm(d.name).includes(kw);
+
+  const sections = CATEGORIES.filter(c => c.id !== 'all').map(c => {
+    const dishes = CATALOG.filter(d => CATEGORY_MAP[d.id] === c.id && match(d));
+    if (!dishes.length) return '';
+    return `
+    <section class="cat-section" id="cat-section-${c.id}" data-cat="${c.id}">
+      <h3 class="cat-heading">${c.label}</h3>
+      <div class="menu-grid">${dishes.map(renderCard).join('')}</div>
+    </section>`;
+  }).join('');
+
+  $('#menu-grid').innerHTML = sections || `
     <div class="menu-empty">
       <i class="ph-duotone ph-magnifying-glass"></i>
       <p>Không tìm thấy món phù hợp. Thử từ khóa khác nhé!</p>
     </div>`;
+  updateActiveChip();
 }
+
+/* Scroll-spy: lướt đến nhóm nào thì chip phân loại đó active (nền cam) */
+function updateActiveChip() {
+  const sections = [...document.querySelectorAll('.cat-section')]
+    .filter(s => s.offsetHeight > 0);           /* bỏ nhóm bị ẩn do tìm kiếm */
+  const probe = 160;                             /* topbar + hàng tiêu đề */
+  let active = 'all';
+  for (const s of sections) {
+    if (s.getBoundingClientRect().top <= probe) active = s.dataset.cat;
+  }
+  setActiveChip(active);
+}
+let spyTick = false;
+window.addEventListener('scroll', () => {
+  if (spyTick) return;
+  spyTick = true;
+  requestAnimationFrame(() => { spyTick = false; updateActiveChip(); });
+}, { passive: true });
 
 function renderStickyBar() {
   const units = draftUnits();
@@ -152,7 +187,7 @@ function renderDraft() {
       return `
       <div class="d-item ${oos ? 'oos' : ''}">
         <div class="d-info">
-          <b>${it.qty}× ${d.name}</b>
+          <b>${d.name}</b>
           <button class="d-note ${it.note ? 'has-note' : ''}" data-note="${i}"
             aria-label="${it.note ? 'Sửa' : 'Thêm'} ghi chú cho ${d.name}">
             <i class="ph-bold ${it.note ? 'ph-note-pencil' : 'ph-plus'}"></i>
@@ -165,7 +200,6 @@ function renderDraft() {
           <button data-dec="${i}" aria-label="Giảm ${d.name}"><i class="ph-bold ph-minus"></i></button>
           <span class="d-qty">${it.qty}</span>
           <button data-inc="${i}" ${oos ? 'disabled' : ''} aria-label="Thêm ${d.name}"><i class="ph-bold ph-plus"></i></button>
-          <button class="d-remove" data-remove="${i}" aria-label="Gỡ ${d.name}"><i class="ph-duotone ph-trash"></i></button>
         </div>
       </div>`;
     }).join('')}`;
@@ -342,12 +376,18 @@ function saveNote() {
 
 /* ===================== SỰ KIỆN ===================== */
 
+/* Chip phân loại = điều hướng: cuộn mượt tới nhóm; scroll-spy tự cập nhật active */
 $('#cat-row').addEventListener('click', e => {
   const btn = e.target.closest('[data-cat]');
   if (!btn) return;
-  activeCat = btn.dataset.cat;
-  renderCategories();
-  renderMenu();
+  const cat = btn.dataset.cat;
+  if (cat === 'all') {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else {
+    document.getElementById('cat-section-' + cat)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  setActiveChip(cat);
 });
 
 $('#search-input').addEventListener('input', e => {
@@ -386,15 +426,13 @@ $('#draft-body').addEventListener('click', e => {
   const noteBtn = e.target.closest('[data-note]');
   const inc = e.target.closest('[data-inc]');
   const dec = e.target.closest('[data-dec]');
-  const rem = e.target.closest('[data-remove]');
   if (noteBtn) { openNoteEditor(+noteBtn.dataset.note); return; }
   if (inc && !inc.disabled) { draft[+inc.dataset.inc].qty += 1; }
   else if (dec) {
     const it = draft[+dec.dataset.dec];
     it.qty -= 1;
-    if (it.qty <= 0) draft.splice(+dec.dataset.dec, 1);
+    if (it.qty <= 0) draft.splice(+dec.dataset.dec, 1);   /* giảm về 0 = gỡ món */
   }
-  else if (rem) { draft.splice(+rem.dataset.remove, 1); }
   else return;
   renderDraft();
   renderStickyBar();

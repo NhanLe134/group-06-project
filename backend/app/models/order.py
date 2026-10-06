@@ -20,7 +20,6 @@ class PhienBan(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     tenban: Mapped[str] = mapped_column(String)
     trangthai: Mapped[str | None] = mapped_column(String, server_default="trong")
-    sokhach: Mapped[int | None] = mapped_column(Integer, server_default="0")
     giobatdau: Mapped[datetime | None] = mapped_column(DateTime(timezone=False), default=None)
     gioketthuc: Mapped[datetime | None] = mapped_column(DateTime(timezone=False), default=None)
 
@@ -36,6 +35,12 @@ class HoaDon(Base):
     )
     tongtien: Mapped[int | None] = mapped_column(Integer, server_default="0")
     trangthai: Mapped[str | None] = mapped_column(String, server_default="ban_nhap")
+    thoigian: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=False), server_default=func.now()
+    )
+    thoigian_thanhtoan: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=False), default=None
+    )
 
 
 class ChiTietMon(Base):
