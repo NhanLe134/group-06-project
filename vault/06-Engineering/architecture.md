@@ -13,7 +13,7 @@
 | Backend runtime | **Python** | **3.13.x** | Đã đồng bộ `backend/.python-version` = `3.13`, `pyproject.toml` `requires-python = ">=3.13"` |
 | Backend framework | **FastAPI** | — | Native async + native WebSocket, phù hợp yêu cầu real-time OOS/KDS |
 | Backend package manager | **uv** | — | `backend/uv.lock` |
-| Database | **PostgreSQL** | **18** (qua Docker) | Service `db` trong `compose.yaml`, image `postgres:18-alpine` |
+| Database | **PostgreSQL** trên **Supabase** (dùng chung) | Supabase managed | Theo **ADR-ARCH-003**. FastAPI là lớp duy nhất đọc/ghi qua `DATABASE_URL` (Session pooler). Docker `postgres:18-alpine` (`docker-compose.yml`) chỉ còn dùng cho dev offline |
 | CI/CD | **GitHub Actions** | — | `.github/workflows/ci.yml`: job `backend` (uv sync + pytest), job `frontend` (Node 24, npm install/build) |
 | Realtime | **WebSocket Pub/Sub** (FastAPI, in-process) | — | Đồng bộ Out of Stock (REQ-09) và Kitchen Ticket (REQ-08) |
 | Scheduler | **APScheduler** (trong tiến trình FastAPI) | — | Xoá cứng Voice Transcript khi Table Session kết thúc (NFR-RO-02) |
@@ -225,7 +225,32 @@ app = FastAPI(lifespan=lifespan)
   - (-) Không phục vụ được khách quốc tế dùng thẻ Visa/Mastercard — đánh đổi đã được chấp nhận tại `scope.md`.
 - **Trạng thái:** Accepted.
 
-> **Đánh số ADR:** 2 ADR kiến trúc ở trên dùng tiền tố riêng `ADR-ARCH-*` để không trùng mã với `vault/08-Decisions/decision-log.md` (nơi giữ các ADR nghiệp vụ, ví dụ `ADR-001` — xử lý món Out of Stock trong Order Draft). Hai dãy số độc lập theo phạm vi tài liệu: `ADR-ARCH-*` cho quyết định kiến trúc/kỹ thuật (`architecture.md`), `ADR-*` cho quyết định nghiệp vụ (`decision-log.md`).
+### ADR-ARCH-003: Dùng Supabase làm nơi chạy PostgreSQL (FastAPI vẫn là lớp duy nhất truy cập dữ liệu)
+
+- **Ngày quyết định:** 2026-10-06
+- **Người quyết định:** Engineering (Nhã), theo gợi ý của giảng viên; cần cả nhóm xác nhận.
+- **Thay thế cho:** quyết định ngày 24/09/2026 "giữ FastAPI + PostgreSQL thuần qua Docker, không dùng Supabase" (`docs/log.md`).
+- **Bối cảnh:**
+  - PostgreSQL chạy bằng Docker trên từng máy làm mỗi thành viên có một database riêng, dữ liệu không dùng chung, và khi deploy staging vẫn phải tự tìm nơi chạy database.
+  - Quyết định 24/09 từ chối Supabase vì lo ngại phải đổi stack (frontend gọi thẳng Supabase, bỏ FastAPI), đi ngược PRD đã duyệt.
+  - Nhóm đã dựng sẵn schema trên Supabase (9 bảng: `thucdon`, `tonkho`, `congthuc`, `phienban`, `hoadon`, `chitietmon`, `nguoidung`, `loghuymon`, `loggiongnoi`).
+- **Quyết định:**
+  - Supabase **chỉ đóng vai trò PostgreSQL managed trên cloud**. Backend FastAPI kết nối bằng SQLAlchemy qua `DATABASE_URL` (Session pooler) và là **lớp duy nhất đọc/ghi dữ liệu nghiệp vụ**. Kiến trúc Monolith (ADR-ARCH-001) và WebSocket Pub/Sub (Mục 4) giữ nguyên.
+  - Schema trên Supabase là chuẩn (source of truth của cấu trúc bảng); model backend ánh xạ đúng tên bảng/cột (`backend/app/models/`), xem bảng ánh xạ tại `data-model.md` Mục 5. Backend **không tự tạo bảng hay seed** vào Supabase (`AUTO_CREATE_SCHEMA=false`).
+  - Phân bổ khóa: `DATABASE_URL` và `SUPABASE_SECRET_KEY` **chỉ ở backend** (`backend/.env`, không commit; khi deploy đặt trong environment manager). `SUPABASE_PUBLISHABLE_KEY` là khóa công khai, đặt ở `frontend/fe_ofc/assets/js/config.js`, chỉ dùng cho tính năng phía client (ví dụ nhận Realtime), không dùng để ghi bảng. Bắt buộc bật Row Level Security cho mọi bảng trên Supabase.
+- **Phương án bị loại:**
+  - Frontend đọc/ghi thẳng Supabase bằng supabase-js (bỏ qua FastAPI): business rule và phân quyền (NFR-RO-03, BR-03) sẽ phải viết lại bằng RLS/Edge Function, có thể bị bypass từ client, đi ngược PRD và ADR-ARCH-001.
+  - Giữ Docker trên từng máy: không có dữ liệu dùng chung, không có database cho staging.
+- **Hệ quả:**
+  - (+) Cả nhóm dùng chung một database, có sẵn database cho staging/demo; code backend gần như không đổi (chỉ đổi `DATABASE_URL`).
+  - (+) Test tự động vẫn chạy trên SQLite in-memory (`backend/tests/conftest.py`), không đụng dữ liệu thật.
+  - (-) Thao tác của một người ảnh hưởng cả nhóm: thay đổi schema phải thống nhất trước, nên chuyển sang migration (Alembic) khi schema ổn định.
+  - (-) Dữ liệu chung không có nghĩa là realtime chung: WebSocket in-process chỉ báo cho client nối vào cùng một backend; muốn realtime giữa nhiều máy cần một backend deploy chung hoặc Supabase Realtime.
+  - (-) Phụ thuộc dịch vụ ngoài (giới hạn gói miễn phí, mạng).
+- **Kiểm chứng:** `GET /health/db` trả `{"database": "ok"}` khi kết nối được; đối chiếu tự động 9 model với OpenAPI của Supabase khớp 100% tên cột và ràng buộc NOT NULL (AI Usage Log A-47).
+- **Trạng thái:** Proposed (chờ cả nhóm xác nhận).
+
+> **Đánh số ADR:** Các ADR kiến trúc ở trên dùng tiền tố riêng `ADR-ARCH-*` để không trùng mã với `vault/08-Decisions/decision-log.md` (nơi giữ các ADR nghiệp vụ, ví dụ `ADR-001` — xử lý món Out of Stock trong Order Draft). Hai dãy số độc lập theo phạm vi tài liệu: `ADR-ARCH-*` cho quyết định kiến trúc/kỹ thuật (`architecture.md`), `ADR-*` cho quyết định nghiệp vụ (`decision-log.md`).
 
 ## 7. Đồng bộ với cấu hình thực tế trong repo
 

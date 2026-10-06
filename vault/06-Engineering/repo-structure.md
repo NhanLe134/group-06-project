@@ -33,7 +33,7 @@ group-06-project/
 │   │   ├── main.py                   # FastAPI app, lifespan (create_all + seed), CORS, /health
 │   │   ├── config.py                  # Settings (pydantic-settings, đọc .env)
 │   │   ├── db.py                      # async engine/session, Base, get_db()
-│   │   ├── models/menu_item.py        # MenuItem ORM (khớp data-model.md)
+│   │   ├── models/                    # 9 ORM model khớp bảng Supabase (data-model.md Mục 5)
 │   │   ├── schemas/menu.py            # MenuItemOut (Pydantic)
 │   │   └── routers/menu.py            # GET /menu (US-01)
 │   ├── tests/
@@ -85,7 +85,7 @@ group-06-project/
 
 ## 2. Cấu trúc dự kiến cho `backend/app/` (mở rộng dần từ vertical slice hiện có)
 
-`backend/app/` hiện đã có vertical slice đầu tiên chạy thật: `GET /menu` (US-01, xem Mục 1) — `main.py`, `config.py`, `db.py`, `models/menu_item.py`, `schemas/menu.py`, `routers/menu.py` đã tồn tại và có test pass. Các module còn lại (`orders`, `ai`, `ws`, `jobs`, `payment_gateways`, `auth`...) triển khai theo `architecture.md` (Modular Monolith, ADR-ARCH-001) khi làm tới story tương ứng. Cấu trúc đầy đủ dự kiến:
+`backend/app/` hiện đã có vertical slice đầu tiên chạy thật: `GET /menu` (US-01, xem Mục 1) — `main.py`, `config.py`, `db.py`, `models/` (9 model khớp bảng Supabase — ADR-ARCH-003, `data-model.md` Mục 5), `schemas/menu.py`, `routers/menu.py` đã tồn tại và có test pass. Các module còn lại (`orders`, `ai`, `ws`, `jobs`, `payment_gateways`, `auth`...) triển khai theo `architecture.md` (Modular Monolith, ADR-ARCH-001) khi làm tới story tương ứng. Cấu trúc đầy đủ dự kiến:
 
 ```
 backend/app/

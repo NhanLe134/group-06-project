@@ -227,3 +227,31 @@ EXECUTE FUNCTION purge_voice_transcripts_on_session_close();
 **Vì sao không dùng `ON DELETE CASCADE` trên FK `voice_transcripts.table_session_id`:** CASCADE chỉ kích hoạt khi `table_sessions` bị `DELETE`, nhưng `table_sessions` không bao giờ bị xoá (cần giữ vĩnh viễn cho lịch sử/đối soát) — nên phải dùng trigger theo sự kiện `UPDATE status` như trên, không thể dựa vào cascade.
 
 **Giới hạn còn lại:** trigger DB chỉ đảm bảo xoá **bản ghi + text transcript** trong Postgres; file audio thô nằm ở Media Storage (ngoài DB) vẫn phụ thuộc tầng ứng dụng dọn dẹp — nên Trigger 1 (tầng ứng dụng) trong `architecture.md` vẫn là bước bắt buộc, trigger DB chỉ là lưới an toàn bổ sung.
+
+## 5. Schema đang triển khai trên Supabase (ADR-ARCH-003)
+
+> Cập nhật 2026-10-06 (thêm cột `giogoimon` cùng ngày — xem `backend/db/migrations/`). Schema gốc: `backend/db/schema.sql`. Bản mô tả chi tiết từng cột (kiểu, mặc định, khóa ngoại) bằng tiếng Việt: `frontend/fe_ofc/dtb.md`. Theo ADR-ARCH-003 (`architecture.md` Mục 6), **schema trên Supabase là cấu trúc bảng đang chạy thật**; ERD ở Mục 1 là thiết kế đích. Model backend (`backend/app/models/`) ánh xạ đúng 9 bảng dưới đây — đã đối chiếu tự động với OpenAPI của Supabase, khớp 100% tên cột và ràng buộc NOT NULL.
+
+| Thực thể (ERD Mục 1) | Bảng Supabase | Model backend | Cột chính |
+| :--- | :--- | :--- | :--- |
+| `MENU_ITEMS` | `thucdon` | `ThucDon` | `tenmon`, `phanloai`, `giaban`, `trangthaiban` (false = Hết hàng), `anhminhhoa`, `soluongton` (tồn theo số lượng cho đồ uống; NULL = không đếm; 0 = Hết hàng) |
+| `INVENTORY_ITEMS` | `tonkho` | `TonKho` | `tennguyenlieu`, `donvitinh`, `tonhethong`, `tonthucte` |
+| `MENU_ITEM_INGREDIENTS` | `congthuc` | `CongThuc` | `thucdon_id`, `tonkho_id`, `dinhluong` |
+| `TABLES` + `TABLE_SESSIONS` | `phienban` | `PhienBan` | `tenban`, `trangthai`, `sokhach`, `giobatdau`, `gioketthuc` |
+| `ORDERS` | `hoadon` | `HoaDon` | `phienban_id`, `tongtien`, `trangthai` |
+| `ORDER_ITEMS` | `chitietmon` | `ChiTietMon` | `hoadon_id`, `thucdon_id`, `soluong`, `trangthai` (trạng thái món trên KDS), `ghichu`, `giogoimon` |
+| `USERS` | `nguoidung` | `NguoiDung` | `hoten`, `vaitro`, `mapin`, `ngaytao` |
+| `VOID_REFUND_LOGS` | `loghuymon` | `LogHuyMon` | `chitietmon_id`, `nguoiduyet_id`, `lydohuy` |
+| `VOICE_TRANSCRIPTS` | `loggiongnoi` | `LogGiongNoi` | `phienban_id`, `vanbangoc`, `ydinhai` (jsonb) |
+
+**API giữ hợp đồng cũ:** `GET /menu` vẫn trả tên trường tiếng Anh (`name`, `price`, `category`, `status`...) như `api-contract.md`; việc đổi tên từ cột tiếng Việt nằm ở `backend/app/schemas/menu.py`.
+
+**Khoảng trống so với ERD đích (Open Questions — chờ nhóm quyết định, AI không tự sửa schema trên Supabase):**
+
+1. ~~`chitietmon` chưa có cột thời gian gọi món~~ — **Đã xử lý 2026-10-06:** thêm `giogoimon TIMESTAMP NOT NULL DEFAULT now()` + index `(trangthai, giogoimon)` bằng `backend/db/migrations/001_chitietmon_giogoimon.sql` (Dev Nhã yêu cầu).
+2. Tách suất trên KDS (`POST /kds/items/{id}/split`) **không thêm cột**: dòng mới copy `hoadon_id, thucdon_id, ghichu, giogoimon`; KDS nhận ra các phần của cùng 1 món nhờ 4 giá trị này để hiện "x/y suất". Nếu cần truy vết chặt hơn thì thêm `parent_id uuid` (tự tham chiếu) — chờ duyệt vào backlog.
+3. Chưa có bảng `KITCHEN_TICKETS` và `PAYMENTS`: KDS đang dùng trực tiếp `chitietmon.trangthai` (khớp AC2 US-03 `order_items.status`); thanh toán (US-05) cần bổ sung bảng hoặc cột trên `hoadon`.
+4. Hết hàng (US-03 AC3 ghi `inventory.stock = 0`) hiện được biểu diễn bằng `thucdon.trangthaiban = false` vì `tonkho` quản lý theo **nguyên liệu**, không theo món — cần cập nhật lại AC3 cho khớp.
+5. Hầu hết bảng chưa có audit fields (`created_at`, `updated_at`) theo quy ước ở Mục 3; `thucdon` chưa có cột mô tả món.
+6. Giá trị hợp lệ của các cột `trangthai` / `vaitro` đã được nhóm định nghĩa trong script tạo bảng (dạng comment, xem `frontend/fe_ofc/dtb.md`) nhưng DB **chưa có ràng buộc CHECK** — backend phải tự kiểm tra; nên bổ sung CHECK khi schema ổn định. Lưu ý cho KDS: `kitchen.html` và AC2/AC4 của US-03 đang dùng `PENDING`/`COOKING`/`READY` và vai trò `CHEF`/`MANAGER`/`WAITER`; khi nối API cần ánh xạ sang giá trị DB: `cho_nau`/`dang_nau`/`da_xong` và `BEP`/`QUAN_LY`/`PHUC_VU`.
+7. **Tồn kho theo số lượng (2026-10-06, migration 002):** `thucdon.soluongton` cho món bán nguyên đơn vị. Hiện cập nhật bằng `PATCH /menu/items/{id}/stock`. **Chưa có:** tự trừ `soluongton` khi chốt đơn và chặn đặt vượt số lượng tồn — thuộc luồng `POST /orders/confirm` (story đặt món), cần làm trong cùng transaction để tránh bán âm.

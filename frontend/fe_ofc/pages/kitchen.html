@@ -205,12 +205,11 @@
     </div>
   </header>
 
-  <!-- Thanh DEMO: giả lập sự kiện realtime / mất mạng (chỉ dùng khi chưa có Backend) -->
+  <!-- Thanh DEMO: tạo đơn mẫu AC1 (cần DEMO_MODE=true ở backend) / giả lập mất mạng AC5 -->
   <div class="demo-bar">
     <span class="demo-tag">DEMO</span>
     <button class="btn-mini" data-action="sim-ac1"><i class="ph-bold ph-broadcast"></i> Đơn mới: Bàn 01 + Bàn 02 gọi Phở bò</button>
     <label class="switch" style="flex:0 0 auto"><input type="checkbox" id="sim-offline"> Giả lập mất Wi-Fi</label>
-    <button class="btn-mini" data-action="reset"><i class="ph-bold ph-arrow-counter-clockwise"></i> Reset</button>
   </div>
 
   <div id="offline-banner" class="banner offline-banner" hidden>
@@ -226,23 +225,26 @@
   <div id="modal-root"></div>
   <div class="toasts" id="toasts" aria-live="polite"></div>
 
-  <script src="../assets/js/mock-data.js"></script>
-  <script src="../assets/js/utils.js"></script>
+  <script src="../assets/js/config.js"></script>
   <script>
   'use strict';
   /* =====================================================================
      US-03 — KDS (Kitchen Display System) & AI Batching
-     - Nấu / Xong từng phần: món có số lượng > 1 được hỏi số suất, tách thành thẻ riêng
-     - REQ-07  : Kanban 3 cột PENDING → COOKING → READY (kéo thả + nút bấm)
+     Story Spec: vault/06-Engineering/story-spec-us03-kds.md
+     - REQ-07  : Kanban 3 cột Chờ nấu → Đang nấu → Đã nấu (kéo thả + nút bấm)
      - REQ-08  : AI Batching gom món giống nhau từ nhiều bàn → "Gợi ý nấu chung"
-     - REQ-09 / BR-03 : Bếp đánh dấu Hết hàng → phát `catalog:updates`
+     - REQ-09 / BR-03 : Bếp đánh dấu Hết hàng → POST /menu/items/{id}/out-of-stock
      - NFR-RO-03 : chỉ CHEF / MANAGER được vào KDS, còn lại 403 → /pos
-     - AC5     : mất mạng → lưu cục bộ (hàng đợi) → tự sync khi online
-     Chưa có Backend: MockSocket dùng BroadcastChannel để giả lập các kênh
-     WebSocket `orders:new`, `orders:status`, `catalog:updates` giữa các tab.
+     - AC5     : mất mạng → thao tác vào hàng đợi cục bộ → tự gửi lại khi có mạng
+     - Nấu / Xong từng phần: món > 1 suất được hỏi số suất → POST /kds/items/{id}/split
+     Dữ liệu thật lấy từ FastAPI (API_BASE_URL trong config.js) — bảng chitietmon trên Supabase.
+     Realtime: WebSocket /ws/kds:tickets và /ws/menu:oos (api-contract.md Mục 5).
      ===================================================================== */
 
-  const STATUSES = ['PENDING', 'COOKING', 'READY'];   /* = giá trị order_items.status */
+  /* Giao diện dùng PENDING/COOKING/READY; DB/API dùng cho_nau/dang_nau/da_xong (dtb.md) */
+  const STATUSES = ['PENDING', 'COOKING', 'READY'];
+  const TO_API = { PENDING: 'cho_nau', COOKING: 'dang_nau', READY: 'da_xong' };
+  const FROM_API = { cho_nau: 'PENDING', dang_nau: 'COOKING', da_xong: 'READY' };
   const COLS = {
     PENDING: { label: 'Chờ nấu',  icon: 'ph-clock' },
     COOKING: { label: 'Đang nấu', icon: 'ph-cooking-pot' },
@@ -250,61 +252,86 @@
   };
   const ALLOWED_ROLES = ['CHEF', 'MANAGER'];
   const POS_URL = 'waiter.html';                       /* màn hình /pos của Phục vụ */
-  const KEY = { state: 'g06-kds-v1', stock: 'g06-catalog-stock', queue: 'g06-kds-queue', auth: 'g06-auth' };
+  const KEY = { queue: 'g06-kds-queue-v2', auth: 'g06-auth' };
+  const API_BASE = (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || 'http://localhost:8000';
+  const WS_BASE = API_BASE.replace(/^http/, 'ws');
+  const POLL_MS = 15000;                               /* hỏi lại server khi WebSocket rớt */
 
   /* ---------- Tiện ích ---------- */
   const $ = sel => document.querySelector(sel);
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fmtTime = ts => new Date(ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-  const dishById = id => CATALOG.find(d => d.id === id);
   const load = (k, fallback) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; } catch { return fallback; } };
   const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* bộ nhớ bị chặn: vẫn chạy bình thường */ } };
 
-  /* ---------- Mock WebSocket (thay bằng socket thật khi có Backend) ---------- */
-  const MockSocket = (() => {
-    const handlers = {};
-    let bc = null;
-    try { bc = new BroadcastChannel('g06-realtime'); } catch { /* trình duyệt cũ */ }
-    if (bc) bc.onmessage = e => (handlers[e.data.channel] || []).forEach(fn => fn(e.data.payload));
-    return {
-      on(channel, fn) { (handlers[channel] = handlers[channel] || []).push(fn); },
-      /* Gửi đi (đến E-Menu, POS Waiter ở các tab khác) */
-      emit(channel, payload) { if (bc) bc.postMessage({ channel, payload }); },
-      /* Giả lập Server đẩy sự kiện tới chính màn hình này (độ trễ ~150ms < 500ms — NFR-RO-01) */
-      simulateIncoming(channel, payload) { setTimeout(() => (handlers[channel] || []).forEach(fn => fn(payload)), 150); },
-    };
-  })();
-
   /* ---------- State ---------- */
-  function seedItems() {
-    const now = Date.now();
-    return [
-      { id: 'OI-101', orderCode: '#B04-001', table: 'Bàn 04', dishId: 'M02', qty: 1, note: '', status: 'PENDING', placedTs: now - 6 * 60000 },
-      { id: 'OI-102', orderCode: '#B05-001', table: 'Bàn 05', dishId: 'M06', qty: 1, note: 'Ít cay', status: 'COOKING', placedTs: now - 12 * 60000 },
-      { id: 'OI-103', orderCode: '#B06-001', table: 'Bàn 06', dishId: 'M05', qty: 2, note: '', status: 'READY', placedTs: now - 15 * 60000 },
-      { id: 'OI-104', orderCode: '#B07-001', table: 'Bàn 07', dishId: 'M03', qty: 10, note: '', status: 'PENDING', placedTs: now - 4 * 60000 },
-    ];
-  }
-  function seedStock() {
-    const s = {};
-    CATALOG.forEach(d => { s[d.id] = d.status === 'Out of Stock' ? 0 : 20; });
-    return s;
-  }
-
   const S = {
-    items: load(KEY.state, null) || seedItems(),
-    stock: load(KEY.stock, null) || seedStock(),       /* inventory.stock theo dishId */
-    queue: load(KEY.queue, []),                        /* thao tác chờ sync khi offline (AC5) */
+    items: [],                                         /* thẻ món (đã đổi sang trạng thái giao diện) */
+    menu: [],                                          /* GET /menu — tên món + còn/hết hàng */
+    queue: load(KEY.queue, []),                        /* thao tác chờ gửi khi offline (AC5) */
     role: (load(KEY.auth, null) || { role: 'CHEF' }).role,
+    loaded: false,
+    loadError: '',
+    wsUp: false,
     forceOffline: false,
     soundOn: true,
-    menuFor: null,                                     /* id thẻ đang mở popover cảnh báo */
+    menuFor: null,                                     /* id thẻ đang mở menu "⋯" */
     newIds: new Set(),
-    seq: 200,
   };
-  const persist = () => { save(KEY.state, S.items); save(KEY.stock, S.stock); save(KEY.queue, S.queue); };
+  const persistQueue = () => save(KEY.queue, S.queue);
   const isOnline = () => navigator.onLine && !S.forceOffline;
-  const isOos = dishId => (S.stock[dishId] ?? 0) <= 0;
+  const menuItem = dishId => S.menu.find(m => m.id === dishId);
+  const menuName = dishId => (menuItem(dishId) || {}).name || 'Món';
+  const isOos = dishId => (menuItem(dishId) || {}).status === 'out_of_stock';
+
+  /* ---------- Gọi API ---------- */
+  class ApiError extends Error {
+    constructor(status, code, message) { super(message); this.status = status; this.code = code; }
+  }
+  async function api(method, path, body) {
+    let res;
+    try {
+      res = await fetch(API_BASE + path, {
+        method,
+        headers: body ? { 'Content-Type': 'application/json' } : undefined,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+    } catch {
+      throw new ApiError(0, 'NETWORK', 'Không kết nối được máy chủ');   /* mất mạng / backend tắt */
+    }
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      const msg = data && (data.message || (Array.isArray(data.detail) ? 'Dữ liệu gửi lên không hợp lệ' : data.detail));
+      throw new ApiError(res.status, (data && data.error_code) || `HTTP_${res.status}`, msg || `Lỗi máy chủ (HTTP ${res.status})`);
+    }
+    return data;
+  }
+
+  /* 1 dòng chitietmon → 1 thẻ trên Kanban */
+  function fromApi(x) {
+    return {
+      id: x.id,
+      hoadonId: x.hoadon_id,
+      orderCode: x.hoadon_id ? '#' + x.hoadon_id.slice(0, 6).toUpperCase() : '',
+      table: x.ban || 'Không rõ bàn',
+      dishId: x.thucdon_id,
+      dishName: x.tenmon || 'Món đã xóa khỏi thực đơn',
+      qty: x.soluong,
+      note: x.ghichu || '',
+      status: FROM_API[x.trangthai],
+      placedTs: Date.parse(x.giogoimon),
+    };
+  }
+  /* Các dòng tách suất có chung hóa đơn + món + ghi chú + giờ gọi → tính lại "5/10 suất" */
+  function markSplitParts(items) {
+    const groups = {};
+    items.forEach(it => { (groups[[it.hoadonId, it.dishId, it.note, it.placedTs].join('|')] ||= []).push(it); });
+    Object.values(groups).forEach(g => {
+      const total = g.reduce((s, x) => s + x.qty, 0);
+      g.forEach(it => { it.origQty = g.length > 1 ? total : undefined; });
+    });
+    return items;
+  }
 
   /* ---------- Âm thanh "ting" (Web Audio, không cần file) ---------- */
   let audioCtx = null;
@@ -333,7 +360,7 @@
   /* =====================================================================
      REQ-08 — AI Batching
      Stand-in cho AI Service Endpoint (dự kiến POST /api/ai/batching):
-     gom các món PENDING cùng dishId đến từ ≥ 2 bàn khác nhau thành 1 mẻ.
+     gom các món Chờ nấu cùng món đến từ ≥ 2 bàn khác nhau thành 1 mẻ.
      ===================================================================== */
   function aiBatching(items) {
     const groups = {};
@@ -351,75 +378,138 @@
       .sort((a, b) => b.totalQty - a.totalQty);
   }
 
-  /* ---------- Sự kiện nhận từ Server ---------- */
-  MockSocket.on('orders:new', order => {
-    const added = order.items.map(it => ({
-      id: `OI-${++S.seq}-${Math.random().toString(36).slice(2, 6)}`,
-      orderCode: order.orderCode, table: order.table,
-      dishId: it.dishId, qty: it.qty, note: it.note || '',
-      status: 'PENDING', placedTs: Date.now(),
-    }));
-    S.items.push(...added);
-    added.forEach(it => S.newIds.add(it.id));
-    setTimeout(() => { added.forEach(it => S.newIds.delete(it.id)); render(); }, 5000);
-    ting();
-    toast(`Đơn mới ${esc(order.orderCode)} — ${esc(order.table)}`, 'warn', 'ph-bell-ringing');
-    const before = S._batchKeys || '';
-    persist(); render();
-    const after = S._batchKeys || '';
-    if (after && after !== before) toast('Trợ lý AI vừa gom món thành mẻ <b>Gợi ý nấu chung</b>', 'ai', 'ph-sparkle');
-  });
-  /* Món bị khóa/mở lại từ máy khác (VD: Manager) */
-  MockSocket.on('catalog:updates', p => { S.stock[p.dishId] = p.stock; persist(); render(); });
-
-  /* ---------- Hành động của Bếp ---------- */
-  /* Gửi lên Server; nếu offline → xếp hàng đợi cục bộ (AC5) */
-  function send(channel, payload) {
-    if (isOnline()) { MockSocket.emit(channel, payload); return true; }
-    S.queue.push({ channel, payload, ts: Date.now() });
-    persist(); updateConnUI();
-    return false;
-  }
-
-  function setStatus(id, status) {
-    const it = S.items.find(x => x.id === id);
-    if (!it || it.status === status || !STATUSES.includes(status)) return;
-    if (it.status === 'PENDING' && isOos(it.dishId)) { toast(`${esc(dishById(it.dishId).name)} đã hết hàng — chỉ có thể xóa khỏi hàng đợi`, 'err', 'ph-prohibit'); return; }
-    it.status = status; it.updatedTs = Date.now();
-    const dish = dishById(it.dishId).name;
-    const sent = send('orders:status', { orderItemId: it.id, parentItemId: it.parentItemId || null, orderCode: it.orderCode, table: it.table, dishId: it.dishId, qty: it.qty, origQty: it.origQty || it.qty, status });
-    if (status === 'READY') {
-      /* AC2 — báo Tablet Phục vụ đi lấy món (nếu chỉ xong 1 phần thì ghi rõ "3/10") */
-      if (sent) { ting(1318); toast(`Ting! ${esc(it.table)} đã có ${partOf(it)}${esc(dish)}`, 'ok', 'ph-bell-ringing'); }
+  /* ---------- Tải dữ liệu từ server ---------- */
+  async function refresh() {
+    try {
+      const [rows, menu] = await Promise.all([api('GET', '/kds/items'), api('GET', '/menu')]);
+      const before = new Set(S.items.map(i => i.id));
+      const firstLoad = !S.loaded;
+      S.menu = menu;
+      S.items = markSplitParts(rows.map(fromApi));
+      applyQueueLocally();                              /* thao tác offline chưa gửi vẫn hiện trên màn hình */
+      S.loaded = true; S.loadError = '';
+      if (!firstLoad) announceNew(S.items.filter(i => i.status === 'PENDING' && !before.has(i.id)));
+    } catch (err) {
+      if (!S.loaded) S.loadError = err.message;
     }
-    if (!sent) toast('Offline: Đang lưu cục bộ', 'warn', 'ph-wifi-slash');
-    persist(); render();
+    render();
+  }
+  let refreshTimer = null;
+  const refreshSoon = () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(refresh, 150); };
+
+  /* AC1 — đơn mới: "ting" + nhấp sáng thẻ + báo nếu AI vừa gom được mẻ */
+  function announceNew(fresh) {
+    if (!fresh.length) return;
+    fresh.forEach(it => S.newIds.add(it.id));
+    setTimeout(() => { fresh.forEach(it => S.newIds.delete(it.id)); render(); }, 5000);
+    ting();
+    [...new Set(fresh.map(i => i.table))].forEach(t => toast(`Đơn mới — ${esc(t)}`, 'warn', 'ph-bell-ringing'));
+    const batched = new Set(aiBatching(S.items).flatMap(b => b.items.map(x => x.id)));
+    if (fresh.some(it => batched.has(it.id))) toast('Trợ lý AI vừa gom món thành mẻ <b>Gợi ý nấu chung</b>', 'ai', 'ph-sparkle');
   }
 
-  /* ---------- Nấu / Xong từng phần ----------
-     Mỗi thẻ = 1 dòng order_items với 1 trạng thái (AC2). Muốn nấu trước 5/10 suất thì TÁCH dòng:
-     dòng mới 5 suất chuyển trạng thái, dòng cũ giữ 5 suất còn lại. Backend dự kiến:
-     POST /api/order-items/:id/split { qty } → tạo dòng mới cùng order, có parent_item_id. */
+  /* ---------- Realtime: WebSocket (fallback hỏi lại định kỳ) ---------- */
+  function connectWs(channel, onMessage) {
+    let ws;
+    try { ws = new WebSocket(`${WS_BASE}/ws/${channel}`); } catch { setTimeout(() => connectWs(channel, onMessage), 3000); return; }
+    ws.onopen = () => { S.wsUp = true; updateConnUI(); };
+    ws.onmessage = e => { try { onMessage(JSON.parse(e.data)); } catch { /* bỏ qua message lỗi */ } };
+    ws.onclose = () => { S.wsUp = false; updateConnUI(); setTimeout(() => connectWs(channel, onMessage), 3000); };
+  }
+  connectWs('kds:tickets', () => refreshSoon());
+  connectWs('menu:oos', () => refreshSoon());
+  setInterval(() => { if (!S.wsUp && isOnline()) refresh(); }, POLL_MS);
+
+  /* ---------- Thao tác của Bếp: gửi API, offline thì xếp hàng (AC5) ----------
+     op: { op: 'status' | 'split' | 'cancel' | 'stock', ... }. Màn hình cập nhật ngay (optimistic),
+     sau đó tải lại dữ liệu thật từ server; server từ chối thì báo lỗi và hoàn lại. */
+  function applyLocal(op) {
+    const it = S.items.find(x => x.id === op.id);
+    if (op.op === 'status' && it) it.status = op.to;
+    if (op.op === 'split' && it) {
+      const total = it.origQty || it.qty;
+      S.items.push({ ...it, id: `${it.id}-tam-${S.queue.length}`, qty: op.n, status: op.to, origQty: total });
+      it.qty -= op.n; it.origQty = total;
+    }
+    if (op.op === 'cancel') S.items = S.items.filter(x => x.id !== op.id);
+    if (op.op === 'stock') { const m = menuItem(op.dishId); if (m) m.status = op.available ? 'available' : 'out_of_stock'; }
+  }
+  function applyQueueLocally() { S.queue.forEach(applyLocal); }
+
+  function callApi(op) {
+    if (op.op === 'status') return api('PATCH', `/kds/items/${op.id}/status`, { trangthai: TO_API[op.to] });
+    if (op.op === 'split') return api('POST', `/kds/items/${op.id}/split`, { soluong: op.n, trangthai: TO_API[op.to] });
+    if (op.op === 'cancel') return api('POST', `/kds/items/${op.id}/cancel-out-of-stock`);
+    return api('POST', `/menu/items/${op.dishId}/${op.available ? 'in-stock' : 'out-of-stock'}`);
+  }
+
+  /* Thông báo sau khi server xác nhận (AC2 "Ting!", AC3 khóa món) */
+  function confirmToast(op) {
+    if ((op.op === 'status' || op.op === 'split') && op.to === 'READY') {
+      ting(1318);
+      toast(`Ting! ${esc(op.table)} đã có ${op.part}${esc(op.dish)}`, 'ok', 'ph-bell-ringing');
+    }
+    if (op.op === 'cancel') toast(`Đã xóa ${esc(op.label)} khỏi hàng đợi — đã báo Phục vụ ${esc(op.table)}`, 'ok', 'ph-trash');
+    if (op.op === 'stock') {
+      toast(op.available ? `Đã mở bán lại <b>${esc(op.dish)}</b> trên E-Menu` : `Đã khóa <b>${esc(op.dish)}</b> trên E-Menu & POS (Hết hàng)`,
+        op.available ? 'ok' : 'err', op.available ? 'ph-check-circle' : 'ph-prohibit');
+    }
+  }
+
+  async function perform(op) {
+    applyLocal(op); render();
+    if (!isOnline()) { enqueue(op); return; }
+    try {
+      await callApi(op);
+      confirmToast(op);
+    } catch (err) {
+      if (err.code === 'NETWORK') { enqueue(op); return; }
+      toast(esc(err.message), 'err', 'ph-warning-circle');  /* server từ chối → tải lại để hoàn tác */
+    }
+    refreshSoon();
+  }
+  function enqueue(op) {
+    S.queue.push(op); persistQueue();
+    toast('Offline: Đang lưu cục bộ', 'warn', 'ph-wifi-slash');
+    render();
+  }
+
+  /* AC5 — có mạng lại → gửi lần lượt các thao tác đã lưu */
+  async function flushQueue() {
+    if (!isOnline() || !S.queue.length) { updateConnUI(); return; }
+    let sent = 0;
+    while (S.queue.length && isOnline()) {
+      const op = S.queue[0];
+      try {
+        await callApi(op);
+        confirmToast(op); sent += 1;
+      } catch (err) {
+        if (err.code === 'NETWORK') break;               /* vẫn chưa có mạng — giữ lại, thử sau */
+        toast(`Không đồng bộ được: ${esc(err.message)}`, 'err', 'ph-warning-circle');
+      }
+      S.queue.shift(); persistQueue();
+    }
+    if (sent) toast(`Đã có mạng — đồng bộ ${sent} thao tác lên Server`, 'ok', 'ph-cloud-check');
+    refresh();
+  }
+
+  /* ---------- Hành động cụ thể ---------- */
   const partOf = it => (it.origQty && it.origQty !== it.qty ? `${it.qty}/${it.origQty} ` : `${it.qty}× `);
   const isForward = (from, to) => STATUSES.indexOf(to) > STATUSES.indexOf(from);
 
+  function setStatus(id, to) {
+    const it = S.items.find(x => x.id === id);
+    if (!it || it.status === to || !STATUSES.includes(to)) return;
+    if (it.status === 'PENDING' && isOos(it.dishId)) { toast(`${esc(it.dishName)} đã hết hàng — chỉ có thể xóa khỏi hàng đợi`, 'err', 'ph-prohibit'); return; }
+    perform({ op: 'status', id, to, table: it.table, dish: it.dishName, part: partOf(it) });
+  }
+
+  /* Nấu / Xong từng phần: tách n suất sang dòng mới (server tạo dòng chitietmon mới) */
   function splitItem(id, n, to) {
     const it = S.items.find(x => x.id === id);
     if (!it) return;
-    if (n >= it.qty) { setStatus(id, to); return; }
-    if (it.status === 'PENDING' && isOos(it.dishId)) { setStatus(id, to); return; }   /* để setStatus báo lỗi hết hàng */
-    const part = {
-      ...it,
-      id: `${it.parentItemId || it.id}-p${Date.now().toString(36)}`,
-      parentItemId: it.parentItemId || it.id,
-      origQty: it.origQty || it.qty,
-      qty: n,
-    };
-    it.origQty = part.origQty;
-    it.qty -= n;
-    S.items.push(part);
-    send('orders:split', { orderItemId: it.id, newItemId: part.id, qty: n, remainingQty: it.qty });
-    setStatus(part.id, to);
+    if (n >= it.qty || (it.status === 'PENDING' && isOos(it.dishId))) { setStatus(id, to); return; }
+    perform({ op: 'split', id, n, to, table: it.table, dish: it.dishName, part: `${n}/${it.origQty || it.qty} ` });
   }
 
   /* Bấm Nấu / Xong trên món có số lượng > 1 → hỏi "bao nhiêu suất?" */
@@ -434,7 +524,7 @@
     const sp = S.split;
     const it = sp && S.items.find(x => x.id === sp.id);
     if (!it) { closeModal(); return; }
-    const name = esc(dishById(it.dishId).name);
+    const name = esc(it.dishName);
     const verb = sp.to === 'COOKING' ? 'Nấu' : 'Xong';
     const rest = it.qty - sp.n;
     $('#modal-root').innerHTML = `
@@ -464,25 +554,16 @@
     const batch = aiBatching(S.items).find(b => b.dishId === dishId);
     if (!batch) return;
     batch.items.forEach(it => setStatus(it.id, 'COOKING'));
-    toast(`Bắt đầu nấu chung mẻ <b>${batch.totalQty}× ${esc(dishById(dishId).name)}</b>`, 'ai', 'ph-sparkle');
+    toast(`Bắt đầu nấu chung mẻ <b>${batch.totalQty}× ${esc(menuName(dishId))}</b>`, 'ai', 'ph-sparkle');
   }
 
-  /* AC3 — Đánh dấu Hết hàng (BR-03) */
-  function setStock(dishId, stock) {
-    S.stock[dishId] = stock;
-    const name = dishById(dishId).name;
-    const sent = send('catalog:updates', { dishId, stock, status: stock > 0 ? 'Available' : 'Out of Stock' });
-    if (sent) {
-      toast(stock > 0 ? `Đã mở bán lại <b>${esc(name)}</b> trên E-Menu` : `Đã khóa <b>${esc(name)}</b> trên E-Menu & POS (Hết hàng)`,
-        stock > 0 ? 'ok' : 'err', stock > 0 ? 'ph-check-circle' : 'ph-prohibit');
-    } else {
-      toast('Offline: Đang lưu cục bộ', 'warn', 'ph-wifi-slash');
-    }
-    persist(); render();
+  /* AC3 — Đánh dấu Hết hàng / mở bán lại (BR-03) */
+  function setStock(dishId, available) {
+    perform({ op: 'stock', dishId, available, dish: menuName(dishId) });
   }
 
   function confirmOos(dishId) {
-    const name = esc(dishById(dishId).name);
+    const name = esc(menuName(dishId));
     $('#modal-root').innerHTML = `
       <div class="kds-overlay" data-action="close-modal">
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="oos-title" data-stop>
@@ -499,16 +580,15 @@
   }
   const closeModal = () => { $('#modal-root').innerHTML = ''; };
 
-  /* Xóa món hết hàng khỏi hàng đợi → báo Phục vụ để thông báo khách (kênh orders:void) */
+  /* Xóa món hết hàng khỏi hàng đợi → trạng thái da_huy + nhật ký loghuymon trên server */
   function confirmRemove(id) {
     const it = S.items.find(x => x.id === id);
     if (!it) return;
-    const name = esc(dishById(it.dishId).name);
     $('#modal-root').innerHTML = `
       <div class="kds-overlay" data-action="close-modal">
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rm-title" data-stop>
           <h3 id="rm-title"><i class="ph-bold ph-trash" style="color:var(--red)"></i> Xóa món khỏi hàng đợi?</h3>
-          <p>Xóa <b>${it.qty}× ${name}</b> của <b>${esc(it.table)}</b> (${esc(it.orderCode)}) vì đã hết nguyên liệu.</p>
+          <p>Xóa <b>${it.qty}× ${esc(it.dishName)}</b> của <b>${esc(it.table)}</b> (${esc(it.orderCode)}) vì đã hết nguyên liệu.</p>
           <p class="muted">Phục vụ sẽ nhận thông báo để báo lại cho khách.</p>
           <div class="modal-actions">
             <button class="btn-ghost" data-action="close-modal">Hủy</button>
@@ -521,25 +601,17 @@
   function removeItem(id) {
     const it = S.items.find(x => x.id === id);
     if (!it) return;
-    S.items = S.items.filter(x => x.id !== id);
-    const sent = send('orders:void', { orderItemId: it.id, orderCode: it.orderCode, table: it.table, dishId: it.dishId, qty: it.qty, reason: 'OUT_OF_STOCK' });
-    if (sent) toast(`Đã xóa ${it.qty}× ${esc(dishById(it.dishId).name)} — đã báo Phục vụ ${esc(it.table)}`, 'ok', 'ph-trash');
-    else toast('Offline: Đang lưu cục bộ', 'warn', 'ph-wifi-slash');
-    persist(); render();
+    perform({ op: 'cancel', id, table: it.table, label: `${it.qty}× ${it.dishName}` });
   }
 
-  /* AC5 — có mạng lại → đồng bộ hàng đợi */
-  function flushQueue() {
-    if (!isOnline() || !S.queue.length) { updateConnUI(); return; }
-    const n = S.queue.length;
-    S.queue.forEach(q => MockSocket.emit(q.channel, q.payload));
-    const readyMsgs = S.queue.filter(q => q.channel === 'orders:status' && q.payload.status === 'READY');
-    S.queue = [];
-    persist(); updateConnUI(); render();
-    toast(`Đã có mạng — đồng bộ ${n} thao tác lên Server`, 'ok', 'ph-cloud-check');
-    if (readyMsgs.length) {
-      ting(1318);
-      readyMsgs.forEach(q => toast(`Ting! ${esc(q.payload.table)} đã có món ${esc(dishById(q.payload.dishId).name)}`, 'ok', 'ph-bell-ringing'));
+  /* Demo AC1 — chỉ chạy khi backend bật DEMO_MODE=true */
+  async function demoOrders() {
+    try {
+      await api('POST', '/kds/demo/orders');
+      refreshSoon();
+    } catch (err) {
+      toast(err.status === 404 ? 'Chức năng demo đang tắt — đặt <b>DEMO_MODE=true</b> trong backend/.env rồi chạy lại backend' : esc(err.message),
+        'err', 'ph-warning-circle');
     }
   }
 
@@ -549,8 +621,9 @@
     $('#queue-count').textContent = S.queue.length ? `${S.queue.length} thao tác chờ sync` : '';
     const c = $('#conn');
     if (c) {
-      c.className = `conn ${online ? 'on' : 'off'}`;
-      c.innerHTML = online ? '<span class="dot"></span> Realtime' : '<span class="dot"></span> Offline';
+      const live = online && S.wsUp;
+      c.className = `conn ${live ? 'on' : 'off'}`;
+      c.innerHTML = `<span class="dot"></span> ${live ? 'Realtime' : online ? 'Đang kết nối lại…' : 'Offline'}`;
     }
   }
 
@@ -569,9 +642,8 @@
 
   /* Mỗi thẻ chỉ 1 hành động chính: Chờ nấu → "Bắt đầu nấu", Đang nấu → "Xong" */
   function renderCard(it) {
-    const dish = dishById(it.dishId);
     const oos = isOos(it.dishId);
-    const queued = S.queue.some(q => q.payload.orderItemId === it.id);
+    const queued = S.queue.some(q => q.id === it.id);
     const blocked = oos && it.status === 'PENDING';    /* hết nguyên liệu khi chưa nấu → chỉ còn nút Xóa */
     let action;
     if (blocked) action = `<button class="kc-btn danger" data-action="ask-remove" data-id="${it.id}">Xóa khỏi hàng đợi</button>`;
@@ -588,13 +660,13 @@
       </div>`;
     return `
     <article class="kcard ${blocked ? 'oos-card' : ''} ${S.newIds.has(it.id) ? 'is-new' : ''}" draggable="${!blocked}" data-id="${it.id}"
-      aria-label="${esc(it.table)}: ${it.qty} ${esc(dish.name)} — ${COLS[it.status].label}">
+      aria-label="${esc(it.table)}: ${it.qty} ${esc(it.dishName)} — ${COLS[it.status].label}">
       <div class="kc-top">
         <b>${esc(it.table)}</b><span>${esc(it.orderCode)}</span>
-        <span class="kc-time">${fmtTime(it.placedTs)}</span>
+        <span class="kc-time" title="Giờ gọi món">${fmtTime(it.placedTs)}</span>
         <button class="kc-more" data-action="menu" data-id="${it.id}" aria-label="Tùy chọn khác" aria-expanded="${S.menuFor === it.id}"><i class="ph-bold ph-dots-three"></i></button>
       </div>
-      <h3><span class="qty">${it.qty}×</span> ${esc(dish.name)}</h3>
+      <h3><span class="qty">${it.qty}×</span> ${esc(it.dishName)}</h3>
       ${it.origQty && it.origQty !== it.qty ? `<span class="kc-part">${{ PENDING: 'Còn lại', COOKING: 'Đang nấu', READY: 'Đã nấu' }[it.status]} ${it.qty}/${it.origQty} suất</span>` : ''}
       ${it.note ? `<p class="kc-note">${esc(it.note)}</p>` : ''}
       ${blocked ? `<span class="pill pill-danger kc-oos">Hết hàng · không thể nấu</span>` : ''}
@@ -604,9 +676,9 @@
     </article>`;
   }
 
-  /* AC1 — mẻ gợi ý nấu chung: 1 khung, liệt kê các bàn, 1 nút duy nhất "Nấu cả mẻ" */
+  /* AC1 — mẻ gợi ý nấu chung: 1 khung, liệt kê các bàn, mỗi bàn vẫn có nút riêng (AC2) */
   function renderBatch(b) {
-    const name = esc(dishById(b.dishId).name);
+    const name = esc(menuName(b.dishId));
     return `
     <section class="batch" aria-label="Gợi ý nấu chung ${b.totalQty} ${name}">
       <span class="pill pill-warning"><i class="ph-bold ph-sparkle"></i> Gợi ý nấu chung</span>
@@ -656,6 +728,18 @@
     </div>`;
   }
 
+  /* Chưa tải được dữ liệu lần đầu: báo lỗi rõ ràng + cách sửa, không treo màn hình */
+  function renderLoadState() {
+    if (!S.loadError) return `<div class="col-empty" role="status">Đang tải dữ liệu bếp…</div>`;
+    return `
+    <div class="forbidden" role="alert">
+      <div class="code"><i class="ph-bold ph-plugs"></i></div>
+      <h2>Không kết nối được máy chủ</h2>
+      <p>KDS không tải được danh sách món từ <b>${esc(API_BASE)}</b>. Kiểm tra backend đang chạy (<code>uv run uvicorn app.main:app --reload</code>) và mạng Wi-Fi.</p>
+      <div class="actions"><button class="btn-primary" data-action="retry">Thử lại</button></div>
+    </div>`;
+  }
+
   let redirectTimer = null;
   function render() {
     clearInterval(redirectTimer);
@@ -670,8 +754,7 @@
       return;
     }
     const batches = aiBatching(S.items);
-    S._batchKeys = batches.map(b => `${b.dishId}:${b.items.length}`).join('|');
-    const oosCount = CATALOG.filter(d => isOos(d.id)).length;
+    const oosCount = S.menu.filter(d => isOos(d.id)).length;
 
     $('#app').innerHTML = `
     <div class="kds-head">
@@ -683,19 +766,19 @@
       </div>
     </div>
 
-    <div class="board">${STATUSES.map(s => renderColumn(s, batches)).join('')}</div>
+    ${S.loaded ? `<div class="board">${STATUSES.map(s => renderColumn(s, batches)).join('')}</div>
 
     <details class="stock" ${S.stockOpen ? 'open' : ''}>
       <summary>Tồn kho <span>· ${oosCount ? `${oosCount} món hết hàng` : 'tất cả còn hàng'}</span></summary>
       <ul>
-        ${CATALOG.map(d => {
+        ${S.menu.map(d => {
           const oos = isOos(d.id);
           return `<li class="${oos ? 'oos' : ''}">
-            <span class="name">${esc(d.name)}</span><span class="state">${oos ? 'Hết hàng' : 'Còn hàng'}</span>
+            <span class="name">${esc(d.name)}</span><span class="state">${oos ? 'Hết hàng' : d.stock != null ? `Còn ${d.stock}` : 'Còn hàng'}</span>
             <button data-action="${oos ? 'restock' : 'ask-oos'}" data-dish="${d.id}">${oos ? 'Mở bán lại' : 'Báo hết'}</button></li>`;
         }).join('')}
       </ul>
-    </details>`;
+    </details>` : renderLoadState()}`;
     updateConnUI();
   }
 
@@ -716,21 +799,14 @@
       case 'menu': S.menuFor = S.menuFor === id ? null : id; render(); break;
       case 'menu-close': S.menuFor = null; render(); break;
       case 'ask-oos': S.menuFor = null; render(); confirmOos(dish); break;
-      case 'do-oos': closeModal(); setStock(dish, 0); break;
+      case 'do-oos': closeModal(); setStock(dish, false); break;
       case 'ask-remove': S.menuFor = null; render(); confirmRemove(id); break;
       case 'do-remove': closeModal(); removeItem(id); break;
-      case 'restock': S.menuFor = null; setStock(dish, 20); break;
+      case 'restock': S.menuFor = null; setStock(dish, true); break;
       case 'close-modal': S.split = null; closeModal(); break;
       case 'sound': S.soundOn = !S.soundOn; if (S.soundOn) ting(); render(); break;
-      case 'sim-ac1':
-        /* AC1: Bàn 01 gọi 2 Phở bò, Bàn 02 gọi 1 Phở bò → AI gom mẻ "3× Phở bò" */
-        MockSocket.simulateIncoming('orders:new', { orderCode: '#B01-' + String(++S.seq).slice(-3), table: 'Bàn 01', items: [{ dishId: 'M01', qty: 2, note: 'Không hành' }] });
-        setTimeout(() => MockSocket.simulateIncoming('orders:new', { orderCode: '#B02-' + String(++S.seq).slice(-3), table: 'Bàn 02', items: [{ dishId: 'M01', qty: 1 }] }), 700);
-        break;
-      case 'reset':
-        S.items = seedItems(); S.stock = seedStock(); S.queue = []; S.menuFor = null;
-        persist(); render(); toast('Đã reset dữ liệu demo', 'ok', 'ph-arrow-counter-clockwise');
-        break;
+      case 'sim-ac1': demoOrders(); break;
+      case 'retry': S.loadError = ''; render(); refresh(); break;
     }
   });
   document.addEventListener('keydown', e => {
@@ -780,7 +856,7 @@
   syncTopbarH();
 
   render();
-  flushQueue();   /* còn thao tác từ phiên offline trước → sync ngay khi mở lại */
+  refresh().then(flushQueue);   /* tải dữ liệu thật; còn thao tác từ phiên offline trước → gửi ngay */
   </script>
 </body>
 </html>

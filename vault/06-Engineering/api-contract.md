@@ -243,3 +243,48 @@ Phát khi `POST /menu/items/{id}/out-of-stock` được gọi — broadcast toà
 ```
 
 **Ghi chú đồng bộ:** phần này mô tả theo góc nhìn "1 màn hình KDS cần những gì" — thiết kế channel vật lý (`kds:tickets` tách khỏi `menu:oos`) giữ nguyên theo `architecture.md` Mục 4, không gộp thành một channel `/ws/kds/tickets` duy nhất để tránh client không liên quan (ví dụ E-Menu khách) phải nhận nhầm sự kiện ticket bếp.
+
+## 6. KDS REST API (US-03) — đã triển khai
+
+> Thêm 2026-10-06 cùng `story-spec-us03-kds.md`. Code: `backend/app/routers/kds.py`, `backend/app/routers/menu.py`, nghiệp vụ ở `backend/app/services/kds.py`. Tên trường theo bảng thật trên Supabase (`frontend/fe_ofc/dtb.md`, ADR-ARCH-003). **Auth: TBD** — chưa có JWT, xem Story Spec Mục 7.
+
+**Đối tượng `KdsItem`** (1 dòng `chitietmon` kèm tên bàn, tên món):
+
+```json
+{
+  "id": "8c3d1a2b-...",
+  "hoadon_id": "20ab3f...",
+  "ban": "Bàn 04",
+  "thucdon_id": "3a2b1c0d-...",
+  "tenmon": "Bún chả Hà Nội",
+  "soluong": 1,
+  "ghichu": "Ít cay",
+  "trangthai": "cho_nau",
+  "giogoimon": "2026-10-06T04:56:49+00:00",
+  "het_hang": false
+}
+```
+
+`trangthai` ∈ `cho_nau | dang_nau | da_xong`. `giogoimon` luôn trả kèm múi giờ UTC. `het_hang = true` khi món bị tắt bán **hoặc** `soluongton = 0`.
+
+`MenuItem` (`GET /menu`) có thêm trường `stock` (số lượng tồn, `null` = món không đếm số lượng); `status = out_of_stock` khi tắt bán hoặc `stock = 0`.
+
+| Method | Path | Body | Response | Lỗi |
+| :--- | :--- | :--- | :--- | :--- |
+| GET | `/kds/items` | — | `KdsItem[]` — chỉ món `cho_nau / dang_nau / da_xong`, sắp `giogoimon` tăng dần | — |
+| PATCH | `/kds/items/{id}/status` | `{ "trangthai": "dang_nau" }` | `KdsItem` | 404 `ORDER_ITEM_NOT_FOUND`; 409 `INVALID_STATUS_TRANSITION`; 409 `ITEM_OUT_OF_STOCK`; 422 giá trị không hợp lệ |
+| POST | `/kds/items/{id}/split` | `{ "soluong": 4, "trangthai": "dang_nau" }` | `{ "goc": KdsItem, "moi": KdsItem }` | như trên + 422 `INVALID_SPLIT_QUANTITY` |
+| POST | `/kds/items/{id}/cancel-out-of-stock` | — | `KdsItem` (`trangthai = da_huy`), ghi `loghuymon` | 404; 409 `ITEM_NOT_CANCELLABLE` (món không ở `cho_nau` hoặc chưa hết hàng) |
+| POST | `/menu/items/{id}/out-of-stock` | — | `MenuItem` (`status = out_of_stock`) + phát `ITEM_OOS_BROADCAST` (Mục 5.2) | 404 `MENU_ITEM_NOT_FOUND` |
+| POST | `/menu/items/{id}/in-stock` | — | `MenuItem` (`status = available`) + phát `ITEM_OOS_BROADCAST` | 404 `MENU_ITEM_NOT_FOUND`; 409 `STOCK_EMPTY` (món đếm số lượng đang = 0) |
+| PATCH | `/menu/items/{id}/stock` | `{ "stock": 24 }` (số nguyên ≥ 0, hoặc `null` = không đếm số lượng) | `MenuItem` (có trường `stock`); về 0 → `status = out_of_stock`. Phát `ITEM_OOS_BROADCAST` khi trạng thái còn/hết thay đổi | 404 `MENU_ITEM_NOT_FOUND`; 422 số âm |
+| POST | `/kds/demo/orders` | — | `KdsItem[]` — đơn mẫu AC1 (2 bàn cùng gọi Phở bò). **Chỉ khi `DEMO_MODE=true`**, ẩn khỏi Swagger | 404 khi tắt; 409 `MENU_ITEM_MISSING` |
+
+**Sự kiện WebSocket bổ sung trên `kds:tickets`** (cùng envelope Mục 5):
+
+| Event | Payload | Khi nào |
+| :--- | :--- | :--- |
+| `KDS_ITEMS_CHANGED` | `{ "item_ids": ["..."], "reason": "status \| split \| cancel_out_of_stock \| new_order" }` | Sau mỗi thao tác ghi ở trên — màn hình KDS tải lại danh sách |
+| `ITEM_READY` | `{ "chitietmon_id": "...", "ban": "Bàn 01", "tenmon": "Phở bò tái lăn", "soluong": 2 }` | Món chuyển sang `da_xong` (US-03 AC2) — màn hình Phục vụ dùng để báo "Ting!" |
+
+> Sự kiện `TICKET_OVERDUE` (Mục 5.1) **chưa triển khai** — chưa có job quét món chờ quá 15 phút.
