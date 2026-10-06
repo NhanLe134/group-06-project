@@ -229,7 +229,7 @@
                             <input type="text" placeholder="Tìm kiếm nguyên liệu...">
                         </div>
                         <div class="actions">
-                            <button class="btn btn-primary" onclick="alert('Chức năng thêm nguyên liệu')"><i class="ph-bold ph-plus"></i> Thêm nguyên liệu</button>
+                            <button class="btn btn-primary" onclick="openAddIngredientModal()"><i class="ph-bold ph-plus"></i> Thêm nguyên liệu</button>
                         </div>
                     </div>
                     <div class="table-responsive">
@@ -240,30 +240,12 @@
                                     <th>Tên nguyên liệu</th>
                                     <th>Đơn vị tính</th>
                                     <th>Nhóm</th>
+                                    <th>Tồn kho</th>
                                     <th>Thao tác</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr>
-                                    <td>NVL001</td>
-                                    <td>Thịt bò Mỹ</td>
-                                    <td>Kg</td>
-                                    <td>Thịt tươi sống</td>
-                                    <td>
-                                        <button class="btn-icon" title="Sửa"><i class="ph-bold ph-pencil-simple"></i></button>
-                                        <button class="btn-icon" style="color:var(--color-danger)" title="Xóa"><i class="ph-bold ph-trash"></i></button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>NVL002</td>
-                                    <td>Gạo ST25</td>
-                                    <td>Kg</td>
-                                    <td>Nông sản</td>
-                                    <td>
-                                        <button class="btn-icon" title="Sửa"><i class="ph-bold ph-pencil-simple"></i></button>
-                                        <button class="btn-icon" style="color:var(--color-danger)" title="Xóa"><i class="ph-bold ph-trash"></i></button>
-                                    </td>
-                                </tr>
+                            <tbody id="ingredients-tbody">
+                                <!-- Render qua JS -->
                             </tbody>
                         </table>
                     </div>
@@ -481,6 +463,164 @@
           <div class="modal-footer">
               <button class="btn btn-outline" onclick="closeEditMenuModal()">Hủy bỏ</button>
               <button class="btn btn-primary" onclick="submitEditMenu()"><i class="ph-bold ph-floppy-disk"></i> Lưu thay đổi</button>
+          </div>
+      </div>
+  </div>
+  
+  <!-- MODAL: THÊM NGUYÊN LIỆU (INGREDIENT) -->
+  <div class="modal-overlay" id="add-ingredient-modal" style="display: none;">
+      <div class="modal-content form-modal">
+          <div class="modal-header modal-header--orange">
+              <h3><i class="ph-bold ph-plus-circle"></i> Thêm Nguyên Liệu Mới</h3>
+              <button class="btn-icon btn-icon--light" onclick="closeAddIngredientModal()"><i class="ph-bold ph-x"></i></button>
+          </div>
+          <div class="modal-body">
+              <div class="form-group">
+                  <label>Tên nguyên liệu <span class="required">*</span></label>
+                  <input type="text" id="ing-name" class="form-control" placeholder="VD: Thịt bò Mỹ, Gạo ST25..." required>
+              </div>
+
+              <div class="form-group">
+                  <label>Nhóm (Danh mục) <span class="required">*</span></label>
+                  <select id="ing-category" class="form-control" required>
+                      <option value="Thịt tươi sống">Thịt tươi sống</option>
+                      <option value="Hải sản">Hải sản</option>
+                      <option value="Nông sản">Nông sản (Rau/Củ/Trái cây)</option>
+                      <option value="Gia vị">Gia vị</option>
+                      <option value="Đồ uống">Đồ uống (Nguyên liệu)</option>
+                      <option value="Khác">Khác</option>
+                  </select>
+              </div>
+
+              <div class="form-group">
+                  <label>Đơn vị tính <span class="required">*</span></label>
+                  <select id="ing-unit" class="form-control" required>
+                      <option value="Kg">Kg</option>
+                      <option value="Gram">Gram</option>
+                      <option value="Lít">Lít</option>
+                      <option value="Cái">Cái</option>
+                      <option value="Gói">Gói</option>
+                      <option value="Hộp">Hộp</option>
+                      <option value="Khay">Khay</option>
+                  </select>
+              </div>
+
+              <div class="form-group">
+                  <label>Tồn kho ban đầu <span class="required">*</span></label>
+                  <input type="number" id="ing-stock" min="0" class="form-control" placeholder="VD: 50" required>
+              </div>
+
+              <div class="form-group">
+                  <label>Ngưỡng cảnh báo hết hàng <span class="required">*</span></label>
+                  <input type="number" id="ing-threshold" min="0" class="form-control" value="5" required>
+                  <small style="color: #64748B; font-size: 12px; margin-top: 4px; display: block;">Hệ thống sẽ cảnh báo khi tồn kho thấp hơn mức này.</small>
+              </div>
+
+              <div class="form-group">
+                  <label>Hình ảnh Minh họa</label>
+                  <div class="upload-box" id="ing-upload-box" onclick="document.getElementById('ing-image-input').click()">
+                      <i class="ph-duotone ph-image" id="ing-upload-icon"></i>
+                      <img id="ing-upload-preview" src="" alt="Xem trước ảnh" style="display:none; max-height:120px; max-width:100%; border-radius:8px; margin-bottom:8px;">
+                      <p id="ing-upload-label">Click hoặc Kéo thả ảnh vào đây</p>
+                      <input type="file" id="ing-image-input" accept="image/*" style="display:none" onchange="previewIngImage(event, 'ing')">
+                  </div>
+              </div>
+
+              <div class="form-group">
+                  <label>Ghi chú</label>
+                  <textarea id="ing-notes" class="form-control" rows="2" placeholder="Ghi chú thêm về nhà cung cấp hoặc bảo quản..."></textarea>
+              </div>
+          </div>
+          <div class="modal-footer">
+              <button class="btn btn-outline" onclick="closeAddIngredientModal()">Hủy bỏ</button>
+              <button class="btn btn-primary" onclick="submitAddIngredient()"><i class="ph-bold ph-floppy-disk"></i> Lưu nguyên liệu</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- MODAL: XEM CHI TIẾT NGUYÊN LIỆU -->
+  <div class="modal-overlay" id="ingredient-detail-modal" style="display:none;">
+      <div class="modal-content form-modal">
+          <div class="modal-header modal-header--orange">
+              <h3><i class="ph-bold ph-eye"></i> Chi tiết Nguyên liệu</h3>
+              <button class="btn-icon btn-icon--light" onclick="closeIngredientDetail()" aria-label="Đóng"><i class="ph-bold ph-x"></i></button>
+          </div>
+          <div class="modal-body modal-body--detail" id="ingredient-detail-body"></div>
+          <div class="modal-footer">
+              <button class="btn btn-outline" onclick="closeIngredientDetail()">Đóng</button>
+              <button class="btn btn-primary" id="detail-edit-ing-btn"><i class="ph-bold ph-pencil-simple"></i> Sửa</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- MODAL: SỬA NGUYÊN LIỆU -->
+  <div class="modal-overlay" id="edit-ingredient-modal" style="display:none;">
+      <div class="modal-content form-modal">
+          <div class="modal-header modal-header--orange">
+              <h3><i class="ph-bold ph-pencil-simple"></i> Sửa Thông Tin Nguyên Liệu</h3>
+              <button class="btn-icon btn-icon--light" onclick="closeEditIngredientModal()"><i class="ph-bold ph-x"></i></button>
+          </div>
+          <div class="modal-body">
+              <input type="hidden" id="edit-ing-id">
+
+              <div class="form-group">
+                  <label>Tên nguyên liệu <span class="required">*</span></label>
+                  <input type="text" id="edit-ing-name" class="form-control" required>
+              </div>
+
+              <div class="form-group">
+                  <label>Nhóm (Danh mục) <span class="required">*</span></label>
+                  <select id="edit-ing-category" class="form-control" required>
+                      <option value="Thịt tươi sống">Thịt tươi sống</option>
+                      <option value="Hải sản">Hải sản</option>
+                      <option value="Nông sản">Nông sản (Rau/Củ/Trái cây)</option>
+                      <option value="Gia vị">Gia vị</option>
+                      <option value="Đồ uống">Đồ uống (Nguyên liệu)</option>
+                      <option value="Khác">Khác</option>
+                  </select>
+              </div>
+
+              <div class="form-group">
+                  <label>Đơn vị tính <span class="required">*</span></label>
+                  <select id="edit-ing-unit" class="form-control" required>
+                      <option value="Kg">Kg</option>
+                      <option value="Gram">Gram</option>
+                      <option value="Lít">Lít</option>
+                      <option value="Cái">Cái</option>
+                      <option value="Gói">Gói</option>
+                      <option value="Hộp">Hộp</option>
+                      <option value="Khay">Khay</option>
+                  </select>
+              </div>
+
+              <div class="form-group">
+                  <label>Tồn kho hiện tại <span class="required">*</span></label>
+                  <input type="number" id="edit-ing-stock" min="0" class="form-control" required>
+              </div>
+
+              <div class="form-group">
+                  <label>Ngưỡng cảnh báo hết hàng <span class="required">*</span></label>
+                  <input type="number" id="edit-ing-threshold" min="0" class="form-control" required>
+              </div>
+
+              <div class="form-group">
+                  <label>Hình ảnh Minh họa</label>
+                  <div class="upload-box" id="edit-ing-upload-box" onclick="document.getElementById('edit-ing-image-input').click()">
+                      <i class="ph-duotone ph-image" id="edit-ing-upload-icon"></i>
+                      <img id="edit-ing-upload-preview" src="" alt="Xem trước ảnh" style="display:none; max-height:120px; max-width:100%; border-radius:8px; margin-bottom:8px;">
+                      <p id="edit-ing-upload-label">Click hoặc Kéo thả ảnh vào đây</p>
+                      <input type="file" id="edit-ing-image-input" accept="image/*" style="display:none" onchange="previewIngImage(event, 'edit-ing')">
+                  </div>
+              </div>
+
+              <div class="form-group">
+                  <label>Ghi chú</label>
+                  <textarea id="edit-ing-notes" class="form-control" rows="2"></textarea>
+              </div>
+          </div>
+          <div class="modal-footer">
+              <button class="btn btn-outline" onclick="closeEditIngredientModal()">Hủy bỏ</button>
+              <button class="btn btn-primary" onclick="submitEditIngredient()"><i class="ph-bold ph-floppy-disk"></i> Lưu thay đổi</button>
           </div>
       </div>
   </div>

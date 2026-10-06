@@ -62,9 +62,9 @@ body.waiter-app { background-color: #F1F5F9; font-family: 'Be Vietnam Pro', sans
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); } 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); } }
 
 /* Drawer & Overlay */
-.drawer-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.4); z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+.drawer-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.4); z-index: 4000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
 .drawer-overlay.active { opacity: 1; pointer-events: auto; }
-.drawer { position: fixed; top: 0; right: -450px; bottom: 0; width: 450px; background: #fff; box-shadow: -10px 0 20px rgba(0,0,0,0.05); z-index: 1001; display: flex; flex-direction: column; transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+.drawer { position: fixed; top: 0; right: -450px; bottom: 0; width: 450px; background: #fff; box-shadow: -10px 0 20px rgba(0,0,0,0.05); z-index: 4001; display: flex; flex-direction: column; transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 .drawer.active { right: 0; }
 .drawer-header { padding: 24px; border-bottom: 1px solid #E2E8F0; display: flex; justify-content: space-between; align-items: flex-start; background: #F8FAFC; }
 .drawer-header h3 { margin: 0; font-size: 24px; color: var(--color-text-main); }
@@ -134,3 +134,97 @@ body.waiter-app { background-color: #F1F5F9; font-family: 'Be Vietnam Pro', sans
 
 @keyframes slideInLeft { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* ===================== ĐIỆN THOẠI & TABLET (Responsive) ===================== */
+@media (max-width: 900px) {
+    /* 1. Rút gọn Header */
+    .premium-header { padding: 10px 16px; }
+    .brand-logo { font-size: 16px; gap: 6px; }
+    .brand-logo i { font-size: 24px; }
+    .header-title-center { display: none; /* Ẩn bớt chữ thừa trên đt */ }
+    .waiter-profile span { display: none; /* Chỉ hiện mỗi avatar */ }
+    .btn-logout { padding: 8px; font-size: 0; }
+    .btn-logout i { font-size: 18px; margin: 0; }
+    
+    /* 2. Dàn lại Layout chính */
+    .waiter-layout { flex-direction: column; }
+    .main-content { padding: 16px; }
+    .section-header { flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+    .status-legend { width: 100%; flex-wrap: wrap; padding: 12px; gap: 12px; justify-content: center; }
+    
+    /* 3. Lưới Sơ đồ bàn (Grid) */
+    .table-grid { grid-template-columns: 1fr; gap: 16px; }
+    
+    /* 4. Thanh Thông báo & Giả lập (Side Panel) */
+    .side-panel {
+        position: fixed;
+        right: -100%;
+        top: 0;
+        bottom: 0;
+        width: 85%;
+        max-width: 320px;
+        z-index: 2000;
+        transition: right 0.3s ease;
+        box-shadow: -5px 0 25px rgba(0,0,0,0.1);
+        display: flex; /* Bật lại để hoạt động dạng ngăn kéo */
+    }
+    .side-panel.active { right: 0; }
+    
+    /* 5. Ngăn kéo CHI TIẾT BÀN (Drawer trượt từ phải qua trái) */
+    .drawer {
+        width: 100%; /* Tràn viền đt, giống Bottom Sheet / Side Sheet của app */
+        right: -100%;
+        border-radius: 16px 0 0 16px; /* Bo góc trái cho đẹp */
+    }
+    .drawer-header { padding: 16px; }
+    .drawer-header h3 { font-size: 18px; }
+    .drawer-body { padding: 16px; }
+    .drawer-footer { padding: 16px; flex-direction: column; } /* Nút Dọn dẹp & Gọi món nằm dọc */
+    
+    .btn-primary-lg, .btn-clean-lg { padding: 12px; font-size: 15px; }
+}
+
+/* ===================== ĐIỆN THOẠI NHỎ (IP 16 PRO MAX ~ 430px) ===================== */
+@media (max-width: 480px) {
+    /* Đảm bảo ngăn kéo không bị lỗi UI */
+    .order-item { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .item-actions { width: 100%; justify-content: space-between; }
+    .btn-serve-item { flex: 1; justify-content: center; }
+}
+
+
+/* --- MOBILE BOTTOM NAV --- */
+.bottom-nav { display: none; }
+@media (max-width: 900px) {
+    .waiter-layout { padding-bottom: 70px; }
+    
+    /* Ghi đè lại Side panel trên mobile để biến nó thành Tab Nội dung thay vì ngăn kéo */
+    .side-panel { position: static !important; width: 100% !important; max-width: 100% !important; box-shadow: none !important; right: 0 !important; }
+    
+    /* Mặc định Tab Bàn (main-content) ẩn, Tab Thông báo (side-panel) hiện */
+    .main-content { display: none; }
+    .side-panel { display: flex; }
+    
+    /* Các class để JS gỡ ẩn hiện */
+    .tab-active { display: block !important; }
+    .tab-active.side-panel { display: flex !important; }
+    .tab-hidden { display: none !important; }
+
+    /* Ẩn bộ Simulator trên mobile để đỡ vướng màn hình */
+    .panel-footer { display: none !important; }
+    
+    /* Nâng Toast lên tránh đè thanh điều hướng */
+    .toast-container { bottom: 85px !important; left: 16px !important; right: 16px !important; z-index: 9999 !important; }
+    .toast { max-width: 100% !important; }
+
+    /* Thanh điều hướng dưới cùng */
+    .bottom-nav { display: flex !important; position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; background: #fff !important; box-shadow: 0 -4px 12px rgba(0,0,0,0.05) !important; z-index: 10000 !important; height: 65px !important; border-top: 1px solid #E2E8F0 !important; }
+    .bottom-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94A3B8; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; border: none; background: transparent; }
+    .bottom-nav-item.active { color: var(--color-primary); }
+    .bottom-nav-item i { font-size: 24px; margin-bottom: 2px; }
+    .bottom-nav-item .badge { position: absolute; top: 6px; right: 50%; margin-right: -20px; background: var(--color-danger); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 10px; }
+    
+    /* Ẩn cái chuông trên header vì đã có bottom nav */
+    #btn-toggle-notif { display: none !important; }
+}
+
