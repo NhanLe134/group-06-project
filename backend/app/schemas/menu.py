@@ -16,6 +16,9 @@ class MenuItemOut(BaseModel):
     status: str
     # Số lượng tồn (đồ uống chai/lon...); null = món không đếm số lượng
     stock: int | None
+    # Bếp/Quản lý còn bật bán món hay không (thucdon.trangthaiban).
+    # false → E-Menu ẩn hẳn món; true/NULL + tồn = 0 → hiển thị xám "Hết hàng" (ADR-N11).
+    listed: bool = True
 
     @classmethod
     def from_thucdon(cls, mon: ThucDon) -> "MenuItemOut":
@@ -29,6 +32,7 @@ class MenuItemOut(BaseModel):
             # Hết hàng khi trangthaiban = false hoặc soluongton = 0 (REQ-09); NULL coi như đang bán
             status="out_of_stock" if mon.het_hang else "available",
             stock=mon.soluongton,
+            listed=mon.trangthaiban is not False,
         )
 
 

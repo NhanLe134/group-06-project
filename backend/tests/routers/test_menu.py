@@ -42,7 +42,30 @@ async def test_menu_item_out_of_stock_when_trangthaiban_false(
 
     resp = await client.get("/menu")
 
-    assert resp.json()[0]["status"] == "out_of_stock"
+    body = resp.json()[0]
+    assert body["status"] == "out_of_stock"
+    # ADR-N11: trangthaiban = false → listed = false → E-Menu ẨN món (không chỉ làm mờ)
+    assert body["listed"] is False
+
+
+async def test_menu_item_het_ton_nhung_van_ban_co_listed(
+    client: AsyncClient, db_session: AsyncSession
+):
+    """ADR-N11: trangthaiban = true + soluongton = 0 → món VẪN HIỂN trên E-Menu
+    (listed = true) với status out_of_stock để render xám "Hết hàng"."""
+    from app.models.menu import ThucDon, true
+
+    db_session.add(
+        ThucDon(tenmon="Trà đá", phanloai="Đồ uống", giaban=5000,
+                trangthaiban=true(), soluongton=0)
+    )
+    await db_session.commit()
+
+    resp = await client.get("/menu")
+
+    body = resp.json()[0]
+    assert body["status"] == "out_of_stock"
+    assert body["listed"] is True
 
 
 async def test_health_check(client: AsyncClient):
