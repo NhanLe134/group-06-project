@@ -1,6 +1,5 @@
 """API Gọi món (US-01), Hóa đơn tạm tính (US-09) và Thu ngân (US-05)."""
 
-import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
@@ -36,7 +35,7 @@ async def current_order(
 
 
 @router.post("/orders/{hoadon_id}/pay-qr", response_model=PayQrOut)
-async def create_pay_qr(hoadon_id: uuid.UUID, db: Db) -> PayQrOut:
+async def create_pay_qr(hoadon_id: str, db: Db) -> PayQrOut:
     """US-05 — Tạo mã QR thanh toán cho hóa đơn đang mở."""
     return await service.create_pay_qr(db, hoadon_id)
 
@@ -48,7 +47,7 @@ async def cashier_tables(db: Db) -> list[TableOut]:
 
 
 @router.post("/tables/{phienban_id}/close", response_model=CloseTableOut)
-async def close_table(phienban_id: uuid.UUID, db: Db) -> CloseTableOut:
+async def close_table(phienban_id: str, db: Db) -> CloseTableOut:
     """US-05 — Xác nhận đã nhận tiền & Đóng bàn: hoadon 'da_thanh_toan', bàn về 'trong'."""
     result = await service.close_table(db, phienban_id)
     return CloseTableOut(**result)

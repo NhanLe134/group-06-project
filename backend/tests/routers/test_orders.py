@@ -1,7 +1,5 @@
 """US-01 / US-09 / US-05 — test API gọi món, hóa đơn tạm tính và Thu ngân."""
 
-import uuid
-
 import pytest
 
 pytestmark = pytest.mark.asyncio
@@ -95,7 +93,7 @@ async def test_order_current_va_trang_thai_phuc_vu(client, menu_ids, db_session)
     # Đánh dấu món đã phục vụ (giả lập Waiter bấm "Đã phục vụ" — US-04)
     from app.models.order import ChiTietMon
 
-    mon = await db_session.get(ChiTietMon, uuid.UUID(items[0]["id"]))
+    mon = await db_session.get(ChiTietMon, items[0]["id"])
     mon.trangthai = "da_phuc_vu"
     await db_session.commit()
 

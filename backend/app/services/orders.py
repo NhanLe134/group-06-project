@@ -4,7 +4,6 @@ Quy tắc đa đợt: 1 phiên bàn có duy nhất 1 hóa đơn 'da_chot' đang 
 gọi đợt 2+ chỉ chèn thêm chitietmon vào hóa đơn đó và tính lại tongtien.
 """
 
-import uuid
 from datetime import UTC, datetime
 from urllib.parse import quote
 
@@ -13,7 +12,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.errors import ApiError
 from app.models import ChiTietMon, HoaDon, PhienBan, ThucDon
-from app.models.menu import la_het_hang
 from app.schemas.order import (
     OrderCreateIn,
     OrderCurrentOut,
@@ -40,7 +38,7 @@ async def get_active_session(db: AsyncSession, table_name: str) -> PhienBan | No
     return row.scalars().first()
 
 
-async def get_open_bill(db: AsyncSession, phienban_id: uuid.UUID) -> HoaDon | None:
+async def get_open_bill(db: AsyncSession, phienban_id: str) -> HoaDon | None:
     """Hóa đơn 'da_chot' đang mở của phiên bàn (gọi đợt 1/2/... cùng chung 1 hóa đơn)."""
     row = await db.execute(
         select(HoaDon)
@@ -51,7 +49,7 @@ async def get_open_bill(db: AsyncSession, phienban_id: uuid.UUID) -> HoaDon | No
     return row.scalars().first()
 
 
-async def _bill_items(db: AsyncSession, hoadon_id: uuid.UUID) -> list[OrderItemOut]:
+async def _bill_items(db: AsyncSession, hoadon_id: str) -> list[OrderItemOut]:
     rows = await db.execute(
         select(ChiTietMon, ThucDon.tenmon, ThucDon.giaban)
         .outerjoin(ThucDon, ChiTietMon.thucdon_id == ThucDon.id)
@@ -174,7 +172,7 @@ async def list_cashier_tables(db: AsyncSession) -> list[TableOut]:
     return out
 
 
-async def _load_bill_for_pay(db: AsyncSession, hoadon_id: uuid.UUID) -> tuple[HoaDon, PhienBan]:
+async def _load_bill_for_pay(db: AsyncSession, hoadon_id: str) -> tuple[HoaDon, PhienBan]:
     row = (
         await db.execute(
             select(HoaDon, PhienBan)
@@ -190,7 +188,7 @@ async def _load_bill_for_pay(db: AsyncSession, hoadon_id: uuid.UUID) -> tuple[Ho
     return hoadon, phien
 
 
-async def create_pay_qr(db: AsyncSession, hoadon_id: uuid.UUID) -> PayQrOut:
+async def create_pay_qr(db: AsyncSession, hoadon_id: str) -> PayQrOut:
     """US-05 — sinh QR thanh toán cho hóa đơn (mock: qrserver.com; sau này thay
     bằng QR động MoMo/VNPAY Sandbox theo REQ-04)."""
     hoadon, phien = await _load_bill_for_pay(db, hoadon_id)
@@ -208,7 +206,7 @@ async def create_pay_qr(db: AsyncSession, hoadon_id: uuid.UUID) -> PayQrOut:
     )
 
 
-async def close_table(db: AsyncSession, phienban_id: uuid.UUID) -> dict:
+async def close_table(db: AsyncSession, phienban_id: str) -> dict:
     """US-05 — Xác nhận đã nhận tiền & Đóng bàn: chốt hóa đơn, trả bàn về 'trong'."""
     phien = (
         await db.execute(select(PhienBan).where(PhienBan.id == phienban_id))
