@@ -246,3 +246,6 @@
   .table-panel { width: 100%; }
   .header-title-center { display: none; }
 }
+
+/* Danh sách rỗng */
+.table-empty { padding: 24px 16px; text-align: center; font-size: 13px; color: var(--color-text-muted); line-height: 1.6; }

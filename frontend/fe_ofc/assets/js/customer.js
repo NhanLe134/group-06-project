@@ -2,8 +2,13 @@
    customer.js — Màn hình Khách hàng (Nhàn & Ny)
    US-01 (Nhàn): E-Menu (danh sách món + thanh phân loại) + Order Draft (giỏ hàng)
    ---------------------------------------------------------------------
-   Nghiệp vụ chép từ prototype (frontend/prototype/js/app.js):
-   - BR-RO-01: giá chỉ đọc từ CATALOG (mock-data.js) — hiển thị qua fmtVND().
+   KẾT NỐI BACKEND (FastAPI + Supabase):
+   - GET /menu → danh sách món (khóa món status = 'out_of_stock', REQ-09/BR-03).
+   - Order Draft (thêm/sửa số lượng/ghi chú) vẫn quản lý ở client.
+   - POST /orders → gửi bếp (đợt 1 tạo phiên + hóa đơn; đợt 2+ chèn thêm).
+   - GET /orders/current?table_name=... → hóa đơn tạm tính cho US-09.
+   - Mã bàn đọc từ URL ?table=... → sessionStorage → fallback 'Bàn 06'.
+   Nghiệp vụ giữ nguyên:
    - BR-RO-02 / REQ-RO-09: món "Out of Stock" bị khóa ở E-Menu, không thêm được.
    - ADR-001: món OOS nằm trong draft → xám + nhãn "Món đã hết", khóa nút gửi.
    - BR-RO-03: chỉ gửi bếp sau Explicit Confirmation (modal xác nhận).
@@ -28,29 +33,29 @@ const NOTE_SUGGESTIONS = [
   'Không đá', 'Ít ngọt', 'Chia đôi phần',
 ];
 
-/* ----- Thanh phân loại (US-01): phân nhóm CATALOG theo id món ----- */
-const CATEGORY_MAP = {
-  M01: 'main', M02: 'main', M03: 'main', M04: 'main',
-  M05: 'drink', M06: 'set',
-};
-const CATEGORIES = [
-  { id: 'all',   label: 'Tất cả',    icon: 'ph-squares-four' },
-  { id: 'main',  label: 'Món chính', icon: 'ph-bowl-food' },
-  { id: 'set',   label: 'Set lẩu',   icon: 'ph-users-three' },
-  { id: 'drink', label: 'Đồ uống',   icon: 'ph-brandy' },
-];
+/* ----- Mã bàn: URL ?table=... → sessionStorage → mặc định 'Bàn 06' ----- */
+const TABLE_KEY = 'current_table';
+const tableName =
+  new URLSearchParams(window.location.search).get('table')
+  || sessionStorage.getItem(TABLE_KEY)
+  || 'Bàn 06';
+sessionStorage.setItem(TABLE_KEY, tableName);
+
+/* ----- Thanh phân loại: nhóm động theo trường `category` (phanloai) từ API ----- */
+const CAT_ORDER = ['Món chính', 'Set lẩu', 'Đồ uống'];   /* thứ tự nhóm ưu tiên */
+const catSlug = label => 'cat-' + encodeURIComponent(label).replace(/%/g, '');
 
 /* ----- State bản nháp (Order Draft — bản nháp DUY NHẤT của bàn) ----- */
 let draft = [];            /* [{ id, qty, note }] */
 let searchText = '';
 let draftOpen = false;
-let orderSeq = 1;
 let editingNoteIdx = null;   /* index món đang mở modal ghi chú, null = đóng */
-let orders = [];             /* US-09: [{ code, items, status, placedTs }] */
+let MENU = [];               /* danh sách món từ GET /menu */
+let CATS = [];               /* nhóm phân loại suy ra từ MENU: [{ id, label }] */
 
 /* ----- Truy vấn dữ liệu ----- */
-const dishById = id => CATALOG.find(d => d.id === id);
-const isOos = id => dishById(id).status === 'Out of Stock';
+const dishById = id => MENU.find(d => d.id === id);
+const isOos = id => dishById(id)?.status === 'out_of_stock';
 const draftUnits = () => draft.reduce((n, it) => n + it.qty, 0);
 const draftTotal = () => draft.reduce((n, it) => n + it.qty * dishById(it.id).price, 0);
 const draftHasOos = () => draft.some(it => isOos(it.id));
@@ -61,14 +66,32 @@ const menuQty = id => draft.filter(it => it.id === id).reduce((n, it) => n + it.
 const norm = t => String(t).toLowerCase().normalize('NFD')
   .replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').trim();
 
+/* GET /menu → MENU + suy ra nhóm phân loại (thứ tự ưu tiên CAT_ORDER).
+   ADR-N11: món listed = false (trangthaiban = false) → ẨN hẳn khỏi E-Menu;
+   listed = true + hết tồn → vẫn hiện nhưng xám "Hết hàng" (card.oos). */
+async function loadMenu() {
+  MENU = (await apiFetch('/menu')).filter(d => d.listed !== false);
+  const labels = [...new Set(MENU.map(d => d.category).filter(Boolean))];
+  labels.sort((a, b) => {
+    const ia = CAT_ORDER.indexOf(a), ib = CAT_ORDER.indexOf(b);
+    return (ia === -1 ? CAT_ORDER.length : ia) - (ib === -1 ? CAT_ORDER.length : ib);
+  });
+  CATS = labels.map(label => ({ id: catSlug(label), label }));
+  renderCategories();
+  renderMenu();
+}
+
 /* ===================== RENDER ===================== */
 
 function renderCategories() {
-  $('#cat-row').innerHTML = CATEGORIES.map(c => `
-    <button class="cat-chip" data-cat="${c.id}">
-      <i class="ph-bold ${c.icon}"></i> ${c.label}
-    </button>`).join('');
-  setActiveChip('all');
+  $('#cat-row').innerHTML = `
+    <button class="cat-chip active" data-cat="all">
+      <i class="ph-bold ph-squares-four"></i> Tất cả
+    </button>
+    ${CATS.map(c => `
+      <button class="cat-chip" data-cat="${c.id}">
+        <i class="ph-bold ph-fork-knife"></i> ${esc(c.label)}
+      </button>`).join('')}`;
 }
 
 /* Chip phân loại đang active (nền cam) — điều khiển bởi click + scroll-spy */
@@ -80,12 +103,14 @@ function setActiveChip(cat) {
 function renderCard(d) {
   const oos = isOos(d.id);
   const q = menuQty(d.id);   /* ADR-N06: món đã trong giỏ → hiển thị bộ đếm − qty + */
+  const thumb = d.image_url
+    ? `<img class="menu-thumb-img" src="${esc(d.image_url)}" alt="${esc(d.name)}">`
+    : '<i class="ph-duotone ph-fork-knife"></i>';
   return `
     <article class="menu-card ${oos ? 'oos' : ''}">
-      <div class="menu-thumb">${d.emoji}</div>
+      <div class="menu-thumb">${thumb}</div>
       <div class="menu-info">
-        <h3>${d.name}${d.bestseller
-          ? ' <span class="badge-hot"><i class="ph-fill ph-fire"></i>Bán chạy</span>' : ''}</h3>
+        <h3>${esc(d.name)}</h3>
         <p class="menu-price">${fmtVND(d.price)}</p>
         ${oos ? '<span class="badge-oos">Hết hàng</span>' : ''}
       </div>
@@ -109,12 +134,12 @@ function renderMenu() {
   const kw = norm(searchText);
   const match = d => !kw || norm(d.name).includes(kw);
 
-  const sections = CATEGORIES.filter(c => c.id !== 'all').map(c => {
-    const dishes = CATALOG.filter(d => CATEGORY_MAP[d.id] === c.id && match(d));
+  const sections = CATS.map(c => {
+    const dishes = MENU.filter(d => d.category === c.label && match(d));
     if (!dishes.length) return '';
     return `
     <section class="cat-section" id="cat-section-${c.id}" data-cat="${c.id}">
-      <h3 class="cat-heading">${c.label}</h3>
+      <h3 class="cat-heading">${esc(c.label)}</h3>
       <div class="menu-grid">${dishes.map(renderCard).join('')}</div>
     </section>`;
   }).join('');
@@ -169,7 +194,7 @@ function renderDraft() {
     body.innerHTML = `
       <div class="draft-empty">
         <i class="ph-duotone ph-shopping-cart"></i>
-        <p>${COPY.EMPTY}</p>
+        <p>Bàn chưa chọn món. Hãy gọi món qua trợ lý hoặc chọn từ menu.</p>
       </div>`;
     footer.innerHTML = '';
     return;
@@ -180,7 +205,7 @@ function renderDraft() {
     ${hasOos ? `
     <div class="adr-warn" role="alert">
       <i class="ph-fill ph-warning-circle"></i>
-      <p>${COPY.ADR001(dishById(draft.find(it => isOos(it.id)).id).name)}</p>
+      <p>Dạ món ${esc(dishById(draft.find(it => isOos(it.id)).id).name)} vừa hết hàng, anh/chị vui lòng bỏ món khỏi danh sách để chốt đơn nhé!</p>
     </div>` : ''}
     ${draft.map((it, i) => {
       const d = dishById(it.id), oos = isOos(it.id);
@@ -244,83 +269,126 @@ function openConfirm() {
 }
 function closeConfirm() { $('#confirm-modal').style.display = 'none'; }
 
-function sendToKitchen() {
+async function sendToKitchen() {
   if (!draft.length || draftHasOos()) return;
-  const code = `#${TABLE_INFO.code}-${String(orderSeq).padStart(3, '0')}`;
-  const total = draftTotal();
-  orderSeq += 1;
-  /* US-09: lưu đơn đã gửi (giá snapshot từ CATALOG tại thời điểm đặt) */
-  orders.unshift({
-    code,
-    items: draft.map(x => ({ ...x })),
-    status: 'pending',
-    placedTs: Date.now(),
-  });
+  try {
+    await apiFetch('/orders', {
+      method: 'POST',
+      body: JSON.stringify({
+        table_name: tableName,
+        items: draft.map(x => ({
+          thucdon_id: x.id,       /* UUID món trong thucdon (Supabase) */
+          soluong: x.qty,
+          ghichu: x.note || null,
+        })),
+      }),
+    });
+  } catch (e) {
+    closeConfirm();
+    showApiError(e);
+    return;
+  }
   draft = [];
   closeConfirm();
   closeDraft();
   renderStickyBar();
   renderMenu();   /* ADR-N06: giỏ đã trống → bộ đếm trên thẻ món về lại nút "+" cho vòng gọi mới */
-  /* success-code / success-total là tùy chọn — popup vẫn phải mở dù phần tử bị xóa */
-  setText('#success-code', code);
-  setText('#success-total', fmtVND(total));
+  /* success-code / success-total / success-table là tùy chọn — popup vẫn phải mở dù phần tử bị xóa */
+  setText('#success-code', `Hóa đơn của ${tableName}`);
+  setText('#success-total', fmtVND(draftTotal()));
+  setText('#success-table', tableName);
   $('#success-modal').style.display = 'grid';
 }
 
-/* ----- US-09: Trang xem Hóa đơn tạm tính (ADR-N05) ----- */
-const orderTotal = o => o.items.reduce((n, it) => n + it.qty * dishById(it.id).price, 0);
+/* ----- US-09: Trang xem Hóa đơn tạm tính (ADR-N05) — dữ liệu GET /orders/current ----- */
+const TRANGTHAI_LABEL = {
+  cho_nau: 'Chờ nấu',
+  dang_nau: 'Đang nấu',
+  da_xong: 'Đã xong — chờ phục vụ',
+  da_phuc_vu: 'Đã phục vụ',
+};
 
-/* Bảng hóa đơn — toàn bộ món đã gọi, giá snapshot CATALOG (US-07) */
-function buildBillTable() {
-  const rows = [];
-  orders.forEach(o => {
-    const served = o.status === 'served';
-    o.items.forEach(it => {
-      const d = dishById(it.id);
-      rows.push(`
+function buildBillTable(bill) {
+  const rows = bill.items.map(it => {
+    const done = it.trangthai === 'da_phuc_vu';
+    return `
       <tr>
-        <td>${d.name}${it.note ? `<small>${esc(it.note)}</small>` : ''}</td>
-        <td class="num">${it.qty}</td>
-        <td class="num">${fmtVND(d.price * it.qty)}</td>
-        <td><span class="status-pill ${served ? 'st-served' : 'st-pending'}">${served ? 'Đã phục vụ' : 'Chưa phục vụ'}</span></td>
-      </tr>`);
-    });
-  });
-  const totalQty = orders.reduce((n, o) => n + o.items.reduce((m, it) => m + it.qty, 0), 0);
-  const totalAmt = orders.reduce((n, o) => n + orderTotal(o), 0);
+        <td>${esc(it.tenmon || '')}${it.ghichu ? `<small>${esc(it.ghichu)}</small>` : ''}</td>
+        <td class="num">${it.soluong}</td>
+        <td class="num">${fmtVND(it.thanhtien)}</td>
+        <td><span class="status-pill ${done ? 'st-served' : 'st-pending'}">
+          ${TRANGTHAI_LABEL[it.trangthai] || it.trangthai}</span></td>
+      </tr>`;
+  }).join('');
+  const totalQty = bill.items.reduce((n, it) => n + it.soluong, 0);
   return `
     <div class="bill">
       <table class="bill-table">
         <thead><tr><th>Món</th><th class="num">SL</th><th class="num">Thành tiền</th><th>Trạng thái</th></tr></thead>
-        <tbody>${rows.join('')}</tbody>
+        <tbody>${rows}</tbody>
       </table>
       <div class="bill-foot">
         <span>Tổng số món: <b>${totalQty}</b></span>
-        <span>Tổng thành tiền: <b>${fmtVND(totalAmt)}</b></span>
+        <span>Tổng thành tiền: <b>${fmtVND(bill.tongtien)}</b></span>
       </div>
     </div>`;
 }
 
-function openBillView() {
+/* US-09 — tải hóa đơn tạm tính từ GET /orders/current, hiển thị trang hóa đơn */
+let currentBill = null;   /* OrderCurrentOut từ API */
+
+async function openBillView() {
   const body = $('#bill-body');
-  if (!orders.length) {
+  body.innerHTML = `
+    <div class="draft-empty">
+      <i class="ph-duotone ph-spinner"></i>
+      <p>Đang tải hóa đơn...</p>
+    </div>`;
+  $('#bill-view').hidden = false;
+  try {
+    currentBill = await apiFetch(
+      `/orders/current?table_name=${encodeURIComponent(tableName)}`,
+    );
+  } catch (e) {
+    currentBill = null;
     body.innerHTML = `
       <div class="draft-empty">
         <i class="ph-duotone ph-receipt"></i>
-        <p>Bàn chưa gọi món nào. Hãy chọn món từ E-Menu trước nhé!</p>
+        <p>${e.status === 404
+          ? 'Bàn chưa gọi món nào. Hãy chọn món từ E-Menu trước nhé!'
+          : esc(e.message)}</p>
+        ${e.status !== 404 ? '<button class="btn-primary" onclick="openBillView()">Thử lại</button>' : ''}
       </div>`;
     $('#btn-request-pay').disabled = true;
+    return;
+  }
+
+  body.innerHTML = buildBillTable(currentBill);
+
+  /* US-09 AC2/AC3: còn món chưa phục vụ → nút khóa + hộp cảnh báo vàng;
+     tất cả 'da_phuc_vu' → bật nút xanh */
+  const box = $('#bill-warn-box');
+  if (box) box.remove();
+  if (!currentBill.all_served) {
+    $('#btn-request-pay').disabled = true;
+    body.insertAdjacentHTML(
+      'afterbegin',
+      `<div class="adr-warn" style="margin-bottom:14px;">
+        <i class="ph-fill ph-warning-circle"></i>
+        <p>Vẫn còn món đang được chế biến/chờ bưng. Vui lòng đợi nhân viên phục vụ đủ món rồi yêu cầu thanh toán nhé!</p>
+      </div>`,
+    );
   } else {
-    body.innerHTML = buildBillTable();
     $('#btn-request-pay').disabled = false;
   }
-  $('#bill-view').hidden = false;
 }
 
-/* Yêu cầu thanh toán: còn món chưa phục vụ → cảnh báo; đã phục vụ hết → hướng dẫn ra quầy */
+/* AC2: còn món chờ → cảnh báo; AC3: đã phục vụ hết → hướng dẫn ra quầy +
+   gửi tín hiệu thông báo thu ngân (hiện tại là toast; sau này qua WebSocket) */
 function requestPayment() {
+  if (!currentBill) return;
   const icon = $('#pay-icon'), title = $('#pay-title'), msg = $('#pay-msg');
-  if (orders.some(o => o.status !== 'served')) {
+  if (!currentBill.all_served) {
     icon.className = 'modal-icon warn';
     icon.innerHTML = '<i class="ph-fill ph-warning-circle"></i>';
     title.textContent = 'Chưa thể thanh toán';
@@ -328,8 +396,8 @@ function requestPayment() {
   } else {
     icon.className = 'modal-icon green';
     icon.innerHTML = '<i class="ph-bold ph-check"></i>';
-    title.textContent = 'Hoàn tất gọi món';
-    msg.textContent = 'Vui lòng đến quầy thu ngân để thanh toán. Xin cảm ơn!';
+    title.textContent = 'Đã gửi yêu cầu thanh toán';
+    msg.textContent = 'Đã báo thu ngân chuẩn bị hóa đơn. Vui lòng đến quầy thu ngân để thanh toán. Xin cảm ơn!';
   }
   $('#pay-modal').style.display = 'grid';
 }
@@ -466,7 +534,33 @@ $('#btn-close-bill').addEventListener('click', () => { $('#bill-view').hidden = 
 $('#btn-request-pay').addEventListener('click', requestPayment);
 $('#btn-pay-close').addEventListener('click', () => { $('#pay-modal').style.display = 'none'; });
 
+/* Lỗi API (mất kết nối, món hết hàng...) → banner đỏ trên đầu danh sách */
+function showApiError(e) {
+  $('#menu-grid').insertAdjacentHTML(
+    'afterbegin',
+    `<div class="adr-warn" role="alert" style="margin:0 0 14px;">
+      <i class="ph-fill ph-warning-circle"></i>
+      <p>${esc(e.message || 'Có lỗi xảy ra. Vui lòng thử lại.')}</p>
+    </div>`,
+  );
+}
+
 /* ===================== KHỞI TẠO ===================== */
+/* Hiển thị mã bàn: URL ?table=... → sessionStorage → 'Bàn 06' */
+setText('#table-name', tableName);
+setText('#bill-view-table', tableName);
+setText('#success-table', tableName);
+{
+  const chip = $('#table-chip');
+  if (chip) chip.innerHTML = `<i class="ph-duotone ph-map-pin"></i> ${esc(tableName)}`;
+}
 renderCategories();
-renderMenu();
 renderStickyBar();
+loadMenu().catch(e => {
+  $('#menu-grid').innerHTML = `
+    <div class="menu-empty">
+      <i class="ph-duotone ph-wifi-slash"></i>
+      <p>${esc(e.message)}</p>
+      <button class="btn-primary" style="margin-top:12px;" onclick="loadMenu()">Tải lại thực đơn</button>
+    </div>`;
+});
