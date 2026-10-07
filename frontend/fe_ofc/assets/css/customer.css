@@ -345,6 +345,40 @@
 }
 .menu-empty i { font-size: 44px; opacity: 0.4; margin-bottom: 10px; display: block; }
 
+/* ---------- Hiệu ứng tải menu (skeleton shimmer) ---------- */
+.menu-loading-note {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  color: var(--color-text-muted); font-size: 13.5px; font-weight: 600;
+  margin: 6px 0 16px;
+}
+.menu-loading-note i {
+  font-size: 17px; color: var(--color-primary);
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.sk-card {
+  display: flex; align-items: center; gap: 12px;
+  height: 100px; padding: 12px;
+  background: var(--color-neutral-card); border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.sk-thumb {
+  width: 52px; height: 52px; flex: none;
+  border-radius: var(--radius-md);
+}
+.sk-lines { flex: 1; display: flex; flex-direction: column; gap: 11px; }
+.sk-line { height: 13px; border-radius: 6px; width: 85%; }
+.sk-line.w60 { width: 45%; }
+.sk-thumb, .sk-line {
+  background: linear-gradient(90deg, #EEF2F6 25%, #F8FAFC 50%, #EEF2F6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+}
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
 /* ---------- Sticky Bottom Bar — tóm tắt bản nháp (đủ chiều rộng màn hình) ---------- */
 .cust-stickybar {
   position: fixed;

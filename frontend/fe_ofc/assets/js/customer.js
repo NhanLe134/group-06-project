@@ -152,6 +152,24 @@ function renderMenu() {
   updateActiveChip();
 }
 
+/* Hiệu ứng tải menu: khung thẻ món nhấp nháy (shimmer) trong lúc chờ GET /menu */
+function renderMenuSkeleton() {
+  $('#menu-grid').innerHTML = `
+    <div class="menu-loading-note">
+      <i class="ph-bold ph-circle-notch"></i> Đang tải thực đơn...
+    </div>
+    <div class="menu-grid">
+      ${Array.from({ length: 6 }, () => `
+        <div class="sk-card" aria-hidden="true">
+          <div class="sk-thumb"></div>
+          <div class="sk-lines">
+            <div class="sk-line"></div>
+            <div class="sk-line w60"></div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
 /* Scroll-spy: lướt đến nhóm nào thì chip phân loại đó active (nền cam) */
 function updateActiveChip() {
   const sections = [...document.querySelectorAll('.cat-section')]
@@ -556,6 +574,7 @@ setText('#success-table', tableName);
 }
 renderCategories();
 renderStickyBar();
+renderMenuSkeleton();
 loadMenu().catch(e => {
   $('#menu-grid').innerHTML = `
     <div class="menu-empty">
