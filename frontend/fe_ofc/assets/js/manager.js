@@ -74,7 +74,7 @@ function renderMenu() {
         if (search && !item.name.toLocaleLowerCase('vi').includes(search)) return false;
         if (menuFilters.status !== 'all' && item.status !== menuFilters.status) return false;
         if (menuFilters.stock !== 'all') {
-            if (item.category !== 'Đồ uống') return false;
+            if (item.stock == null) return false;
             if (menuFilters.stock === 'out' && item.stock !== 0) return false;
             if (menuFilters.stock === 'low' && !(item.stock > 0 && item.stock < 20)) return false;
             if (menuFilters.stock === 'available' && item.stock < 20) return false;
@@ -92,7 +92,7 @@ function renderMenu() {
             <td>${item.category}</td>
             <td>${item.price.toLocaleString('vi-VN')}đ</td>
             <td><span class="badge ${item.statusClass}">${item.status}</span></td>
-            <td>${item.category === 'Đồ uống' ? `<input class="inv-input menu-stock-input" type="number" min="0" value="${item.stock ?? 0}" aria-label="Số lượng tồn" onchange="updateMenuStock('${item.id}', this.value)">` : '<span class="stock-na">—</span>'}</td>
+            <td><input class="inv-input menu-stock-input" type="number" min="0" value="${item.stock ?? ''}" aria-label="Số lượng tồn (không bắt buộc)" placeholder="—" onchange="updateMenuStock('${item.id}', this.value)"></td>
             <td><div class="menu-row-actions"><button class="btn-icon" title="Xem chi tiết" aria-label="Xem chi tiết" onclick="showMenuDetail('${item.id}')"><i class="ph-bold ph-eye"></i></button><button class="btn-icon" title="Sửa món" aria-label="Sửa món" onclick="openEditMenuModal('${item.id}')"><i class="ph-bold ph-pencil-simple"></i></button><button class="btn-icon danger-icon" title="Xóa món" aria-label="Xóa món" onclick="deleteMenu('${item.id}')"><i class="ph-bold ph-trash"></i></button></div></td>
         `;
         menuTableBody.appendChild(tr);
@@ -100,7 +100,8 @@ function renderMenu() {
 }
 
 window.updateMenuStock = function(id, value) {
-    menuRequest('PATCH', `/items/${encodeURIComponent(id)}/stock`, { stock: Math.max(0, Number.parseInt(value, 10) || 0) })
+    const stock = value.trim() === '' ? null : Math.max(0, Number.parseInt(value, 10) || 0);
+    menuRequest('PATCH', `/items/${encodeURIComponent(id)}/stock`, { stock })
         .then(loadMenuItems)
         .catch(error => showToast('Không thể cập nhật tồn kho', error.message, 'danger'));
 };
@@ -112,8 +113,6 @@ window.showMenuDetail = function(id) {
     const dietLabel = item.diet === 'Chay'
         ? '<span style="background:#DCFCE7;color:#15803D;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">🥦 Chay</span>'
         : '<span style="background:#FEE2E2;color:#B91C1C;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">🥩 Mặn</span>';
-
-    const isDrink = item.category === 'Đồ uống';
 
     document.getElementById('menu-detail-body').innerHTML = `
         <div class="modal-body">
@@ -128,11 +127,10 @@ window.showMenuDetail = function(id) {
                 <input type="text" class="form-control" value="${item.category}" readonly>
             </div>
 
-            ${isDrink ? `
             <div class="form-group">
                 <label>Số lượng tồn</label>
-                <input type="text" class="form-control" value="${item.stock ?? 0}" readonly>
-            </div>` : ''}
+                <input type="text" class="form-control" value="${item.stock ?? 'Không theo dõi'}" readonly>
+            </div>
 
             <div class="form-group">
                 <label>Giá bán (VNĐ)</label>
@@ -215,9 +213,8 @@ window.openEditMenuModal = function(id) {
     if (dietRadio) dietRadio.checked = true;
 
     // Số lượng tồn
-    const isDrink = item.category === 'Đồ uống';
-    document.getElementById('edit-stock-group').hidden = !isDrink;
-    document.getElementById('edit-menu-stock').value = isDrink ? (item.stock ?? 0) : '';
+    document.getElementById('edit-stock-group').hidden = false;
+    document.getElementById('edit-menu-stock').value = item.stock ?? '';
 
     // Ảnh preview
     const preview = document.getElementById('edit-upload-preview');
@@ -245,11 +242,6 @@ window.openEditMenuModal = function(id) {
 window.closeEditMenuModal = function() {
     document.getElementById('edit-menu-modal').style.display = 'none';
 };
-
-document.getElementById('edit-menu-category')?.addEventListener('change', e => {
-    const isDrink = e.target.value === 'Đồ uống';
-    document.getElementById('edit-stock-group').hidden = !isDrink;
-});
 
 window.previewEditImage = function(event) {
     const file = event.target.files[0];
@@ -296,7 +288,7 @@ window.submitEditMenu = async function() {
         const saved = await menuRequest('PUT', `/${encodeURIComponent(id)}`, {
             name, category, price: Number.parseInt(priceStr, 10), description,
             image_url: imgSrc, is_available: status === 'Đang bán',
-            stock: category === 'Đồ uống' && stockInput !== '' ? Number.parseInt(stockInput, 10) : null,
+            stock: stockInput.trim() !== '' ? Number.parseInt(stockInput, 10) : null,
             ingredients,
             spicy: document.getElementById('edit-menu-spicy').value,
             diet: document.querySelector('input[name="edit-menu-diet"]:checked').value,
@@ -332,7 +324,7 @@ window.openAddMenuModal = function() {
     document.getElementById('menu-allergens').value = '';
     document.querySelector('input[name="menu-diet"][value="Mặn"]').checked = true;
     document.getElementById('menu-category').value = 'Món chính';
-    document.getElementById('menu-stock-group').hidden = true;
+    document.getElementById('menu-stock-group').hidden = false;
     // Reset ảnh
     const preview = document.getElementById('upload-preview');
     const icon = document.getElementById('upload-icon');
@@ -369,19 +361,12 @@ window.previewMenuImage = function(event) {
     reader.readAsDataURL(file);
 }
 
-document.getElementById('menu-category')?.addEventListener('change', event => {
-    const isDrink = event.target.value === 'Đồ uống';
-    document.getElementById('menu-stock-group').hidden = !isDrink;
-    document.getElementById('menu-stock').required = isDrink;
-});
-
 window.submitAddMenu = async function() {
     const name = document.getElementById('menu-name').value.trim();
     const category = document.getElementById('menu-category').value;
     const priceStr = document.getElementById('menu-price').value.trim();
     const stock = document.getElementById('menu-stock').value;
     const description = document.getElementById('menu-description').value.trim();
-    const isDrink = category === 'Đồ uống';
 
     // Validate bắt buộc (*)
     if (!name) { showToast('Lỗi nhập liệu', 'Vui lòng nhập Tên món!', 'danger'); document.getElementById('menu-name').focus(); return; }
@@ -403,7 +388,7 @@ window.submitAddMenu = async function() {
         const created = await menuRequest('POST', '', {
             name, category, price: Number.parseInt(priceStr, 10), description,
             image_url: imgSrc, is_available: true,
-            stock: isDrink ? (Number.parseInt(stock, 10) || 0) : null,
+            stock: stock.trim() !== '' ? Number.parseInt(stock, 10) : null,
             ingredients,
             spicy: document.getElementById('menu-spicy').value,
             diet: document.querySelector('input[name="menu-diet"]:checked').value,
