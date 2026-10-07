@@ -6,7 +6,10 @@
 
 'use strict';
 
-const API_BASE = `${location.protocol}//${location.hostname}:8000`;
+/* Ưu tiên APP_CONFIG.API_BASE_URL (config.js của team — localhost:8000 khi dev,
+ * Render production khi deploy online); thiếu config.js thì fallback hostname:8000. */
+const API_BASE = window.APP_CONFIG?.API_BASE_URL
+  || `${location.protocol}//${location.hostname}:8000`;
 
 /** Gọi API; lỗi trả về Error có .code (error_code) và .status (HTTP). */
 async function apiFetch(path, options = {}) {
