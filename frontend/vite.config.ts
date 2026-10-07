@@ -13,6 +13,8 @@ export default defineConfig({
     emptyOutDir: true,
   },
   test: {
+    // Root là fe_ofc/ nên phải chỉ rõ thư mục chứa unit test (frontend/tests/)
+    dir: resolve(__dirname, 'tests'),
     environment: 'jsdom',
     globals: true,
     setupFiles: resolve(__dirname, 'src/setupTests.ts'),

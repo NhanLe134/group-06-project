@@ -1,0 +1,3 @@
+87 passed in 5.25s
+--- ruff:
+All checks passed!

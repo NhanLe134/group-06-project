@@ -1,0 +1,190 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "D:\\MIS3032\\group-06-project\\testing\\test_scripts\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "-c",
+      "playwright.us03.config.ts",
+      "--project=staging-smoke"
+    ],
+    "configFile": "D:\\MIS3032\\group-06-project\\testing\\test_scripts\\playwright.us03.config.ts",
+    "rootDir": "D:/MIS3032/group-06-project/testing/test_scripts/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/MIS3032/group-06-project/testing/test_scripts/reports/us03/results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "local-e2e",
+        "name": "local-e2e",
+        "testDir": "D:/MIS3032/group-06-project/testing/test_scripts/tests",
+        "testIgnore": [
+          "/smoke/"
+        ],
+        "testMatch": [
+          "/us0[38]-.*\\.spec\\.ts/"
+        ],
+        "timeout": 45000
+      },
+      {
+        "outputDir": "D:/MIS3032/group-06-project/testing/test_scripts/reports/us03/results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "staging-smoke",
+        "name": "staging-smoke",
+        "testDir": "D:/MIS3032/group-06-project/testing/test_scripts/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "/us03-smoke\\.spec\\.ts/"
+        ],
+        "timeout": 45000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "./reports/us03/results.json"
+        }
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "./reports/us03/html",
+          "open": "never"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "us03-smoke.spec.ts",
+      "file": "us03-smoke.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "US-03 — Smoke trên staging (chỉ đọc)",
+          "file": "us03-smoke.spec.ts",
+          "line": 13,
+          "column": 6,
+          "specs": [
+            {
+              "title": "backend staging sống và trả thực đơn",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "staging-smoke",
+                  "projectName": "staging-smoke",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4331,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-07T15:51:25.356Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b4d9d51a2e373a7684db-3878720d61cbc0dc6d40",
+              "file": "us03-smoke.spec.ts",
+              "line": 16,
+              "column": 7
+            },
+            {
+              "title": "màn hình KDS staging mở được và kết nối Realtime",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "staging-smoke",
+                  "projectName": "staging-smoke",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2992,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-07T15:51:29.734Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b4d9d51a2e373a7684db-39f6094accf54a7d5b6a",
+              "file": "us03-smoke.spec.ts",
+              "line": 26,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-07T15:51:20.989Z",
+    "duration": 14866.645,
+    "expected": 2,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

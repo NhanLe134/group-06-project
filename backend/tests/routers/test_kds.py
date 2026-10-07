@@ -244,3 +244,38 @@ async def test_kds_still_cooks_reserved_item_when_drink_stock_is_zero(
     assert (await client.get("/kds/items")).json()[0]["het_hang"] is False
     resp = await client.patch(f"/kds/items/{item.id}/status", json={"trangthai": "da_xong"})
     assert resp.status_code == 200
+
+
+async def test_double_click_done_second_request_is_409(
+    client: AsyncClient, db_session: AsyncSession
+):
+    """TC-OP-KDS-005 (§11.3 double click): bấm "Xong" 2 lần liên tiếp → lần 2 bị 409,
+    trạng thái trong DB vẫn đúng 1 lần chuyển."""
+    _, item = await _seed(db_session)
+    first = await client.patch(f"/kds/items/{item.id}/status", json={"trangthai": "da_xong"})
+    second = await client.patch(f"/kds/items/{item.id}/status", json={"trangthai": "da_xong"})
+
+    assert first.status_code == 200
+    assert second.status_code == 409
+    assert second.json()["error_code"] == "INVALID_STATUS_TRANSITION"
+
+
+async def test_vietnamese_and_emoji_note_shown_unchanged_on_kds(
+    client: AsyncClient, db_session: AsyncSession
+):
+    """TC-OP-KDS-012 (§11.3 Unicode/tiếng Việt/emoji): ghi chú khách nhập hiện nguyên vẹn."""
+    note = "Không hành, ít cay 🌶️ — thêm chanh"
+    mon = ThucDon(tenmon="Bún bò Huế", phanloai="Món chính", giaban=60000)
+    db_session.add(mon)
+    await db_session.commit()
+
+    resp = await client.post(
+        "/orders",
+        json={
+            "table_name": "Bàn 09",
+            "items": [{"thucdon_id": mon.id, "soluong": 1, "ghichu": note}],
+        },
+    )
+    assert resp.status_code == 200
+    card = next(i for i in (await client.get("/kds/items")).json() if i["ban"] == "Bàn 09")
+    assert (card["tenmon"], card["ghichu"]) == ("Bún bò Huế", note)

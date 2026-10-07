@@ -84,18 +84,24 @@ Chi tiết request/response: `api-contract.md` Mục 6. Tóm tắt:
 
 ## 10. Test plan
 
-| Lớp | Kiểm chứng | Nơi |
+> Cập nhật 2026-10-07 theo testing pyramid (giáo trình §11.2). Test case đầy đủ: `testing/test_cases/test-cases-US03.md`; kết quả: `testing/reports/US-03/`.
+
+| Tầng | Kiểm chứng | Nơi |
 | :--- | :--- | :--- |
-| API (integration, SQLite in-memory) | FIFO, ẩn món đã phục vụ/đã hủy, 4 chuyển trạng thái hợp lệ, chuyển sai 409, giá trị lạ 422, 404, chặn nấu món hết hàng, tách suất (đúng + sai), xóa món hết hàng + log, báo hết/mở bán, demo tắt/bật | `backend/tests/routers/test_kds.py` |
-| Unit | Envelope WebSocket, gỡ client lỗi khỏi kênh | `test_kds.py::test_publish_sends_envelope_and_drops_broken_clients` |
-| E2E thủ công có script (trình duyệt headless + backend + Supabase thật) | AC1 gom mẻ, AC2 đổi trạng thái ghi DB, tách 4/10, toast "Ting!", AC3 khóa thẻ + xóa khỏi hàng đợi, AC5 offline → đồng bộ | AI Usage Log A-52 |
-| Chưa có | AC4 (chờ Auth); E2E tự động trong CI (chưa có Playwright) | — |
+| Unit (backend) | Bảng chuyển trạng thái, bấm 2 lần, chặn nấu chỉ khi báo hết tay, số phần còn | `backend/tests/unit/` (18 test) |
+| Unit (frontend) | AI gom mẻ, chữ khung Tồn kho, địa chỉ WebSocket khi deploy | `frontend/tests/kds-logic.test.js` (8 test, Vitest) |
+| Integration (SQLite) | FIFO, ẩn món đã phục vụ/hủy, chuyển trạng thái, tách suất, xóa món hết hàng + log, báo hết/mở bán, trừ kho, Unicode, dữ liệu biên | `backend/tests/routers/test_kds.py`, `test_stock.py`, `test_orders.py` |
+| Integration (Postgres thật) | 6 bàn tranh suất cuối — không bán vượt (TC-OP-005) | `backend/tests/pg/test_race_last_portion.py` |
+| E2E (Playwright, backend E2E riêng) | AC1 realtime + gom mẻ, AC2 + màn Phục vụ, AC3 báo hết + hết nguyên liệu, AC5 offline → đồng bộ | `testing/test_scripts/tests/us03-kds.spec.ts` |
+| Smoke staging (chỉ đọc) | Backend Render sống, KDS online kết nối Realtime | `testing/test_scripts/tests/us03-smoke.spec.ts` |
+| Chưa có | AC4 (chờ JWT); TC-OP-002 chớp đỏ 15 phút (chưa làm); E2E/Postgres chưa chạy trong CI | — |
 
 ## 11. Definition of Done
 
-- [x] Spec này được viết trước khi nối frontend với API.
-- [x] `ruff check` sạch, `pytest` pass.
-- [x] AC1, AC2, AC3, AC5 chạy được trên database thật.
+- [ ] Spec này được viết trước khi code — **không**: spec viết sau khi đã có giao diện KDS (phát hiện khi rà soát giáo trình, AI_USAGE_LOG A-58); các phần sau (trừ kho) có spec trước.
+- [x] `ruff check` sạch, `pytest` + `vitest` + Playwright pass (2026-10-07).
+- [x] AC1, AC2, AC3, AC5 chạy được trên database thật và có E2E tự động.
+- [x] Màn hình Phục vụ nhận `ITEM_READY`; E-Menu nhận `menu:oos` (A-72).
 - [ ] AC4 kiểm tra quyền ở server (chờ story Auth/JWT).
-- [ ] PR có Story ID + review của thành viên khác trước khi merge.
-- [ ] Màn hình Phục vụ nhận `ITEM_READY` (phụ thuộc US của trang Waiter).
+- [ ] PR có Story ID + review của thành viên khác trước khi merge (PR `feature/US-03-tests`).
+- [ ] Độ trễ đơn mới < 500 ms (NFR-RO-01): đo được 635 ms — chưa đạt.
