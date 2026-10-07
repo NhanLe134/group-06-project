@@ -50,6 +50,7 @@
   gap: 10px;
   max-width: 1152px;
   margin: 0 auto;
+  position: relative;
   width: 100%;
 }
 .brand-logo {
@@ -64,23 +65,6 @@
 .brand-logo i { font-size: 24px; }
 .brand { color: var(--color-text-main); font-size: 15px; letter-spacing: -0.02em; }
 .cust-table-chip { display: none; }   /* mobile: thông tin bàn nằm ở cust-head */
-.btn-home {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #F1F5F9;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--color-text-muted);
-  text-decoration: none;
-  cursor: pointer;
-  transition: all 0.2s;
-  flex: none;
-}
-.btn-home:hover { background: #E2E8F0; color: var(--color-danger); }
 
 /* ---------- Khung màn hình ---------- */
 .cust-screen {
@@ -210,15 +194,16 @@
   margin-top: 14px;
 }
 .menu-card {
+  position: relative;   /* mốc cho ruy băng chéo góc */
   display: flex;
   align-items: center;
-  gap: 12px;
-  height: 100px;            /* cố định chiều cao — mọi thẻ đều bằng nhau */
+  gap: 8px;
+  height: 88px;            /* cố định: thumb 68px + padding 10px×2 — biên đều 10px */
   overflow: hidden;
   background: var(--color-neutral-card);
   border: 1.5px solid transparent;
   border-radius: 16px;
-  padding: 12px;
+  padding: 10px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
@@ -228,8 +213,8 @@
   border-color: var(--color-primary);
 }
 .menu-thumb {
-  width: 52px;
-  height: 52px;
+  width: 68px;
+  height: 68px;
   flex: none;
   border-radius: var(--radius-md);
   background: var(--primary-soft);
@@ -251,6 +236,10 @@
   font-size: 14.5px;
   line-height: 1.35;
   color: var(--color-text-main);
+  /* giới hạn 1 dòng — tên dài hiển thị "..." thay vì vỡ thẻ */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .menu-price {
   margin: 4px 0 0;
@@ -258,18 +247,23 @@
   color: var(--color-primary);
   font-size: 14px;
 }
+.menu-thumb-wrap { position: relative; flex: none; overflow: hidden; border-radius: var(--radius-md); }
 .badge-hot {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 10.5px;
-  background: #FEF3C7;
-  color: var(--color-warning);
-  border-radius: var(--radius-full);
-  padding: 2px 8px;
-  font-weight: 700;
-  margin-left: 6px;
-  vertical-align: middle;
+  /* Ruy băng chéo 45° qua góc trên-trái THẺ (vượt cả khoảng trắng lẫn ảnh) */
+  position: absolute;
+  top: 14px;
+  left: -50px;
+  width: 140px;
+  z-index: 2;              /* ruy băng NẰM TRÊN ảnh món */
+  transform: rotate(-45deg);
+  text-align: center;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  padding: 2px 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 .badge-oos {
   display: inline-block;
@@ -306,6 +300,19 @@
 }
 .btn-add:hover:not(:disabled) { background: var(--primary-dark); }
 .btn-add:disabled { background: #CBD5E1; box-shadow: none; cursor: not-allowed; }
+/* Nhãn "Hết" — thay thế vị trí nút + của món hết hàng (ADR-N11) */
+.btn-soldout {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border-radius: var(--radius-md);
+  background: #F1F5F9;
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+}
 
 /* Bộ đếm số lượng trên thẻ món — thay nút "+" khi món đã vào giỏ (ADR-N06) */
 .qty-ctrl {
@@ -344,6 +351,40 @@
   padding: 40px 20px;
 }
 .menu-empty i { font-size: 44px; opacity: 0.4; margin-bottom: 10px; display: block; }
+
+/* ---------- Hiệu ứng tải menu (skeleton shimmer) ---------- */
+.menu-loading-note {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  color: var(--color-text-muted); font-size: 13.5px; font-weight: 600;
+  margin: 6px 0 16px;
+}
+.menu-loading-note i {
+  font-size: 17px; color: var(--color-primary);
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.sk-card {
+  display: flex; align-items: center; gap: 8px;
+  height: 88px; padding: 10px;
+  background: var(--color-neutral-card); border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.sk-thumb {
+  width: 68px; height: 68px; flex: none;
+  border-radius: var(--radius-md);
+}
+.sk-lines { flex: 1; display: flex; flex-direction: column; gap: 11px; }
+.sk-line { height: 13px; border-radius: 6px; width: 85%; }
+.sk-line.w60 { width: 45%; }
+.sk-thumb, .sk-line {
+  background: linear-gradient(90deg, #EEF2F6 25%, #F8FAFC 50%, #EEF2F6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+}
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
 
 /* ---------- Sticky Bottom Bar — tóm tắt bản nháp (đủ chiều rộng màn hình) ---------- */
 .cust-stickybar {
@@ -822,6 +863,9 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);   /* căn giữa tuyệt đối topbar */
     background: var(--primary-soft);
     color: var(--color-primary);
     font-size: 13px;
@@ -849,11 +893,11 @@
   .note-input { font-size: 14px; }   /* desktop không có auto-zoom, thu nhỏ như phần còn lại */
   .menu-info h3 { font-size: 14px; }
   .menu-price { font-size: 13px; }
-  .menu-thumb { width: 48px; height: 48px; font-size: 24px; }
+  .menu-thumb { width: 68px; height: 68px; font-size: 26px; }
+  .btn-soldout { width: 38px; height: 38px; font-size: 11.5px; }
   .btn-add { width: 38px; height: 38px; font-size: 19px; }
   .qty-ctrl button { width: 34px; height: 34px; font-size: 15px; }
   .qty-num { font-size: 13px; }
-  .badge-hot { font-size: 10px; }
   .badge-oos { font-size: 10.5px; }
   .btn-primary { min-height: 42px; font-size: 13.5px; }
   .sb-info b { font-size: 14px; }

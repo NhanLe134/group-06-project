@@ -14,22 +14,22 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    UniqueConstraint,
+    event,
     true,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
-
-
-def la_het_hang(trangthaiban: bool | None, soluongton: int | None) -> bool:
-    """Hết hàng khi Bếp/Quản lý tắt bán, hoặc món đếm số lượng đã về 0 (REQ-09, BR-03)."""
-    return trangthaiban is False or (soluongton is not None and soluongton <= 0)
 
 
 class ThucDon(Base):
     """Món ăn trên E-Menu (MENU_ITEMS).
 
-    `trangthaiban = false` hoặc `soluongton = 0` nghĩa là Hết hàng (xem `la_het_hang`).
+    Cách tính tồn theo TỪNG MÓN (phương án A — story-spec-tru-kho-tu-dong.md Mục 3):
+    - Món MUA SẴN (`soluongton` khác NULL, vd. sữa chua hũ, Coca lon): đếm theo số lượng.
+    - Món CHẾ BIẾN (`soluongton` NULL): tồn theo nguyên liệu (`congthuc` × `tonkho`).
+    `trangthaiban = false` hoặc hết số phần còn nghĩa là Hết hàng (xem `het_hang`).
     """
 
     __tablename__ = "thucdon"
@@ -50,16 +50,56 @@ class ThucDon(Base):
     loaimon: Mapped[str | None] = mapped_column(String(30), default=None)
     thongtindiung: Mapped[str | None] = mapped_column(Text, default=None)
     soluongton: Mapped[int | None] = mapped_column(Integer, default=None)
+    # Món bán chạy — nhãn 🔥 Bán chạy trên E-Menu (ADR-002)
+    banchay: Mapped[bool | None] = mapped_column(Boolean, default=None)
+
+    # Công thức nạp sẵn cùng món (selectin) để tính số phần còn mà không lazy-load trong async
+    congthuc: Mapped[list["CongThuc"]] = relationship(
+        lazy="selectin", cascade="all, delete-orphan", passive_deletes=True
+    )
+
+    @property
+    def mua_san(self) -> bool:
+        """Món mua sẵn: có nhập số lượng tồn → đếm theo `soluongton`, không trừ nguyên liệu."""
+        return self.soluongton is not None
+
+    @property
+    def so_phan_con(self) -> int | None:
+        """Số phần còn bán được; None = không giới hạn (món chế biến chưa có công thức).
+
+        - Mua sẵn: `soluongton`.
+        - Chế biến: min(⌊tồn nguyên liệu ÷ định lượng⌋) theo công thức.
+        Story Spec: vault/06-Engineering/story-spec-tru-kho-tu-dong.md Mục 3.
+        """
+        if self.mua_san:
+            return max(self.soluongton, 0)
+        gioi_han = [
+            max(int((ct.nguyenlieu.tonhethong or 0) // ct.dinhluong), 0)
+            for ct in self.congthuc
+            if ct.dinhluong and ct.dinhluong > 0
+        ]
+        return min(gioi_han) if gioi_han else None
 
     @property
     def het_hang(self) -> bool:
-        return la_het_hang(self.trangthaiban, self.soluongton)
+        """Hết hàng khi bếp báo hết, hoặc không còn đủ hàng/nguyên liệu cho 1 phần."""
+        return self.trangthaiban is False or self.so_phan_con == 0
+
+
+@event.listens_for(ThucDon, "init")
+def _mon_moi_chua_co_cong_thuc(target: ThucDon, args, kwargs) -> None:
+    """Món tạo mới chưa có công thức: gán sẵn danh sách rỗng để `so_phan_con` không
+    lazy-load (không được phép trong async session) sau khi insert."""
+    kwargs.setdefault("congthuc", [])
 
 
 class TonKho(Base):
     """Nguyên liệu trong kho (INVENTORY_ITEMS)."""
 
     __tablename__ = "tonkho"
+    __table_args__ = (
+        CheckConstraint("tonhethong >= 0", name="tonkho_tonhethong_khong_am"),  # migration 011
+    )
 
     # Mã do database tự sinh (migration 007, ADR-ARCH-004), vd. MON001, HD-20261006-0001
     id: Mapped[str] = mapped_column(String(30), primary_key=True, server_default=FetchedValue())
@@ -73,6 +113,10 @@ class CongThuc(Base):
     """Định lượng nguyên liệu cho 1 món (MENU_ITEM_INGREDIENTS)."""
 
     __tablename__ = "congthuc"
+    __table_args__ = (
+        CheckConstraint("dinhluong > 0", name="congthuc_dinhluong_duong"),  # migration 011
+        UniqueConstraint("thucdon_id", "tonkho_id", name="congthuc_mon_nguyenlieu_unique"),
+    )
 
     # Mã do database tự sinh (migration 007, ADR-ARCH-004), vd. MON001, HD-20261006-0001
     id: Mapped[str] = mapped_column(String(30), primary_key=True, server_default=FetchedValue())
@@ -83,3 +127,5 @@ class CongThuc(Base):
         String(30), ForeignKey("tonkho.id", ondelete="CASCADE"), default=None
     )
     dinhluong: Mapped[Decimal] = mapped_column(Numeric)
+
+    nguyenlieu: Mapped[TonKho] = relationship(lazy="selectin")

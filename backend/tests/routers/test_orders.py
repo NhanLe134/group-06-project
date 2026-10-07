@@ -37,6 +37,32 @@ async def test_gui_dot_1_tao_phien_va_hoa_don(client, menu_ids):
     assert data["all_served"] is False
 
 
+async def test_gui_bep_phat_su_kien_kds(client, menu_ids, monkeypatch):
+    """US-03 AC1: gửi bếp → publish KDS_ITEMS_CHANGED lên kênh kds:tickets cho KDS."""
+    from app.ws.manager import manager
+
+    sent = []
+
+    async def fake_publish(channel, event, payload):
+        sent.append((channel, event, payload))
+
+    monkeypatch.setattr(manager, "publish", fake_publish)
+    pho_id, _ = menu_ids
+    res = await client.post(
+        "/orders",
+        json={"table_name": "Bàn 06", "items": [{"thucdon_id": str(pho_id), "soluong": 2}]},
+    )
+    assert res.status_code == 200
+    item_id = res.json()["items"][0]["id"]
+    assert sent == [
+        (
+            "kds:tickets",
+            "KDS_ITEMS_CHANGED",
+            {"item_ids": [item_id], "reason": "new_order", "ban": "Bàn 06"},
+        )
+    ]
+
+
 async def test_gui_dot_2_cong_vao_hoa_don_cu(client, menu_ids):
     """US-01: gọi đợt 2 → giữ nguyên hoadon, chèn thêm món, tongtien = đợt 1 + đợt 2."""
     pho_id, tra_id = menu_ids

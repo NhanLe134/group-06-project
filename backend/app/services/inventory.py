@@ -1,6 +1,6 @@
 """Nghiệp vụ US-08 — đối soát tồn kho & đóng ca. Spec: story-spec-us08-inventory.md.
 
-A = tồn đầu ca (chụp `thucdon.soluongton` lúc tạo phiếu), B = đã bán trong kỳ (từ `chitietmon`),
+A = tồn đầu ca, B = đã bán trong kỳ (từ `chitietmon`),
 C = A - B (tồn lý thuyết), chênh lệch = tồn thực tế - C (âm = hao hụt).
 """
 
@@ -13,7 +13,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.errors import ApiError
 from app.models import ChiTietMon, HoaDon, NguoiDung, ThucDon
 from app.models.inventory import DA_CHOT, NHAP, ChiTietKiemKe, PhieuKiemKe
-from app.models.menu import la_het_hang
 from app.schemas.inventory import ShiftDetailOut, ShiftLineIn, ShiftLineOut, ShiftSummaryOut
 
 VN_OFFSET = timedelta(hours=7)
@@ -143,6 +142,7 @@ async def create_shift(db: AsyncSession) -> ShiftDetailOut:
         raise ApiError(
             409, "SHIFT_DRAFT_EXISTS", "Đang có phiếu kiểm kê chưa chốt — hãy mở phiếu đó."
         )
+    # Món mua sẵn (có soluongton); món chế biến trừ nguyên liệu — story-spec-tru-kho-tu-dong.md
     tracked = (
         (await db.execute(select(ThucDon).where(ThucDon.soluongton.is_not(None)))).scalars().all()
     )
@@ -153,16 +153,21 @@ async def create_shift(db: AsyncSession) -> ShiftDetailOut:
             "Chưa có món nào đếm số lượng tồn (vd. nước uống) — hãy nhập số lượng tồn trước.",
         )
     now = _now()
+    tuluc = await _period_start(db, now)
+    # `soluongton` đã bị trừ dần theo đơn từ đầu kỳ (story-spec-tru-kho-tu-dong.md) → cộng lại
+    # số đã bán trong kỳ để ra tồn ĐẦU kỳ, tránh trừ hai lần khi tính C = A - B.
+    da_ban = await _sold(db, tuluc, now, [mon.id for mon in tracked])
     # id (mã phiếu PKK-YYYYMMDD-NNNN) do database tự sinh — migration 007
-    phieu = PhieuKiemKe(
-        trangthai=NHAP,
-        tuluc=await _period_start(db, now),
-    )
+    phieu = PhieuKiemKe(trangthai=NHAP, tuluc=tuluc)
     try:
         db.add(phieu)
         await db.flush()
         db.add_all(
-            ChiTietKiemKe(phieukiemke_id=phieu.id, thucdon_id=mon.id, tondauca=mon.soluongton)
+            ChiTietKiemKe(
+                phieukiemke_id=phieu.id,
+                thucdon_id=mon.id,
+                tondauca=mon.soluongton + da_ban.get(mon.id, 0),
+            )
             for mon in tracked
         )
         await db.commit()
@@ -232,9 +237,9 @@ async def close_shift(
     for line, mon in lines:
         v = views[line.thucdon_id]
         line.daban, line.tonlythuyet, line.chenhlech = v.daban, v.tonlythuyet, v.chenhlech
-        truoc = la_het_hang(mon.trangthaiban, mon.soluongton)
+        truoc = mon.het_hang
         mon.soluongton = line.tonthucte  # AC3: tồn thực tế thành tồn đầu ca sau
-        if la_het_hang(mon.trangthaiban, mon.soluongton) != truoc:
+        if mon.het_hang != truoc:
             flipped.append(mon)
     phieu.trangthai = DA_CHOT
     phieu.giochot = _now()

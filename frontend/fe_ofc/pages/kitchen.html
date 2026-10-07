@@ -44,7 +44,7 @@
     button, input, select { font-family: var(--font-sans); }
     .numeric, time, .kc-time, [data-clock] { font-variant-numeric: tabular-nums; }
 
-    /* Topbar + thanh demo theo kiểu E-Menu */
+    /* Topbar theo kiểu E-Menu */
     /* Thanh tiêu đề luôn dính trên cùng khi cuộn trang */
     .topbar { position: sticky; top: 0; z-index: 30; background: var(--color-neutral-card); }
     .brand { display: inline-flex; align-items: center; gap: 10px; font: var(--type-subhead); font-weight: 800; }
@@ -52,8 +52,6 @@
     .brand-row > b { font: var(--type-subhead); }
     .btn-logout { min-height: 44px; padding: 4px 14px; border: none; border-radius: var(--radius-md); background: var(--color-tint); color: #475569; font: var(--type-button); }
     .btn-logout:hover { background: var(--color-primary-soft); color: var(--color-primary-dark); border: none; }
-    .demo-bar { background: var(--color-neutral-card); border-bottom: 1px solid var(--color-line); }
-    .demo-tag { color: var(--color-primary-dark); }
     .offline-banner { position: sticky; top: var(--topbar-h, 0px); z-index: 29; font: var(--type-desc); }   /* dính ngay dưới thanh tiêu đề */
     .offline-banner[hidden] { display: none; }
 
@@ -205,13 +203,6 @@
     </div>
   </header>
 
-  <!-- Thanh DEMO: tạo đơn mẫu AC1 (cần DEMO_MODE=true ở backend) / giả lập mất mạng AC5 -->
-  <div class="demo-bar">
-    <span class="demo-tag">DEMO</span>
-    <button class="btn-mini" data-action="sim-ac1"><i class="ph-bold ph-broadcast"></i> Đơn mới: Bàn 01 + Bàn 02 gọi Phở bò</button>
-    <label class="switch" style="flex:0 0 auto"><input type="checkbox" id="sim-offline"> Giả lập mất Wi-Fi</label>
-  </div>
-
   <div id="offline-banner" class="banner offline-banner" hidden>
     <i class="ph-bold ph-wifi-slash"></i>
     <span><b>Offline: Đang lưu cục bộ.</b> Thao tác của bạn vẫn được ghi nhận và sẽ tự động đồng bộ lên Server khi có mạng lại.</span>
@@ -273,16 +264,19 @@
     loaded: false,
     loadError: '',
     wsUp: false,
-    forceOffline: false,
     soundOn: true,
     menuFor: null,                                     /* id thẻ đang mở menu "⋯" */
     newIds: new Set(),
   };
   const persistQueue = () => save(KEY.queue, S.queue);
-  const isOnline = () => navigator.onLine && !S.forceOffline;
+  const isOnline = () => navigator.onLine;
   const menuItem = dishId => S.menu.find(m => m.id === dishId);
   const menuName = dishId => (menuItem(dishId) || {}).name || 'Món';
   const isOos = dishId => (menuItem(dishId) || {}).status === 'out_of_stock';
+  /* Chặn nấu chỉ khi bếp BÁO HẾT bằng tay (listed = false). Món đã gửi bếp đã được trừ kho lúc gửi,
+     nên hết số phần còn (status out_of_stock do hết nguyên liệu) không chặn nấu món đó
+     — story-spec-tru-kho-tu-dong.md Mục 3. */
+  const isBlocked = dishId => (menuItem(dishId) || {}).listed === false;
 
   /* ---------- Gọi API ---------- */
   class ApiError extends Error {
@@ -364,7 +358,7 @@
      ===================================================================== */
   function aiBatching(items) {
     const groups = {};
-    items.filter(it => it.status === 'PENDING' && !isOos(it.dishId)).forEach(it => {
+    items.filter(it => it.status === 'PENDING' && !isBlocked(it.dishId)).forEach(it => {
       (groups[it.dishId] = groups[it.dishId] || []).push(it);
     });
     return Object.entries(groups)
@@ -432,7 +426,7 @@
       it.qty -= op.n; it.origQty = total;
     }
     if (op.op === 'cancel') S.items = S.items.filter(x => x.id !== op.id);
-    if (op.op === 'stock') { const m = menuItem(op.dishId); if (m) m.status = op.available ? 'available' : 'out_of_stock'; }
+    if (op.op === 'stock') { const m = menuItem(op.dishId); if (m) { m.listed = op.available; m.status = op.available ? 'available' : 'out_of_stock'; } }
   }
   function applyQueueLocally() { S.queue.forEach(applyLocal); }
 
@@ -500,7 +494,7 @@
   function setStatus(id, to) {
     const it = S.items.find(x => x.id === id);
     if (!it || it.status === to || !STATUSES.includes(to)) return;
-    if (it.status === 'PENDING' && isOos(it.dishId)) { toast(`${esc(it.dishName)} đã hết hàng — chỉ có thể xóa khỏi hàng đợi`, 'err', 'ph-prohibit'); return; }
+    if (it.status === 'PENDING' && isBlocked(it.dishId)) { toast(`${esc(it.dishName)} đã hết hàng — chỉ có thể xóa khỏi hàng đợi`, 'err', 'ph-prohibit'); return; }
     perform({ op: 'status', id, to, table: it.table, dish: it.dishName, part: partOf(it) });
   }
 
@@ -508,7 +502,7 @@
   function splitItem(id, n, to) {
     const it = S.items.find(x => x.id === id);
     if (!it) return;
-    if (n >= it.qty || (it.status === 'PENDING' && isOos(it.dishId))) { setStatus(id, to); return; }
+    if (n >= it.qty || (it.status === 'PENDING' && isBlocked(it.dishId))) { setStatus(id, to); return; }
     perform({ op: 'split', id, n, to, table: it.table, dish: it.dishName, part: `${n}/${it.origQty || it.qty} ` });
   }
 
@@ -516,7 +510,7 @@
   function askQty(id, to) {
     const it = S.items.find(x => x.id === id);
     if (!it) return;
-    if (it.qty <= 1 || !isForward(it.status, to) || (it.status === 'PENDING' && isOos(it.dishId))) { setStatus(id, to); return; }
+    if (it.qty <= 1 || !isForward(it.status, to) || (it.status === 'PENDING' && isBlocked(it.dishId))) { setStatus(id, to); return; }
     S.split = { id, to, n: it.qty };
     renderSplit();
   }
@@ -604,17 +598,6 @@
     perform({ op: 'cancel', id, table: it.table, label: `${it.qty}× ${it.dishName}` });
   }
 
-  /* Demo AC1 — chỉ chạy khi backend bật DEMO_MODE=true */
-  async function demoOrders() {
-    try {
-      await api('POST', '/kds/demo/orders');
-      refreshSoon();
-    } catch (err) {
-      toast(err.status === 404 ? 'Chức năng demo đang tắt — đặt <b>DEMO_MODE=true</b> trong backend/.env rồi chạy lại backend' : esc(err.message),
-        'err', 'ph-warning-circle');
-    }
-  }
-
   function updateConnUI() {
     const online = isOnline();
     $('#offline-banner').hidden = online;
@@ -642,7 +625,7 @@
 
   /* Mỗi thẻ chỉ 1 hành động chính: Chờ nấu → "Bắt đầu nấu", Đang nấu → "Xong" */
   function renderCard(it) {
-    const oos = isOos(it.dishId);
+    const oos = isBlocked(it.dishId);
     const queued = S.queue.some(q => q.id === it.id);
     const blocked = oos && it.status === 'PENDING';    /* hết nguyên liệu khi chưa nấu → chỉ còn nút Xóa */
     let action;
@@ -760,7 +743,8 @@
     <div class="kds-head">
       <div>
         <h2><i class="ph-bold ph-chef-hat"></i> Bếp KDS</h2>
-        <p>${S.role === 'CHEF' ? 'Bếp trưởng Hùng' : 'Quản lý ca'} · <span data-clock>${fmtTime(Date.now())}</span> · <span id="conn" class="conn"></span> ·
+        <!-- Chưa có đăng nhập nên chưa hiện tên người dùng; khi có JWT (AC4) lấy tên thật từ bảng nguoidung -->
+        <p><span data-clock>${fmtTime(Date.now())}</span> · <span id="conn" class="conn"></span> ·
           <button class="sound-toggle ${S.soundOn ? '' : 'off'}" data-action="sound" aria-pressed="${S.soundOn}" aria-label="${S.soundOn ? 'Tắt âm thanh báo đơn' : 'Bật âm thanh báo đơn'}">
             <i class="ph-bold ${S.soundOn ? 'ph-speaker-high' : 'ph-speaker-slash'}"></i> ${S.soundOn ? 'Âm thanh' : 'Đã tắt tiếng'}</button></p>
       </div>
@@ -772,10 +756,16 @@
       <summary>Tồn kho <span>· ${oosCount ? `${oosCount} món hết hàng` : 'tất cả còn hàng'}</span></summary>
       <ul>
         ${S.menu.map(d => {
-          const oos = isOos(d.id);
+          const oos = isOos(d.id), stopped = d.listed === false;
+          /* Món mua sẵn (có stock): "Còn N" theo số lượng. Món chế biến: số phần còn làm được theo
+             nguyên liệu + công thức (story-spec-tru-kho-tu-dong.md Mục 3); chưa có công thức thì nhắc nhập. */
+          const muaSan = d.stock != null;
+          const state = stopped ? 'Hết hàng'
+            : oos ? (muaSan ? 'Hết hàng' : 'Hết nguyên liệu')
+            : d.portions != null ? `Còn ${d.portions}` : 'Chưa có công thức';
           return `<li class="${oos ? 'oos' : ''}">
-            <span class="name">${esc(d.name)}</span><span class="state">${oos ? 'Hết hàng' : d.stock != null ? `Còn ${d.stock}` : 'Còn hàng'}</span>
-            <button data-action="${oos ? 'restock' : 'ask-oos'}" data-dish="${d.id}">${oos ? 'Mở bán lại' : 'Báo hết'}</button></li>`;
+            <span class="name">${esc(d.name)}</span><span class="state">${state}</span>
+            <button data-action="${stopped ? 'restock' : 'ask-oos'}" data-dish="${d.id}">${stopped ? 'Mở bán lại' : 'Báo hết'}</button></li>`;
         }).join('')}
       </ul>
     </details>` : renderLoadState()}`;
@@ -805,7 +795,6 @@
       case 'restock': S.menuFor = null; setStock(dish, true); break;
       case 'close-modal': S.split = null; closeModal(); break;
       case 'sound': S.soundOn = !S.soundOn; if (S.soundOn) ting(); render(); break;
-      case 'sim-ac1': demoOrders(); break;
       case 'retry': S.loadError = ''; render(); refresh(); break;
     }
   });
@@ -843,8 +832,7 @@
     setStatus(e.dataTransfer.getData('text/plain'), col.dataset.drop);
   });
 
-  /* Demo: mất mạng */
-  $('#sim-offline').addEventListener('change', e => { S.forceOffline = e.target.checked; S.forceOffline ? updateConnUI() : flushQueue(); render(); });
+  /* Mất / có mạng thật (AC5) */
   window.addEventListener('offline', () => { updateConnUI(); render(); });
   window.addEventListener('online', () => { flushQueue(); render(); });
 

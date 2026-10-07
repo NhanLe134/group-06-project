@@ -10,6 +10,7 @@ from app.config import settings
 from app.db import get_db
 from app.errors import ApiError
 from app.models import ChiTietMon, HoaDon, PhienBan, ThucDon
+from app.routers.menu import broadcast_flipped
 from app.schemas.kds import KdsItemOut, SplitIn, SplitOut, StatusUpdateIn
 from app.services import kds as service
 from app.ws.manager import KDS_CHANNEL, manager
@@ -62,8 +63,9 @@ async def split_item(item_id: str, body: SplitIn, db: Db) -> SplitOut:
 @router.post("/items/{item_id}/cancel-out-of-stock", response_model=KdsItemOut)
 async def cancel_out_of_stock(item_id: str, db: Db) -> KdsItemOut:
     """Xóa món chờ nấu đã hết nguyên liệu khỏi hàng đợi (trạng thái da_huy + loghuymon)."""
-    item = await service.cancel_out_of_stock(db, item_id)
+    item, changed = await service.cancel_out_of_stock(db, item_id)
     await _notify([item], "cancel_out_of_stock")
+    await broadcast_flipped(db, changed)  # hoàn kho: món dùng chung nguyên liệu có thể bán lại
     return item
 
 

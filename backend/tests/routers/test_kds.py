@@ -232,15 +232,15 @@ async def test_publish_sends_envelope_and_drops_broken_clients():
     assert broken not in mgr.channels["kds:tickets"]
 
 
-async def test_kds_blocks_cooking_when_drink_stock_is_zero(
+async def test_kds_still_cooks_reserved_item_when_drink_stock_is_zero(
     client: AsyncClient, db_session: AsyncSession
 ):
-    """Đồ uống có soluongton = 0 → KDS coi là hết hàng: het_hang = true, không cho nấu/xong."""
+    """Story Spec trừ kho tự động (AC6): soluongton = 0 nghĩa là đã bán hết cho các đơn đã gửi bếp
+    (đã trừ lúc gửi) → món đang chờ nấu vẫn nấu/xong được; chỉ bếp BÁO HẾT mới chặn."""
     mon, item = await _seed(db_session)
     mon.soluongton = 0
     await db_session.commit()
 
-    assert (await client.get("/kds/items")).json()[0]["het_hang"] is True
+    assert (await client.get("/kds/items")).json()[0]["het_hang"] is False
     resp = await client.patch(f"/kds/items/{item.id}/status", json={"trangthai": "da_xong"})
-    assert resp.status_code == 409
-    assert resp.json()["error_code"] == "ITEM_OUT_OF_STOCK"
+    assert resp.status_code == 200

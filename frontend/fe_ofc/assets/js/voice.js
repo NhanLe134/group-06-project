@@ -121,13 +121,36 @@ function vApplyParse(parsed) {
     vRender(); return;
   }
 
-  if (parsed.suggestions?.length || parsed.recommendations?.length) {
-    vAiSay(parsed.message || 'Dạ, anh/chị muốn dùng món nào ạ?');
-  } else if (parsed.not_found?.length) {
+  /* ── Intent A: Tư vấn theo từ khóa / nguyên liệu ── */
+  if (parsed.intent === 'recommendation' || parsed.suggestions?.length || parsed.recommendations?.length) {
+    const chips = (parsed.suggestions || []).concat(parsed.recommendations || [])
+      .map(s => ({
+        id: s.id,
+        label: `<i class="ph-bold ph-plus"></i> ${escV(s.name)} · ${fmtVND(s.price)}`,
+      }));
+    vAiSay(
+      parsed.message || 'Dạ, anh/chị muốn dùng món nào ạ?',
+      chips.length ? chips : null,
+    );
+    vRender(); return;
+  }
+
+  /* ── Intent B: Cảnh báo dị ứng ── */
+  if (parsed.warnings?.length) {
+    const w = parsed.warnings[0];
+    const altChips = (parsed.recommendations || []).map(s => ({
+      id: s.id,
+      label: `<i class="ph-bold ph-plus"></i> ${escV(s.name)} · ${fmtVND(s.price)}`,
+    }));
+    vAiSay(
+      parsed.message || w.message,
+      altChips.length ? altChips : null,
+    );
+    vRender(); return;
+  }
+
+  if (parsed.not_found?.length) {
     vAiSay(parsed.message || `Dạ, em chưa tìm thấy ${parsed.not_found.join(', ')} trong thực đơn ạ.`);
-  } else if (parsed.warnings?.length) {
-    vRender();
-    return;
   } else if (parsed.message) {
     vAiSay(parsed.message);
   }
@@ -399,6 +422,100 @@ document.addEventListener('submit', e => {
 document.getElementById('voice-sheet-overlay')
   .addEventListener('click', vCloseSheet);
 
-/* FAB — dùng data-action="v-open" trong HTML */
-document.getElementById('voice-fab')
-  .addEventListener('click', vOpenSheet);
+/* ───────── FAB: click ngắn = mở voice sheet, nhấn giữ = drag ───────── */
+(function initFabDrag() {
+  const fab = document.getElementById('voice-fab');
+  if (!fab) return;
+
+  const HOLD_MS   = 200;   /* giữ bao lâu mới tính là drag */
+  const MOVE_PX   = 6;     /* di chuyển quá ngưỡng này thì hủy click */
+  const MARGIN    = 12;    /* khoảng cách tối thiểu đến mép màn hình */
+
+  let holdTimer   = null;
+  let dragging    = false;
+  let startX      = 0, startY = 0;
+  let offsetX     = 0, offsetY = 0;  /* vị trí con trỏ so với góc fab */
+  let hasMoved    = false;
+
+  /* Đặt fab về vị trí fixed tuyệt đối */
+  function applyPos(x, y) {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const w  = fab.offsetWidth,   h  = fab.offsetHeight;
+    x = Math.max(MARGIN, Math.min(vw - w - MARGIN, x));
+    y = Math.max(MARGIN, Math.min(vh - h - MARGIN, y));
+    fab.style.right  = 'unset';
+    fab.style.bottom = 'unset';
+    fab.style.left   = x + 'px';
+    fab.style.top    = y + 'px';
+  }
+
+  function onMoveGlobal(ex, ey) {
+    /* Tính hasMoved bất kể dragging hay chưa — để touch move sớm vẫn được ghi nhận */
+    const dx = ex - startX, dy = ey - startY;
+    if (!hasMoved && (Math.abs(dx) > MOVE_PX || Math.abs(dy) > MOVE_PX)) {
+      hasMoved = true;
+      /* Kích hoạt drag ngay khi di chuyển đủ, không cần chờ holdTimer */
+      if (!dragging) {
+        clearTimeout(holdTimer);
+        dragging = true;
+        fab.classList.add('dragging');
+      }
+    }
+    if (dragging && hasMoved) {
+      applyPos(ex - offsetX, ey - offsetY);
+    }
+  }
+
+  function onUpGlobal() {
+    clearTimeout(holdTimer);
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup',   onMouseUp);
+    document.removeEventListener('touchmove', onTouchMove);
+    document.removeEventListener('touchend',  onTouchEnd);
+    fab.classList.remove('dragging');
+    const wasDragging = dragging && hasMoved;
+    dragging = false;
+    /* nếu không di chuyển → tính là click → mở voice sheet */
+    if (!wasDragging) vOpenSheet();
+  }
+
+  function startHold(ex, ey) {
+    startX  = ex; startY = ey;
+    hasMoved = false;
+    const rect = fab.getBoundingClientRect();
+    offsetX = ex - rect.left;
+    offsetY = ey - rect.top;
+    holdTimer = setTimeout(() => {
+      dragging = true;
+      fab.classList.add('dragging');
+    }, HOLD_MS);
+  }
+
+  /* Mouse */
+  function onMouseMove(e) { onMoveGlobal(e.clientX, e.clientY); }
+  function onMouseUp()    { onUpGlobal(); }
+  fab.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    startHold(e.clientX, e.clientY);
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup',   onMouseUp);
+  });
+
+  /* Touch */
+  function onTouchMove(e) {
+    const t = e.touches[0];
+    /* Luôn ngăn scroll khi đang trong session drag (dù chưa activate dragging)
+       để tránh browser scroll cuỗn trang trước khi timer kích hoạt */
+    e.preventDefault();
+    onMoveGlobal(t.clientX, t.clientY);
+  }
+  function onTouchEnd() { onUpGlobal(); }
+  fab.addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    startHold(t.clientX, t.clientY);
+    /* passive: false BẮT BUỘC để preventDefault() trong touchmove có tác dụng */
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend',  onTouchEnd);
+  }, { passive: false });   /* passive: false để cho phép preventDefault ngay tại touchstart nếu cần */
+})();

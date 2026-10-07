@@ -17,7 +17,7 @@ Cuối ca, Quản lý xem bảng đối soát cho các món **đếm số lượ
 
 - Chỉ đối soát món có `soluongton` khác NULL — khớp Out of Scope của US-08 ("chỉ quản lý tồn theo đơn vị món thành phẩm", không tính định mức nguyên liệu).
 - **Kỳ của ca:** từ lúc chốt phiếu gần nhất (lần đầu: 00:00 giờ Việt Nam hôm nay) đến lúc chốt phiếu này.
-- **Tồn đầu ca (A):** chụp giá trị `thucdon.soluongton` lúc tạo phiếu. Giả định: hiện chưa có luồng chốt đơn tự trừ `soluongton`, nên giá trị này = tồn thực tế của ca trước + hàng nhập thêm (cập nhật qua `PATCH /menu/items/{id}/stock`). Khi luồng chốt đơn tự trừ tồn được làm, cần xem lại cách lấy A.
+- **Tồn đầu ca (A):** = `thucdon.soluongton` lúc tạo phiếu **+ số đã bán từ đầu kỳ đến lúc tạo phiếu**. Cập nhật 2026-10-07: gửi bếp nay tự trừ `soluongton` (`story-spec-tru-kho-tu-dong.md`), nên phải cộng lại phần đã bán để ra tồn đầu kỳ, tránh trừ hai lần khi tính C = A − B. Hàng nhập thêm trong ca (`PATCH /menu/items/{id}/stock`) vẫn được tính vào A.
 - **Đã bán (B):** tổng `chitietmon.soluong` của món đó có `giogoimon` trong kỳ, bỏ qua món `da_huy` và hóa đơn `da_huy`.
 - **Tồn lý thuyết (C) = A − B.** **Chênh lệch = Tồn thực tế − C** (âm = hao hụt, dương = dư).
 

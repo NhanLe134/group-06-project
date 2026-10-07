@@ -15,7 +15,9 @@ class MenuItemOut(BaseModel):
     category: str | None
     status: str
     stock: int | None
+    bestseller: bool = False
     listed: bool = True
+    portions: int | None = None  # số phần còn làm được (story-spec-tru-kho-tu-dong.md)
 
     @classmethod
     def from_thucdon(cls, mon: ThucDon) -> "MenuItemOut":
@@ -28,7 +30,9 @@ class MenuItemOut(BaseModel):
             category=mon.phanloai,
             status="out_of_stock" if mon.het_hang else "available",
             stock=mon.soluongton,
+            bestseller=bool(mon.banchay),
             listed=mon.trangthaiban is not False,
+            portions=mon.so_phan_con,
         )
 
 
@@ -108,6 +112,7 @@ class MenuRead(BaseModel):
     image_url: str | None
     is_available: bool
     stock: int | None = None
+    portions: int | None = None
     ingredients: str | None = None
     spicy: str | None = None
     diet: str | None = None
@@ -124,6 +129,7 @@ class MenuRead(BaseModel):
             image_url=mon.anhminhhoa,
             is_available=not mon.het_hang,
             stock=mon.soluongton,
+            portions=mon.so_phan_con,
             ingredients=mon.thanhphan,
             spicy=mon.docay,
             diet=mon.loaimon,

@@ -74,10 +74,12 @@ function renderMenu() {
         if (search && !item.name.toLocaleLowerCase('vi').includes(search)) return false;
         if (menuFilters.status !== 'all' && item.status !== menuFilters.status) return false;
         if (menuFilters.stock !== 'all') {
-            if (item.category !== 'Đồ uống') return false;
-            if (menuFilters.stock === 'out' && item.stock !== 0) return false;
-            if (menuFilters.stock === 'low' && !(item.stock > 0 && item.stock < 20)) return false;
-            if (menuFilters.stock === 'available' && item.stock < 20) return false;
+            // Số còn bán được: món mua sẵn = số lượng tồn, món chế biến = số phần theo nguyên liệu
+            const qty = item.stock ?? item.portions;
+            if (qty == null) return false;
+            if (menuFilters.stock === 'out' && qty !== 0) return false;
+            if (menuFilters.stock === 'low' && !(qty > 0 && qty < 20)) return false;
+            if (menuFilters.stock === 'available' && qty < 20) return false;
         }
         return true;
     });
@@ -92,7 +94,7 @@ function renderMenu() {
             <td>${item.category}</td>
             <td>${item.price.toLocaleString('vi-VN')}đ</td>
             <td><span class="badge ${item.statusClass}">${item.status}</span></td>
-            <td>${item.category === 'Đồ uống' ? `<input class="inv-input menu-stock-input" type="number" min="0" value="${item.stock ?? 0}" aria-label="Số lượng tồn" onchange="updateMenuStock('${item.id}', this.value)">` : '<span class="stock-na">—</span>'}</td>
+            <td>${item.stock != null ? `<input class="inv-input menu-stock-input" type="number" min="0" value="${item.stock}" aria-label="Số lượng tồn" onchange="updateMenuStock('${item.id}', this.value)">` : `<span class="stock-na" title="Món chế biến — tính theo nguyên liệu">${item.portions != null ? `${item.portions} phần (theo NL)` : 'Chưa có công thức'}</span>`}</td>
             <td><div class="menu-row-actions"><button class="btn-icon" title="Xem chi tiết" aria-label="Xem chi tiết" onclick="showMenuDetail('${item.id}')"><i class="ph-bold ph-eye"></i></button><button class="btn-icon" title="Sửa món" aria-label="Sửa món" onclick="openEditMenuModal('${item.id}')"><i class="ph-bold ph-pencil-simple"></i></button><button class="btn-icon danger-icon" title="Xóa món" aria-label="Xóa món" onclick="deleteMenu('${item.id}')"><i class="ph-bold ph-trash"></i></button></div></td>
         `;
         menuTableBody.appendChild(tr);
@@ -100,7 +102,8 @@ function renderMenu() {
 }
 
 window.updateMenuStock = function(id, value) {
-    menuRequest('PATCH', `/items/${encodeURIComponent(id)}/stock`, { stock: Math.max(0, Number.parseInt(value, 10) || 0) })
+    const stock = value.trim() === '' ? null : Math.max(0, Number.parseInt(value, 10) || 0);
+    menuRequest('PATCH', `/items/${encodeURIComponent(id)}/stock`, { stock })
         .then(loadMenuItems)
         .catch(error => showToast('Không thể cập nhật tồn kho', error.message, 'danger'));
 };
@@ -112,8 +115,6 @@ window.showMenuDetail = function(id) {
     const dietLabel = item.diet === 'Chay'
         ? '<span style="background:#DCFCE7;color:#15803D;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">🥦 Chay</span>'
         : '<span style="background:#FEE2E2;color:#B91C1C;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">🥩 Mặn</span>';
-
-    const isDrink = item.category === 'Đồ uống';
 
     document.getElementById('menu-detail-body').innerHTML = `
         <div class="modal-body">
@@ -128,11 +129,10 @@ window.showMenuDetail = function(id) {
                 <input type="text" class="form-control" value="${item.category}" readonly>
             </div>
 
-            ${isDrink ? `
             <div class="form-group">
                 <label>Số lượng tồn</label>
-                <input type="text" class="form-control" value="${item.stock ?? 0}" readonly>
-            </div>` : ''}
+                <input type="text" class="form-control" value="${item.stock ?? 'Chế biến — tính theo nguyên liệu'}" readonly>
+            </div>
 
             <div class="form-group">
                 <label>Giá bán (VNĐ)</label>
@@ -215,9 +215,11 @@ window.openEditMenuModal = function(id) {
     if (dietRadio) dietRadio.checked = true;
 
     // Số lượng tồn
-    const isDrink = item.category === 'Đồ uống';
-    document.getElementById('edit-stock-group').hidden = !isDrink;
-    document.getElementById('edit-menu-stock').value = isDrink ? (item.stock ?? 0) : '';
+    // Cách tính tồn theo từng món: có số lượng tồn = Mua sẵn, không có = Chế biến (story-spec-tru-kho-tu-dong.md)
+    const muaSan = item.stock != null;
+    document.querySelector(`input[name="edit-stock-mode"][value="${muaSan ? 'mua_san' : 'che_bien'}"]`).checked = true;
+    document.getElementById('edit-menu-stock').value = muaSan ? item.stock : '';
+    applyEditStockMode();
 
     // Ảnh preview
     const preview = document.getElementById('edit-upload-preview');
@@ -239,6 +241,7 @@ window.openEditMenuModal = function(id) {
     }
     document.getElementById('edit-image-input').value = '';
 
+    loadRecipeIntoEditForm(id);
     document.getElementById('edit-menu-modal').style.display = 'flex';
 };
 
@@ -246,10 +249,13 @@ window.closeEditMenuModal = function() {
     document.getElementById('edit-menu-modal').style.display = 'none';
 };
 
-document.getElementById('edit-menu-category')?.addEventListener('change', e => {
-    const isDrink = e.target.value === 'Đồ uống';
-    document.getElementById('edit-stock-group').hidden = !isDrink;
-});
+const stockMode = name => document.querySelector(`input[name="${name}"]:checked`)?.value || 'che_bien';
+function applyEditStockMode() {
+    const muaSan = stockMode('edit-stock-mode') === 'mua_san';
+    document.getElementById('edit-stock-group').hidden = !muaSan;
+    document.getElementById('edit-recipe-section').hidden = muaSan;
+}
+document.querySelectorAll('input[name="edit-stock-mode"]').forEach(r => r.addEventListener('change', applyEditStockMode));
 
 window.previewEditImage = function(event) {
     const file = event.target.files[0];
@@ -289,6 +295,10 @@ window.submitEditMenu = async function() {
     const imageChanged = document.getElementById('edit-image-input').files.length > 0;
     const imgSrc = imageChanged ? previewEl.src : (oldItem?.image_url || null);
 
+    const muaSan = stockMode('edit-stock-mode') === 'mua_san';
+    const recipeLines = muaSan ? null : collectRecipeLines();
+    if (!muaSan && !recipeLines) return;
+
     const status = document.getElementById('edit-menu-status').value;
     const stockInput = document.getElementById('edit-menu-stock').value;
     showToast('Đang cập nhật món', 'Đang lưu thay đổi vào thực đơn...', 'primary');
@@ -296,13 +306,16 @@ window.submitEditMenu = async function() {
         const saved = await menuRequest('PUT', `/${encodeURIComponent(id)}`, {
             name, category, price: Number.parseInt(priceStr, 10), description,
             image_url: imgSrc, is_available: status === 'Đang bán',
-            stock: category === 'Đồ uống' && stockInput !== '' ? Number.parseInt(stockInput, 10) : null,
+            stock: muaSan ? Math.max(0, Number.parseInt(stockInput, 10) || 0) : null,
             ingredients,
             spicy: document.getElementById('edit-menu-spicy').value,
             diet: document.querySelector('input[name="edit-menu-diet"]:checked').value,
             allergens,
         });
-        menuItems = menuItems.map(item => item.id === id ? mapMenuItem(saved) : item);
+        // Công thức lưu riêng (story-spec-tru-kho-tu-dong.md); số phần còn đổi theo → tải lại món
+        if (recipeLines) await stockApi('PUT', `/menu/items/${encodeURIComponent(id)}/recipe`, { lines: recipeLines });
+        const refreshed = await menuRequest('GET', `/${encodeURIComponent(id)}`).catch(() => saved);
+        menuItems = menuItems.map(item => item.id === id ? mapMenuItem(refreshed) : item);
         renderMenu();
         closeEditMenuModal();
         showToast('Cập nhật thành công', `Đã lưu thay đổi cho món "${name}".`, 'success');
@@ -332,6 +345,7 @@ window.openAddMenuModal = function() {
     document.getElementById('menu-allergens').value = '';
     document.querySelector('input[name="menu-diet"][value="Mặn"]').checked = true;
     document.getElementById('menu-category').value = 'Món chính';
+    document.querySelector('input[name="menu-stock-mode"][value="che_bien"]').checked = true;
     document.getElementById('menu-stock-group').hidden = true;
     // Reset ảnh
     const preview = document.getElementById('upload-preview');
@@ -369,11 +383,11 @@ window.previewMenuImage = function(event) {
     reader.readAsDataURL(file);
 }
 
-document.getElementById('menu-category')?.addEventListener('change', event => {
-    const isDrink = event.target.value === 'Đồ uống';
-    document.getElementById('menu-stock-group').hidden = !isDrink;
-    document.getElementById('menu-stock').required = isDrink;
-});
+document.querySelectorAll('input[name="menu-stock-mode"]').forEach(r => r.addEventListener('change', () => {
+    const muaSan = stockMode('menu-stock-mode') === 'mua_san';
+    document.getElementById('menu-stock-group').hidden = !muaSan;
+    document.getElementById('menu-stock').required = muaSan;
+}));
 
 window.submitAddMenu = async function() {
     const name = document.getElementById('menu-name').value.trim();
@@ -381,7 +395,7 @@ window.submitAddMenu = async function() {
     const priceStr = document.getElementById('menu-price').value.trim();
     const stock = document.getElementById('menu-stock').value;
     const description = document.getElementById('menu-description').value.trim();
-    const isDrink = category === 'Đồ uống';
+    const isDrink = stockMode('menu-stock-mode') === 'mua_san';   // món mua sẵn: đếm theo số lượng
 
     // Validate bắt buộc (*)
     if (!name) { showToast('Lỗi nhập liệu', 'Vui lòng nhập Tên món!', 'danger'); document.getElementById('menu-name').focus(); return; }
@@ -403,7 +417,7 @@ window.submitAddMenu = async function() {
         const created = await menuRequest('POST', '', {
             name, category, price: Number.parseInt(priceStr, 10), description,
             image_url: imgSrc, is_available: true,
-            stock: isDrink ? (Number.parseInt(stock, 10) || 0) : null,
+            stock: isDrink ? Math.max(0, Number.parseInt(stock, 10) || 0) : null,   // Chế biến → null (theo công thức)
             ingredients,
             spicy: document.getElementById('menu-spicy').value,
             diet: document.querySelector('input[name="menu-diet"]:checked').value,
@@ -454,39 +468,178 @@ window.syncMenuToAI = function() {
 }
 
 // ==========================================
-// NGHIỆP VỤ: THỰC PHẨM (NGUYÊN LIỆU)
+// NGHIỆP VỤ: THỰC PHẨM (NGUYÊN LIỆU) + CÔNG THỨC MÓN — trừ kho tự động
+// Spec: vault/06-Engineering/story-spec-tru-kho-tu-dong.md (API /inventory/ingredients, /menu/items/{id}/recipe)
 // ==========================================
-let ingredientsData = [
-    { id: 'NVL001', name: 'Thịt bò Mỹ', unit: 'Kg', category: 'Thịt tươi sống' },
-    { id: 'NVL002', name: 'Gạo ST25', unit: 'Kg', category: 'Nông sản' }
-];
+const STOCK_BASE = (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || 'http://localhost:8000';
+let ingredientsData = [];
 
-function renderIngredients() {
-    const tbody = document.querySelector('#ingredients-table tbody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    ingredientsData.forEach(item => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${item.id}</td>
-            <td><b>${item.name}</b></td>
-            <td>${item.unit}</td>
-            <td>${item.category}</td>
-            <td>
-                <button class="btn-icon" title="Sửa" onclick="showToast('Tính năng', 'Tính năng sửa thực phẩm đang được bảo trì.', 'warning')"><i class="ph-bold ph-pencil-simple"></i></button>
-                <button class="btn-icon" style="color:var(--color-danger)" title="Xóa" onclick="deleteIngredient('${item.id}')"><i class="ph-bold ph-trash"></i></button>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
+async function stockApi(method, path, body) {
+    let res;
+    try {
+        res = await fetch(STOCK_BASE + path, {
+            method,
+            headers: body ? { 'Content-Type': 'application/json' } : undefined,
+            body: body ? JSON.stringify(body) : undefined,
+        });
+    } catch {
+        throw new Error('Không kết nối được máy chủ. Kiểm tra backend đang chạy.');
+    }
+    if (res.status === 204) return null;
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+        throw new Error((data && (data.message || (Array.isArray(data.detail) ? 'Dữ liệu nhập không hợp lệ' : data.detail))) || `Lỗi máy chủ (HTTP ${res.status})`);
+    }
+    return data;
 }
 
-window.deleteIngredient = function(id) {
-    if(confirm('Bạn có chắc chắn muốn xóa nguyên liệu này?')) {
-        ingredientsData = ingredientsData.filter(i => i.id !== id);
-        renderIngredients();
-        showToast('Xóa thành công', 'Nguyên liệu đã bị xóa.', 'success');
+const fmtQty = n => Number(n).toLocaleString('vi-VN', { maximumFractionDigits: 3 });
+
+async function loadIngredients() {
+    ingredientsData = await stockApi('GET', '/inventory/ingredients');
+    return ingredientsData;
+}
+
+async function renderIngredients() {
+    const tbody = document.querySelector('#ingredients-table tbody');
+    if (!tbody) return;
+    try {
+        await loadIngredients();
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="inv-empty">${invEsc(err.message)} <button class="btn btn-outline" onclick="renderIngredients()">Thử lại</button></td></tr>`;
+        return;
     }
+    drawIngredients();
+}
+
+function drawIngredients() {
+    const tbody = document.querySelector('#ingredients-table tbody');
+    const q = (document.getElementById('ing-search')?.value || '').trim().toLowerCase();
+    const rows = ingredientsData.filter(i => !q || i.name.toLowerCase().includes(q) || i.id.toLowerCase().includes(q));
+    if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="inv-empty">${ingredientsData.length ? 'Không có nguyên liệu khớp tìm kiếm.' : 'Chưa có nguyên liệu nào. Bấm "Thêm nguyên liệu" để bắt đầu.'}</td></tr>`;
+        return;
+    }
+    tbody.innerHTML = rows.map(item => `
+        <tr>
+            <td>${invEsc(item.id)}</td>
+            <td><b>${invEsc(item.name)}</b></td>
+            <td>${invEsc(item.unit)}</td>
+            <td><span class="badge ${item.stock > 0 ? 'badge-success' : 'badge-danger'}">${fmtQty(item.stock)} ${invEsc(item.unit)}</span></td>
+            <td>${item.used_in.length ? invEsc(item.used_in.join(', ')) : '<span class="stock-na">Chưa dùng</span>'}</td>
+            <td>
+                <div class="menu-row-actions">
+                    <button class="btn-icon" title="Sửa / nhập hàng" onclick="openIngredientModal('${invEsc(item.id)}')"><i class="ph-bold ph-pencil-simple"></i></button>
+                    <button class="btn-icon danger-icon" title="Xóa" onclick="deleteIngredient('${invEsc(item.id)}')"><i class="ph-bold ph-trash"></i></button>
+                </div>
+            </td>
+        </tr>`).join('');
+}
+document.getElementById('ing-search')?.addEventListener('input', drawIngredients);
+
+window.openIngredientModal = function(id) {
+    const item = id ? ingredientsData.find(i => i.id === id) : null;
+    document.getElementById('ing-modal-title').innerHTML = `<i class="ph-bold ph-carrot"></i> ${item ? 'Sửa nguyên liệu / Nhập hàng' : 'Thêm nguyên liệu'}`;
+    document.getElementById('ing-id').value = item ? item.id : '';
+    document.getElementById('ing-name').value = item ? item.name : '';
+    document.getElementById('ing-unit').value = item ? item.unit : '';
+    document.getElementById('ing-stock').value = item ? item.stock : '';
+    document.getElementById('ing-error').textContent = '';
+    document.getElementById('ingredient-modal').style.display = 'flex';
+    document.getElementById('ing-name').focus();
+};
+
+window.closeIngredientModal = function() {
+    document.getElementById('ingredient-modal').style.display = 'none';
+};
+
+window.submitIngredient = async function() {
+    const id = document.getElementById('ing-id').value;
+    const name = document.getElementById('ing-name').value.trim();
+    const unit = document.getElementById('ing-unit').value.trim();
+    const stockStr = document.getElementById('ing-stock').value.trim();
+    const stock = Number(stockStr);
+    const error = document.getElementById('ing-error');
+    if (!name || !unit || stockStr === '') { error.textContent = 'Vui lòng nhập đủ tên, đơn vị và tồn kho.'; return; }
+    if (!Number.isFinite(stock) || stock < 0) { error.textContent = 'Tồn kho phải là số không âm.'; return; }
+    const btn = document.getElementById('ing-submit');
+    btn.disabled = true;
+    try {
+        await stockApi(id ? 'PUT' : 'POST', `/inventory/ingredients${id ? '/' + encodeURIComponent(id) : ''}`, { name, unit, stock });
+        closeIngredientModal();
+        showToast(id ? 'Đã cập nhật' : 'Đã thêm', `Nguyên liệu "${name}" đã được lưu.`, 'success');
+        renderIngredients();
+        loadMenuItems();   // số phần còn của các món dùng nguyên liệu này có thể đổi
+    } catch (err) {
+        error.textContent = err.message;
+    } finally {
+        btn.disabled = false;
+    }
+};
+
+window.deleteIngredient = async function(id) {
+    const item = ingredientsData.find(i => i.id === id);
+    if (!item || !confirm(`Bạn có chắc chắn muốn xóa nguyên liệu "${item.name}"?`)) return;
+    try {
+        await stockApi('DELETE', `/inventory/ingredients/${encodeURIComponent(id)}`);
+        showToast('Xóa thành công', 'Nguyên liệu đã bị xóa.', 'success');
+        renderIngredients();
+    } catch (err) {
+        showToast('Không thể xóa', err.message, 'danger');
+    }
+};
+
+// ---------- Công thức trong form Sửa món ----------
+function recipeLineHtml(line = {}) {
+    const options = ingredientsData.map(i =>
+        `<option value="${invEsc(i.id)}" data-unit="${invEsc(i.unit)}" ${i.id === line.ingredient_id ? 'selected' : ''}>${invEsc(i.name)} (${invEsc(i.unit)})</option>`).join('');
+    const unit = (ingredientsData.find(i => i.id === line.ingredient_id) || ingredientsData[0] || {}).unit || '';
+    return `
+        <div class="recipe-line">
+            <select class="form-control recipe-ingredient" aria-label="Nguyên liệu" onchange="this.closest('.recipe-line').querySelector('.recipe-unit').textContent = this.selectedOptions[0]?.dataset.unit || ''">${options}</select>
+            <input type="number" class="form-control recipe-qty" min="0" step="any" placeholder="Định lượng" aria-label="Định lượng cho 1 phần" value="${line.quantity ?? ''}">
+            <span class="recipe-unit">${invEsc(unit)}</span>
+            <button type="button" class="btn-icon danger-icon" title="Bỏ khỏi công thức" onclick="this.closest('.recipe-line').remove()"><i class="ph-bold ph-x"></i></button>
+        </div>`;
+}
+
+window.addRecipeLine = function() {
+    if (!ingredientsData.length) {
+        showToast('Chưa có nguyên liệu', 'Hãy thêm nguyên liệu ở tab Thực phẩm trước.', 'warning');
+        return;
+    }
+    document.getElementById('edit-recipe-lines').insertAdjacentHTML('beforeend', recipeLineHtml());
+};
+
+async function loadRecipeIntoEditForm(id) {
+    const box = document.getElementById('edit-recipe-lines');
+    const portions = document.getElementById('edit-recipe-portions');
+    box.innerHTML = '<p class="recipe-hint">Đang tải công thức...</p>';
+    portions.textContent = '';
+    try {
+        const [, recipe] = await Promise.all([loadIngredients(), stockApi('GET', `/menu/items/${encodeURIComponent(id)}/recipe`)]);
+        box.innerHTML = recipe.lines.map(recipeLineHtml).join('');
+        portions.textContent = recipe.portions == null ? '' : `· Còn làm được ${recipe.portions} phần`;
+    } catch (err) {
+        box.innerHTML = `<p class="inv-field-error">${invEsc(err.message)}</p>`;
+    }
+}
+
+/** Đọc các dòng công thức; trả null nếu dữ liệu sai (đã báo lỗi). */
+function collectRecipeLines() {
+    const lines = [...document.querySelectorAll('#edit-recipe-lines .recipe-line')].map(row => ({
+        ingredient_id: row.querySelector('.recipe-ingredient').value,
+        quantity: Number(row.querySelector('.recipe-qty').value),
+    }));
+    if (lines.some(l => !(l.quantity > 0))) {
+        showToast('Lỗi công thức', 'Định lượng mỗi nguyên liệu phải lớn hơn 0.', 'danger');
+        return null;
+    }
+    if (new Set(lines.map(l => l.ingredient_id)).size !== lines.length) {
+        showToast('Lỗi công thức', 'Mỗi nguyên liệu chỉ nhập 1 lần trong công thức.', 'danger');
+        return null;
+    }
+    return lines;
 }
 
 // ==========================================

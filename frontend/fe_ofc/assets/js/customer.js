@@ -106,20 +106,27 @@ function renderCard(d) {
   const thumb = d.image_url
     ? `<img class="menu-thumb-img" src="${esc(d.image_url)}" alt="${esc(d.name)}">`
     : '<i class="ph-duotone ph-fork-knife"></i>';
+  /* Badge bán chạy overlay góc ảnh — đặt trong h3 sẽ bị cắt bởi ellipsis tên món */
+  const hotBadge = d.bestseller
+    ? '<span class="badge-hot"><i class="ph-fill ph-fire"></i>Bán chạy</span>'
+    : '';
   return `
     <article class="menu-card ${oos ? 'oos' : ''}">
-      <div class="menu-thumb">${thumb}</div>
+      ${hotBadge}
+      <div class="menu-thumb-wrap">
+        <div class="menu-thumb">${thumb}</div>
+      </div>
       <div class="menu-info">
-        <h3>${esc(d.name)}</h3>
+        <h3 title="${esc(d.name)}">${esc(d.name)}</h3>
         <p class="menu-price">${fmtVND(d.price)}</p>
-        ${oos ? '<span class="badge-oos">Hết hàng</span>' : ''}
       </div>
       ${q === 0
-        ? `<button class="btn-add" data-add="${d.id}" ${oos ? 'disabled' : ''}
-            aria-label="Thêm ${d.name} vào đơn"
-            title="${oos ? 'Món này hiện đã hết, vui lòng chọn món khác.' : 'Thêm vào Order Draft'}">
-            <i class="ph-bold ph-plus"></i>
-          </button>`
+        ? (oos
+          ? '<span class="btn-soldout" title="Món này hiện đã hết, vui lòng chọn món khác.">Hết</span>'
+          : `<button class="btn-add" data-add="${d.id}"
+              aria-label="Thêm ${d.name} vào đơn" title="Thêm vào Order Draft">
+              <i class="ph-bold ph-plus"></i>
+            </button>`)
         : `<div class="qty-ctrl" aria-label="${d.name} đã có ${q} phần trong giỏ">
             <button data-dec-menu="${d.id}" aria-label="Giảm ${d.name}"><i class="ph-bold ph-minus"></i></button>
             <span class="qty-num">${q}</span>
@@ -150,6 +157,24 @@ function renderMenu() {
       <p>Không tìm thấy món phù hợp. Thử từ khóa khác nhé!</p>
     </div>`;
   updateActiveChip();
+}
+
+/* Hiệu ứng tải menu: khung thẻ món nhấp nháy (shimmer) trong lúc chờ GET /menu */
+function renderMenuSkeleton() {
+  $('#menu-grid').innerHTML = `
+    <div class="menu-loading-note">
+      <i class="ph-bold ph-circle-notch"></i> Đang tải thực đơn...
+    </div>
+    <div class="menu-grid">
+      ${Array.from({ length: 6 }, () => `
+        <div class="sk-card" aria-hidden="true">
+          <div class="sk-thumb"></div>
+          <div class="sk-lines">
+            <div class="sk-line"></div>
+            <div class="sk-line w60"></div>
+          </div>
+        </div>`).join('')}
+    </div>`;
 }
 
 /* Scroll-spy: lướt đến nhóm nào thì chip phân loại đó active (nền cam) */
@@ -556,6 +581,7 @@ setText('#success-table', tableName);
 }
 renderCategories();
 renderStickyBar();
+renderMenuSkeleton();
 loadMenu().catch(e => {
   $('#menu-grid').innerHTML = `
     <div class="menu-empty">
@@ -564,3 +590,14 @@ loadMenu().catch(e => {
       <button class="btn-primary" style="margin-top:12px;" onclick="loadMenu()">Tải lại thực đơn</button>
     </div>`;
 });
+
+/* US-03 AC3: Bếp/Quản lý báo Hết hàng / Còn hàng → tải lại menu ngay, không cần F5.
+   Món hết hàng đang nằm trong bản nháp sẽ hiện cảnh báo và khóa nút gửi bếp. */
+if (typeof subscribeChannel === 'function') {
+  subscribeChannel('menu:oos', msg => {
+    if (msg.event !== 'ITEM_OOS_BROADCAST') return;
+    loadMenu()
+      .then(() => { renderStickyBar(); renderDraft(); })
+      .catch(() => { /* giữ menu hiện tại nếu tải lại lỗi */ });
+  });
+}
