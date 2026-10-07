@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Màn hình Thu ngân Cashier (Nhàn)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/cashier.css">
+</head>
+<body class="cashier-app">
+  <header class="topbar premium-header">
+    <div class="brand-row">
+      <div class="brand-logo">
+        <i class="ph-fill ph-storefront"></i>
+        <span class="brand">Smart Ordering</span>
+      </div>
+      <div class="header-title-center">
+        <b>Thu ngân — Thanh toán &amp; Đóng bàn (US-05)</b>
+      </div>
+      <div class="header-right">
+        <div class="cashier-profile">
+          <img src="https://ui-avatars.com/api/?name=Cashier&background=0D5C75&color=fff" alt="Avatar" class="avatar">
+          <span>Ca Chiều (Quầy)</span>
+        </div>
+        <a href="../index.html" class="btn-logout"><i class="ph-bold ph-sign-out"></i> Thoát</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="cashier-layout">
+    <!-- Cột trái: danh sách hóa đơn các bàn đang ăn -->
+    <aside class="table-panel">
+      <div class="panel-head">
+        <h3><i class="ph-duotone ph-squares-four"></i> Danh sách bàn</h3>
+        <span class="badge" id="occupied-count">0</span>
+      </div>
+      <div class="table-list" id="table-list"></div>
+      <div class="sim-box">
+        <label class="sim-toggle">
+          <input type="checkbox" id="err-sim">
+          <span>Mô phỏng lỗi cổng thanh toán (AC5)</span>
+        </label>
+      </div>
+    </aside>
+
+    <!-- Cột phải: chi tiết hóa đơn + thanh toán — render tự động -->
+    <section class="detail-panel" id="detail-panel"></section>
+  </main>
+
+  <!-- Toast thông báo (AC4/AC5) -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script src="../assets/js/cashier.js"></script>
+</body>
+</html>

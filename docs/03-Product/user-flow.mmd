@@ -1,0 +1,31 @@
+graph TD
+    A[Khách hàng ngồi vào bàn] --> B[Quét mã QR trên bàn]
+    
+    %% Error Path được bổ sung theo lệnh của BA
+    B --> C{Trạng thái quét QR}
+    C -- Lỗi mạng/Hỏng QR --> Z[Gọi nhân viên phục vụ]
+    Z --> Z1[Nhân viên dùng Tablet Voice-to-order]
+    Z1 --> F
+    
+    %% Luồng chính (Happy Path)
+    C -- Thành công --> C1[Mở Menu điện tử E-Menu]
+    C1 --> D{Khách cần tư vấn món?}
+    D -- Có --> E[Chat với AI Assistant]
+    E --> F[Thêm món vào Order Draft]
+    D -- Không --> F
+    F --> G[Kiểm tra Order Draft và Giá tiền]
+    G --> H[Explicit Confirmation - Bấm Xác Nhận]
+    H --> I[Đơn tự động đẩy xuống KDS Bếp]
+    I --> J[Bếp hoàn thành món & Bấm Done]
+    J --> K[App Phục vụ báo Ting Ting]
+    K --> L[Phục vụ bưng món lên bàn]
+    L --> M[Khách ăn xong, bấm Yêu cầu thanh toán]
+    M --> N[Màn hình hiện mã QR MoMo/VNPAY]
+    
+    %% Error path thanh toán được bổ sung
+    N --> N1{Trạng thái Thanh toán}
+    N1 -- Lỗi ngân hàng --> Z2[Thanh toán tiền mặt tại quầy]
+    Z2 --> P
+    N1 -- Thành công --> O[Khách thanh toán thành công qua app]
+    
+    O --> P[Đóng bàn - Chuyển sang trạng thái Cần dọn]

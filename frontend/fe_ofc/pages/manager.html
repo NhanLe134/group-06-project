@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Màn hình Quản lý (Manager Portal)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  
+  <link rel="stylesheet" href="../assets/css/global.css">
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/manager.css">
+</head>
+<body class="manager-app">
+
+  <div class="manager-layout">
+    
+    <!-- Sidebar Điều hướng -->
+    <aside class="sidebar">
+      <div class="brand-logo">
+        <i class="ph-fill ph-storefront"></i>
+        <span>Smart Ordering</span>
+      </div>
+      
+      <p class="nav-label">TRUNG TÂM QUẢN LÝ</p>
+      <nav class="nav-menu">
+        <a href="#" class="nav-item active" data-tab="tab-dashboard">
+            <i class="ph-bold ph-chart-pie-slice"></i> <span>Tổng quan (Dashboard)</span>
+        </a>
+        <a href="#" class="nav-item" data-tab="tab-menu-cms">
+            <i class="ph-bold ph-book-open-text"></i> <span>Thực đơn (CMS)</span>
+        </a>
+        <a href="#" class="nav-item" data-tab="tab-ingredients">
+            <i class="ph-bold ph-carrot"></i> <span>Thực phẩm</span>
+        </a>
+        <a href="#" class="nav-item" data-tab="tab-inventory">
+            <i class="ph-bold ph-clipboard-text"></i> <span>Phiếu Kiểm kê</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+          <div class="user-profile">
+              <img src="https://ui-avatars.com/api/?name=Manager&background=FF5A36&color=fff" alt="Avatar" class="avatar">
+              <div class="user-info">
+                  <b>Quản lý</b>
+                  <span>Admin</span>
+              </div>
+          </div>
+      </div>
+    </aside>
+
+    <!-- Khu vực Nội dung chính -->
+    <main class="main-content">
+        <!-- Topbar chung -->
+        <header class="topbar">
+            <h2 id="page-title">Tổng quan Doanh thu (Dashboard)</h2>
+            <div class="header-actions">
+                <button class="btn-icon"><i class="ph-bold ph-bell-ringing"></i></button>
+                <a href="../index.html"><button class="btn-logout"><i class="ph-bold ph-sign-out"></i> Thoát Cổng</button></a>
+            </div>
+        </header>
+
+        <div class="content-wrapper">
+            
+            <!-- TAB 1: DASHBOARD -->
+            <div id="tab-dashboard" class="tab-pane active">
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: #E0F2FE; color: #0284C7;"><i class="ph-fill ph-money"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Doanh thu hôm nay</span>
+                            <span class="kpi-value">12.540.000đ</span>
+                            <span class="kpi-trend positive"><i class="ph-bold ph-trend-up"></i> +15% so với hôm qua</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: #FEF3C7; color: #D97706;"><i class="ph-fill ph-receipt"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Tổng đơn hàng</span>
+                            <span class="kpi-value">42 Đơn</span>
+                            <span class="kpi-trend positive"><i class="ph-bold ph-trend-up"></i> +5 đơn</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: #FCE7F3; color: #DB2777;"><i class="ph-fill ph-users"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Tỷ lệ lấp đầy bàn (Occupancy)</span>
+                            <span class="kpi-value">85%</span>
+                            <span class="kpi-trend negative"><i class="ph-bold ph-trend-down"></i> Bàn trống rất ít</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-panels">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="ph-bold ph-chart-bar"></i> Doanh thu theo giờ</h3>
+                        </div>
+                        <div class="panel-body">
+                            <div class="mock-chart">
+                                <!-- Giả lập biểu đồ cột bằng CSS -->
+                                <div class="bar" style="height: 30%;" title="10:00 - 5tr"></div>
+                                <div class="bar" style="height: 50%;" title="11:00 - 8tr"></div>
+                                <div class="bar" style="height: 90%;" title="12:00 - 15tr"></div>
+                                <div class="bar" style="height: 60%;" title="13:00 - 10tr"></div>
+                                <div class="bar" style="height: 20%;" title="14:00 - 3tr"></div>
+                                <div class="bar" style="height: 40%;" title="15:00 - 6tr"></div>
+                            </div>
+                            <div class="chart-labels">
+                                <span>10h</span><span>11h</span><span>12h</span><span>13h</span><span>14h</span><span>15h</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="ph-bold ph-star"></i> Top Món Bán Chạy (Bestsellers)</h3>
+                        </div>
+                        <div class="panel-body p-0">
+                            <ul class="top-list">
+                                <li>
+                                    <span class="rank rank-1">1</span>
+                                    <div class="top-info"><b>Lẩu Thái Tomyum</b><small>15 suất</small></div>
+                                    <span class="top-rev">5.250.000đ</span>
+                                </li>
+                                <li>
+                                    <span class="rank rank-2">2</span>
+                                    <div class="top-info"><b>Bò Lúc Lắc</b><small>12 suất</small></div>
+                                    <span class="top-rev">1.440.000đ</span>
+                                </li>
+                                <li>
+                                    <span class="rank rank-3">3</span>
+                                    <div class="top-info"><b>Cơm Chiên Hải Sản</b><small>10 suất</small></div>
+                                    <span class="top-rev">1.100.000đ</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: MENU CMS -->
+            <div id="tab-menu-cms" class="tab-pane">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="search-box">
+                            <i class="ph-bold ph-magnifying-glass"></i>
+                            <input type="text" placeholder="Tìm kiếm món ăn...">
+                        </div>
+                        <div class="actions">
+                            <button class="btn btn-primary" onclick="openAddMenuModal()"><i class="ph-bold ph-plus"></i> Thêm món mới</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="menu-table">
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Hình ảnh</th>
+                                    <th>Tên món ăn</th>
+                                    <th>Danh mục</th>
+                                    <th>Giá bán <details class="table-filter"><summary aria-label="Lọc giá bán"><i class="ph-bold ph-funnel"></i></summary><div class="filter-menu"><button type="button" data-filter="price" data-value="all">Tất cả</button><button type="button" data-filter="price" data-value="high-low">Cao đến thấp</button><button type="button" data-filter="price" data-value="low-high">Thấp đến cao</button></div></details></th>
+                                    <th>Trạng thái <details class="table-filter"><summary aria-label="Lọc trạng thái"><i class="ph-bold ph-caret-down"></i></summary><div class="filter-menu"><button type="button" data-filter="status" data-value="all">Tất cả</button><button type="button" data-filter="status" data-value="Đang bán">Đang bán</button><button type="button" data-filter="status" data-value="Tạm ẩn">Tạm ẩn</button></div></details></th>
+                                    <th>Số lượng tồn <details class="table-filter"><summary aria-label="Lọc số lượng tồn"><i class="ph-bold ph-caret-down"></i></summary><div class="filter-menu"><button type="button" data-filter="stock" data-value="all">Tất cả</button><button type="button" data-filter="stock" data-value="out">Hết hàng</button><button type="button" data-filter="stock" data-value="low">Sắp hết (&lt;20)</button><button type="button" data-filter="stock" data-value="available">Còn hàng</button></div></details></th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Render qua JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: INVENTORY — US-08 Đối soát tồn kho & Đóng ca (dữ liệu thật qua API /inventory/shifts) -->
+            <div id="tab-inventory" class="tab-pane">
+                <!-- Danh sách phiếu -->
+                <div class="panel" id="inv-list-panel">
+                    <div class="panel-header">
+                        <h3>Danh sách Phiếu Kiểm kê</h3>
+                        <button class="btn btn-primary" id="inv-create-btn" onclick="createInventoryShift()"><i class="ph-bold ph-plus"></i> Tạo Phiếu Kiểm Kê</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="inventory-sessions-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã Phiếu</th>
+                                    <th>Kỳ kiểm kê</th>
+                                    <th>Người chốt</th>
+                                    <th>Hao hụt</th>
+                                    <th>Trạng thái</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="6" class="inv-empty">Đang tải phiếu kiểm kê…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Bảng đối soát của 1 phiếu (AC1–AC4) -->
+                <div class="panel" id="inv-detail-panel" style="display: none;">
+                    <div class="panel-header">
+                        <div>
+                            <h3 id="inv-detail-title">Phiếu kiểm kê</h3>
+                            <p class="inv-period" id="inv-detail-period"></p>
+                        </div>
+                        <button class="btn btn-outline" onclick="closeInventoryDetail()"><i class="ph-bold ph-arrow-left"></i> Danh sách phiếu</button>
+                    </div>
+                    <div class="panel-body inv-note-wrap">
+                        <div class="alert alert-info inv-note">
+                            <i class="ph-bold ph-info"></i>
+                            <span>Chỉ đối soát các món <b>đếm số lượng</b> (nước uống chai/lon…). <b>Tồn lý thuyết = Tồn đầu ca − Đã bán.</b> Nhập tồn thực tế sau khi kiểm đếm; dòng hao hụt bắt buộc ghi lý do.</span>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="inv-lines-table">
+                            <thead>
+                                <tr>
+                                    <th>Món</th>
+                                    <th class="num">Tồn đầu ca (A)</th>
+                                    <th class="num">Đã bán (B)</th>
+                                    <th class="num">Tồn lý thuyết (C = A − B)</th>
+                                    <th class="num">Tồn thực tế</th>
+                                    <th class="num">Chênh lệch</th>
+                                    <th>Lý do hao hụt</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer" id="inv-detail-actions"></div>
+                </div>
+            </div>
+
+            <!-- TAB 4: INGREDIENTS (THỰC PHẨM) -->
+            <div id="tab-ingredients" class="tab-pane">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="search-box">
+                            <i class="ph-bold ph-magnifying-glass"></i>
+                            <input type="text" placeholder="Tìm kiếm nguyên liệu...">
+                        </div>
+                        <div class="actions">
+                            <button class="btn btn-primary" onclick="alert('Chức năng thêm nguyên liệu')"><i class="ph-bold ph-plus"></i> Thêm nguyên liệu</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="ingredients-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã NVL</th>
+                                    <th>Tên nguyên liệu</th>
+                                    <th>Đơn vị tính</th>
+                                    <th>Nhóm</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>NVL001</td>
+                                    <td>Thịt bò Mỹ</td>
+                                    <td>Kg</td>
+                                    <td>Thịt tươi sống</td>
+                                    <td>
+                                        <button class="btn-icon" title="Sửa"><i class="ph-bold ph-pencil-simple"></i></button>
+                                        <button class="btn-icon" style="color:var(--color-danger)" title="Xóa"><i class="ph-bold ph-trash"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>NVL002</td>
+                                    <td>Gạo ST25</td>
+                                    <td>Kg</td>
+                                    <td>Nông sản</td>
+                                    <td>
+                                        <button class="btn-icon" title="Sửa"><i class="ph-bold ph-pencil-simple"></i></button>
+                                        <button class="btn-icon" style="color:var(--color-danger)" title="Xóa"><i class="ph-bold ph-trash"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+  </div>
+
+  <!-- MODAL: THÊM MÓN MỚI -->
+  <div class="modal-overlay" id="add-menu-modal" style="display: none;">
+      <div class="modal-content form-modal">
+          <div class="modal-header modal-header--orange">
+              <h3><i class="ph-bold ph-plus-circle"></i> Thêm Món Mới vào Thực Đơn</h3>
+              <button class="btn-icon btn-icon--light" onclick="closeAddMenuModal()"><i class="ph-bold ph-x"></i></button>
+          </div>
+          <div class="modal-body">
+              <!-- Tên món -->
+              <div class="form-group">
+                  <label>Tên món ăn <span class="required">*</span></label>
+                  <input type="text" id="menu-name" class="form-control" placeholder="VD: Sườn sụn rang muối" required>
+              </div>
+
+              <!-- Danh mục -->
+              <div class="form-group">
+                  <label>Danh mục <span class="required">*</span></label>
+                  <select id="menu-category" class="form-control" required>
+                      <option value="Món chính">Món chính</option>
+                      <option value="Khai vị">Khai vị</option>
+                      <option value="Tráng miệng">Tráng miệng</option>
+                      <option value="Đồ uống">Đồ uống</option>
+                  </select>
+              </div>
+
+              <!-- Số lượng tồn — chỉ hiện khi chọn Đồ uống -->
+              <div class="form-group" id="menu-stock-group" hidden>
+                  <label for="menu-stock">Số lượng tồn</label>
+                  <input type="number" min="0" id="menu-stock" class="form-control" placeholder="Nhập số lượng tồn">
+              </div>
+
+              <!-- Giá bán -->
+              <div class="form-group">
+                  <label>Giá bán (VNĐ) <span class="required">*</span></label>
+                  <input type="number" id="menu-price" class="form-control" placeholder="VD: 150000" required>
+              </div>
+
+              <!-- Hình ảnh — cho phép tải lên -->
+              <div class="form-group">
+                  <label>Hình ảnh Minh họa</label>
+                  <div class="upload-box" id="upload-box" onclick="document.getElementById('menu-image-input').click()">
+                      <i class="ph-duotone ph-image" id="upload-icon"></i>
+                      <img id="upload-preview" src="" alt="Xem trước ảnh" style="display:none; max-height:120px; max-width:100%; border-radius:8px; margin-bottom:8px;">
+                      <p id="upload-label">Click hoặc Kéo thả ảnh vào đây</p>
+                      <input type="file" id="menu-image-input" accept="image/*" style="display:none" onchange="previewMenuImage(event)">
+                  </div>
+              </div>
+
+              <!-- Mô tả (liên kết Smart Ordering) -->
+              <div class="form-group">
+                  <label>Mô tả <span class="required">*</span></label>
+                  <textarea id="menu-description" class="form-control" rows="3" placeholder="Mô tả ngắn về món ăn..." required></textarea>
+              </div>
+
+              <!-- Thông tin phục vụ Smart Ordering -->
+              <div class="smart-ordering-section">
+                  <div class="smart-ordering-header">
+                      <i class="ph-bold ph-robot"></i>
+                      <span>Thông tin phục vụ Smart Ordering</span>
+                  </div>
+                  <div class="smart-ordering-body">
+                      <div class="form-group">
+                          <label>Thành phần <span class="required">*</span></label>
+                          <input type="text" id="menu-ingredients" class="form-control" placeholder="VD: Thịt bò, rau xà lách, cà chua..." required>
+                      </div>
+                      <div class="form-group">
+                          <label>Độ cay <span class="required">*</span></label>
+                          <select id="menu-spicy" class="form-control" required>
+                              <option value="Không cay">Không cay</option>
+                              <option value="Cay nhẹ">Cay nhẹ</option>
+                              <option value="Cay vừa">Cay vừa</option>
+                              <option value="Cay nhiều">Cay nhiều</option>
+                          </select>
+                      </div>
+                      <div class="form-group">
+                          <label>Loại món <span class="required">*</span></label>
+                          <div class="radio-group">
+                              <label class="radio-option">
+                                  <input type="radio" name="menu-diet" value="Mặn" checked> Mặn
+                              </label>
+                              <label class="radio-option">
+                                  <input type="radio" name="menu-diet" value="Chay"> Chay
+                              </label>
+                          </div>
+                      </div>
+                      <div class="form-group">
+                          <label>Thông tin dị ứng <span class="required">*</span></label>
+                          <input type="text" id="menu-allergens" class="form-control" placeholder="VD: Hải sản, đậu phộng, sữa..." required>
+                      </div>
+                  </div>
+              </div>
+          </div>
+          <div class="modal-footer">
+              <button class="btn btn-outline" onclick="closeAddMenuModal()">Hủy bỏ</button>
+              <button type="button" class="btn btn-primary" onclick="submitAddMenu()"><i class="ph-bold ph-floppy-disk"></i> Lưu</button>
+          </div>
+      </div>
+  </div>
+
+  <div class="modal-overlay" id="menu-detail-modal" style="display:none;">
+      <div class="modal-content form-modal">
+          <div class="modal-header modal-header--orange">
+              <h3><i class="ph-bold ph-eye"></i> Chi tiết món ăn</h3>
+              <button class="btn-icon btn-icon--light" onclick="closeMenuDetail()" aria-label="Đóng"><i class="ph-bold ph-x"></i></button>
+          </div>
+          <div class="modal-body modal-body--detail" id="menu-detail-body"></div>
+          <div class="modal-footer">
+              <button class="btn btn-outline" onclick="closeMenuDetail()">Đóng</button>
+              <button class="btn btn-primary" id="detail-edit-btn"><i class="ph-bold ph-pencil-simple"></i> Sửa món</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- MODAL: SỬA MÓN -->
+  <div class="modal-overlay" id="edit-menu-modal" style="display:none;">
+      <div class="modal-content form-modal">
+          <div class="modal-header modal-header--orange">
+              <h3><i class="ph-bold ph-pencil-simple"></i> Sửa Thông Tin Món Ăn</h3>
+              <button class="btn-icon btn-icon--light" onclick="closeEditMenuModal()"><i class="ph-bold ph-x"></i></button>
+          </div>
+          <div class="modal-body">
+              <input type="hidden" id="edit-menu-id">
+
+              <div class="form-group">
+                  <label>Tên món ăn <span class="required">*</span></label>
+                  <input type="text" id="edit-menu-name" class="form-control" placeholder="VD: Sườn sụn rang muối" required>
+              </div>
+
+              <div class="form-group">
+                  <label>Danh mục <span class="required">*</span></label>
+                  <select id="edit-menu-category" class="form-control" required>
+                      <option value="Món chính">Món chính</option>
+                      <option value="Khai vị">Khai vị</option>
+                      <option value="Tráng miệng">Tráng miệng</option>
+                      <option value="Đồ uống">Đồ uống</option>
+                  </select>
+              </div>
+
+              <div class="form-group" id="edit-stock-group" hidden>
+                  <label for="edit-menu-stock">Số lượng tồn</label>
+                  <input type="number" min="0" id="edit-menu-stock" class="form-control" placeholder="Nhập số lượng tồn">
+              </div>
+
+              <div class="form-group">
+                  <label>Giá bán (VNĐ) <span class="required">*</span></label>
+                  <input type="number" id="edit-menu-price" class="form-control" placeholder="VD: 150000" required>
+              </div>
+
+              <div class="form-group">
+                  <label>Trạng thái <span class="required">*</span></label>
+                  <select id="edit-menu-status" class="form-control" required>
+                      <option value="Đang bán">Đang bán</option>
+                      <option value="Tạm ẩn">Tạm ẩn</option>
+                  </select>
+              </div>
+
+              <div class="form-group">
+                  <label>Hình ảnh Minh họa</label>
+                  <div class="upload-box" id="edit-upload-box" onclick="document.getElementById('edit-image-input').click()">
+                      <i class="ph-duotone ph-image" id="edit-upload-icon"></i>
+                      <img id="edit-upload-preview" src="" alt="Xem trước ảnh" style="display:none; max-height:120px; max-width:100%; border-radius:8px; margin-bottom:8px;">
+                      <p id="edit-upload-label">Click hoặc Kéo thả ảnh vào đây</p>
+                      <input type="file" id="edit-image-input" accept="image/*" style="display:none" onchange="previewEditImage(event)">
+                  </div>
+              </div>
+
+              <div class="form-group">
+                  <label>Mô tả <span class="required">*</span></label>
+                  <textarea id="edit-menu-description" class="form-control" rows="3" placeholder="Mô tả ngắn về món ăn..." required></textarea>
+              </div>
+
+              <div class="smart-ordering-section">
+                  <div class="smart-ordering-header">
+                      <i class="ph-bold ph-robot"></i>
+                      <span>Thông tin phục vụ Smart Ordering</span>
+                  </div>
+                  <div class="smart-ordering-body">
+                      <div class="form-group">
+                          <label>Thành phần <span class="required">*</span></label>
+                          <input type="text" id="edit-menu-ingredients" class="form-control" placeholder="VD: Thịt bò, rau xà lách, cà chua..." required>
+                      </div>
+                      <div class="form-group">
+                          <label>Độ cay <span class="required">*</span></label>
+                          <select id="edit-menu-spicy" class="form-control" required>
+                              <option value="Không cay">Không cay</option>
+                              <option value="Cay nhẹ">Cay nhẹ</option>
+                              <option value="Cay vừa">Cay vừa</option>
+                              <option value="Cay nhiều">Cay nhiều</option>
+                          </select>
+                      </div>
+                      <div class="form-group">
+                          <label>Loại món <span class="required">*</span></label>
+                          <div class="radio-group">
+                              <label class="radio-option"><input type="radio" name="edit-menu-diet" value="Mặn"> Mặn</label>
+                              <label class="radio-option"><input type="radio" name="edit-menu-diet" value="Chay"> Chay</label>
+                          </div>
+                      </div>
+                      <div class="form-group">
+                          <label>Thông tin dị ứng <span class="required">*</span></label>
+                          <input type="text" id="edit-menu-allergens" class="form-control" placeholder="VD: Hải sản, đậu phộng, sữa..." required>
+                      </div>
+                  </div>
+              </div>
+          </div>
+          <div class="modal-footer">
+              <button class="btn btn-outline" onclick="closeEditMenuModal()">Hủy bỏ</button>
+              <button type="button" class="btn btn-primary" onclick="submitEditMenu()"><i class="ph-bold ph-floppy-disk"></i> Lưu thay đổi</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- MODAL: PIN QUẢN LÝ KHI CHỐT CA (US-08 AC5 — Manager Override) -->
+  <div class="modal-overlay" id="inv-pin-modal" style="display: none;">
+      <div class="modal-content form-modal">
+          <div class="modal-header modal-header--orange">
+              <h3><i class="ph-bold ph-lock-key"></i> Xác nhận Đóng ca</h3>
+              <button class="btn-icon btn-icon--light" onclick="closeInventoryPinModal()" aria-label="Đóng"><i class="ph-bold ph-x"></i></button>
+          </div>
+          <div class="modal-body">
+              <p class="inv-pin-text">Cần quyền Quản lý. Vui lòng yêu cầu Quản lý nhập mã PIN để tiếp tục thao tác này.</p>
+              <p class="inv-pin-warn"><i class="ph-bold ph-warning"></i> Sau khi chốt, phiếu sẽ bị khóa (chỉ xem) và tồn thực tế được dùng làm tồn đầu ca tiếp theo.</p>
+              <div class="form-group">
+                  <label for="inv-pin-input">Mã PIN Quản lý <span class="required">*</span></label>
+                  <input type="password" id="inv-pin-input" name="manager_pin" class="form-control" inputmode="numeric" autocomplete="one-time-code" placeholder="••••">
+                  <span class="inv-field-error" id="inv-pin-error"></span>
+              </div>
+          </div>
+          <div class="modal-footer">
+              <button class="btn btn-outline" onclick="closeInventoryPinModal()">Hủy bỏ</button>
+              <button class="btn btn-primary" id="inv-pin-submit" onclick="submitInventoryClose()"><i class="ph-bold ph-check-circle"></i> Xác nhận Đóng ca</button>
+          </div>
+      </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/manager.js"></script>
+</body>
+</html>

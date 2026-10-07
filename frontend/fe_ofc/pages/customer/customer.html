@@ -1,0 +1,114 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Màn hình Khách hàng (Nhàn & Ny)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <link rel="stylesheet" href="../../assets/css/design-system.css">
+  <link rel="stylesheet" href="../../assets/css/customer.css">
+</head>
+<body class="customer-app">
+  <header class="cust-topbar">
+    <div class="cust-topbar-inner">
+      <div class="brand-logo">
+        <i class="ph-fill ph-storefront"></i>
+        <span class="brand">Smart Ordering</span>
+      </div>
+      <div class="cust-table-chip">
+        <i class="ph-duotone ph-map-pin"></i>
+        Bàn 06 · Lầu 1 · Anh Tuấn + gia đình 4 người
+      </div>
+      <a href="../../index.html" class="btn-home"><i class="ph-bold ph-house"></i> Về Portal</a>
+    </div>
+  </header>
+
+  <main class="cust-screen">
+    <div class="cust-head">
+      <div>
+        <h2><i class="ph-duotone ph-fork-knife"></i> E-Menu — Bàn 06</h2>
+      </div>
+    </div>
+
+    <form class="cust-search" onsubmit="return false;">
+      <i class="ph-bold ph-magnifying-glass"></i>
+      <input id="search-input" type="text" placeholder="Tìm món ăn, đồ uống..." autocomplete="off" aria-label="Tìm kiếm món">
+    </form>
+
+    <!-- US-01 (Nhàn): thanh phân loại + danh sách món — render tự động -->
+    <div class="cat-row" id="cat-row"></div>
+    <div class="menu-grid" id="menu-grid"></div>
+
+    <!-- US-02 (Ny): Trợ lý Voice AI — nút micro FAB + popup chat sẽ bổ sung tại đây -->
+  </main>
+
+  <!-- Sticky Bottom Bar: tóm tắt bản nháp + nút mở Order Draft -->
+  <div class="cust-stickybar">
+    <div class="sb-info" id="sb-info"></div>
+    <button class="btn-primary" id="btn-open-draft"></button>
+  </div>
+
+  <!-- Bottom Sheet: Order Draft (giỏ hàng) -->
+  <div class="sheet-overlay" id="sheet-overlay"></div>
+  <section class="draft-sheet" id="draft-sheet" role="dialog" aria-label="Order Draft">
+    <div class="sheet-grip"></div>
+    <div class="sheet-head">
+      <b><i class="ph-duotone ph-receipt"></i> Order Draft</b>
+      <button class="btn-x" id="btn-close-draft" aria-label="Đóng"><i class="ph-bold ph-x"></i></button>
+    </div>
+    <div class="sheet-body" id="draft-body"></div>
+    <div class="sheet-footer" id="draft-footer"></div>
+  </section>
+
+  <!-- Modal Explicit Confirmation (BR-RO-03): xác nhận gửi bếp -->
+  <div class="modal-overlay" id="confirm-modal" style="display: none;" role="alertdialog" aria-modal="true" aria-label="Xác nhận gửi bếp">
+    <div class="modal">
+      <div class="modal-icon teal"><i class="ph-duotone ph-bell-ringing"></i></div>
+      <h3>Xác nhận gửi bếp</h3>
+      <p id="confirm-text"></p>
+      <p>Bàn 06 · Tổng tạm tính: <b id="confirm-total" style="color: var(--color-primary);"></b></p>
+      <div class="modal-actions">
+        <button class="btn-ghost" id="btn-cancel-confirm">Hủy bỏ</button>
+        <button class="btn-primary" id="btn-confirm-send">Xác nhận</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay thành công (sau khi gửi bếp) -->
+  <div class="modal-overlay" id="success-modal" style="display: none;" role="status">
+    <div class="modal">
+      <div class="modal-icon green"><i class="ph-bold ph-check"></i></div>
+      <h3>Đã gửi đơn xuống bếp thành công!</h3>
+      <p class="order-code" id="success-code"></p>
+      <p>Bàn 06 · <b id="success-total"></b></p>
+      <p>Theo dõi tiến độ món ở mục của Waiter / Bếp KDS nhé.</p>
+      <div class="modal-actions">
+        <button class="btn-primary" id="btn-close-success">Tiếp tục gọi món</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal ghi chú món (US-01 mở rộng — xem vault/08-Decisions/decision_log_Nhan.md ADR-N01) -->
+  <div class="modal-overlay" id="note-modal" style="display: none;" role="dialog" aria-modal="true" aria-label="Ghi chú món ăn">
+    <div class="modal modal-left">
+      <h3 id="note-title">Ghi chú món</h3>
+      <p>Chọn nhanh hoặc gõ yêu cầu riêng cho món này (bếp sẽ thấy khi nhận đơn).</p>
+      <div class="note-chips" id="note-chips"></div>
+      <textarea id="note-input" class="note-input" rows="2" maxlength="150"
+        placeholder="VD: không hành, nhiều cay..." aria-label="Nội dung ghi chú"></textarea>
+      <div class="modal-actions">
+        <button class="btn-ghost" id="btn-note-clear">Xóa ghi chú</button>
+        <button class="btn-primary" id="btn-note-save">Lưu ghi chú</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/mock-data.js"></script>
+  <script src="../../assets/js/utils.js"></script>
+  <script src="../../assets/js/customer.js"></script>
+</body>
+</html>

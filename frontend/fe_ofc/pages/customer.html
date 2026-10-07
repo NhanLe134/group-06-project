@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Màn hình Khách hàng (Nhàn & Ny)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/customer.css">
+  <link rel="stylesheet" href="../assets/css/voice.css">
+</head>
+<body class="customer-app">
+  <header class="cust-topbar">
+    <div class="cust-topbar-inner">
+      <div class="brand-logo">
+        <i class="ph-fill ph-storefront"></i>
+        <span class="brand">Smart Ordering</span>
+      </div>
+      <div class="cust-table-chip" id="table-chip">
+        <i class="ph-duotone ph-map-pin"></i>
+        Bàn 06
+      </div>
+      <a href="../index.html" class="btn-home"><i class="ph-bold ph-house"></i> Về Portal</a>
+    </div>
+  </header>
+
+  <main class="cust-screen">
+    <div class="cust-head">
+      <div class="cust-head-row">
+        <h2><i class="ph-duotone ph-fork-knife"></i> E-Menu — <span id="table-name">Bàn 06</span></h2>
+        <button class="btn-view-bill" id="btn-view-bill"><i class="ph-duotone ph-receipt"></i> Xem hóa đơn</button>
+      </div>
+    </div>
+
+    <form class="cust-search" onsubmit="return false;">
+      <i class="ph-bold ph-magnifying-glass"></i>
+      <input id="search-input" type="text" placeholder="Tìm món ăn, đồ uống..." autocomplete="off" aria-label="Tìm kiếm món">
+    </form>
+
+    <!-- US-01 (Nhàn): thanh phân loại + danh sách món — render tự động -->
+    <div class="cat-row" id="cat-row"></div>
+    <div class="menu-grid" id="menu-grid"></div>
+
+    <!-- US-02 (Ny): Trợ lý Voice AI — FAB micro -->
+    <button class="voice-fab" id="voice-fab" aria-label="Mở trợ lý gọi món bằng giọng nói">
+      <i class="ph-duotone ph-microphone"></i>
+    </button>
+  </main>
+
+  <!-- Voice Sheet Overlay -->
+  <div class="voice-sheet-overlay" id="voice-sheet-overlay"></div>
+
+  <!-- Voice Sheet (US-02) -->
+  <section class="voice-sheet" id="voice-sheet" role="dialog" aria-label="Trợ lý gọi món AI">
+    <div class="sheet-grip"></div>
+    <div class="voice-sheet-inner" id="voice-sheet-inner"></div>
+  </section>
+
+  <!-- Sticky Bottom Bar: tóm tắt bản nháp + nút mở Order Draft -->
+  <div class="cust-stickybar">
+    <div class="sb-info" id="sb-info"></div>
+    <button class="btn-primary" id="btn-open-draft"></button>
+  </div>
+
+  <!-- Bottom Sheet: Order Draft (giỏ hàng) -->
+  <div class="sheet-overlay" id="sheet-overlay"></div>
+  <section class="draft-sheet" id="draft-sheet" role="dialog" aria-label="Order Draft">
+    <div class="sheet-grip"></div>
+    <div class="sheet-head">
+      <b><i class="ph-duotone ph-receipt"></i> Order Draft</b>
+      <button class="btn-x" id="btn-close-draft" aria-label="Đóng"><i class="ph-bold ph-x"></i></button>
+    </div>
+    <div class="sheet-body" id="draft-body"></div>
+    <div class="sheet-footer" id="draft-footer"></div>
+  </section>
+
+  <!-- Modal Explicit Confirmation (BR-RO-03): xác nhận gửi bếp -->
+  <div class="modal-overlay" id="confirm-modal" style="display: none;" role="alertdialog" aria-modal="true" aria-label="Xác nhận gửi bếp">
+    <div class="modal">
+      <div class="modal-icon teal"><i class="ph-duotone ph-bell-ringing"></i></div>
+      <h3>Xác nhận gửi bếp</h3>
+      <p id="confirm-text"></p>
+      <div class="modal-actions">
+        <button class="btn-ghost" id="btn-cancel-confirm">Hủy bỏ</button>
+        <button class="btn-primary" id="btn-confirm-send">Xác nhận</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay thành công (sau khi gửi bếp) -->
+  <div class="modal-overlay" id="success-modal" style="display: none;" role="status">
+    <div class="modal">
+      <div class="modal-icon green"><i class="ph-bold ph-check"></i></div>
+      <h3>Đã gửi đơn xuống bếp thành công!</h3>
+      <div class="modal-actions">
+        <button class="btn-primary" id="btn-close-success">Tiếp tục gọi món</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal ghi chú món (US-01 mở rộng — xem vault/08-Decisions/decision_log_Nhan.md ADR-N01) -->
+  <div class="modal-overlay" id="note-modal" style="display: none;" role="dialog" aria-modal="true" aria-label="Ghi chú món ăn">
+    <div class="modal modal-left">
+      <h3 id="note-title">Ghi chú món</h3>
+      <p>Chọn nhanh hoặc gõ yêu cầu riêng cho món này (bếp sẽ thấy khi nhận đơn).</p>
+      <div class="note-chips" id="note-chips"></div>
+      <textarea id="note-input" class="note-input" rows="2" maxlength="150"
+        placeholder="VD: không hành, nhiều cay..." aria-label="Nội dung ghi chú"></textarea>
+      <div class="modal-actions">
+        <button class="btn-ghost" id="btn-note-clear">Xóa ghi chú</button>
+        <button class="btn-primary" id="btn-note-save">Lưu ghi chú</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- US-09: Trang xem Hóa đơn tạm tính (mở qua nút "Xem hóa đơn" trên E-Menu) -->
+  <section class="bill-view" id="bill-view" hidden>
+    <header class="bill-view-head">
+      <button class="btn-x" id="btn-close-bill" aria-label="Quay lại E-Menu"><i class="ph-bold ph-arrow-left"></i></button>
+      <b><i class="ph-duotone ph-receipt"></i> Hóa đơn tạm tính — <span id="bill-view-table">Bàn 06</span></b>
+    </header>
+    <div class="bill-view-body" id="bill-body"></div>
+    <div class="bill-view-foot">
+      <button class="btn-primary btn-send" id="btn-request-pay"><i class="ph-duotone ph-hand-coins"></i> Yêu cầu thanh toán</button>
+    </div>
+  </section>
+
+  <!-- US-09: Modal kết quả "Yêu cầu thanh toán" -->
+  <div class="modal-overlay" id="pay-modal" style="display: none;" role="alertdialog" aria-modal="true" aria-label="Yêu cầu thanh toán">
+    <div class="modal">
+      <div class="modal-icon teal" id="pay-icon"></div>
+      <h3 id="pay-title"></h3>
+      <p id="pay-msg"></p>
+      <div class="modal-actions">
+        <button class="btn-primary" id="btn-pay-close">Đã hiểu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Menu/đơn hàng và phân tích transcript Voice đều dùng Backend FastAPI. -->
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/mock-data.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script src="../assets/js/customer.js"></script>
+  <script src="../assets/js/voice.js"></script>
+</body>
+</html>

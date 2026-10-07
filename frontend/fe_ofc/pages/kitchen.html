@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Màn hình Bếp KDS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link rel="stylesheet" href="../assets/css/global.css">
+  <style>
+    /* ===================== US-03 — KDS bản TỐI GIẢN (chỉ dùng cho trang này) =====================
+       Theo docs/05-Design/DESIGN.md (Output #16): tokens màu, Typography Scale §2, radius.md 12px,
+       radius.full cho pill, touch target ≥ 44px, tương phản ≥ 4.5:1, KDS tablet min-width 768px.
+       Font: "Be Vietnam Pro" (CSS handoff) — Outfit không có bộ ký tự tiếng Việt nên chữ có dấu bị lệch font.
+       Riêng color.primary: DESIGN.md ghi #0D5C75 nhưng design-system.css + E-Menu đang dùng #FF5A36 → tạm theo #FF5A36. */
+    :root {
+      /* 1. Màu (DESIGN.md §1) */
+      --color-primary: #FF5A36; --color-primary-dark: #E8461F; --color-primary-soft: #FFF0ED;
+      --color-success: #15803D; --color-warning: #D97706; --color-danger: #DC2626; --color-info: #2563EB;
+      --color-neutral-bg: #F8FAFC; --color-neutral-card: #FFFFFF;
+      --color-text-main: #0F172A; --color-text-muted: #64748B;
+      --color-line: #E2E8F0; --color-tint: #EEF2F7;
+      /* 2. Bo góc */
+      --radius-md: 12px; --radius-full: 9999px;
+      /* 3. Typography Scale (DESIGN.md §2) */
+      --font-sans: "Be Vietnam Pro", "Segoe UI", Roboto, Arial, sans-serif;
+      --type-display: 700 24px/30px var(--font-sans);   /* tiêu đề màn hình */
+      --type-heading: 700 18px/24px var(--font-sans);   /* tiêu đề khối */
+      --type-title: 700 16px/22px var(--font-sans);     /* tiêu đề modal, tiêu đề mẻ */
+      --type-subhead: 700 15px/20px var(--font-sans);   /* tên món trên thẻ */
+      --type-body: 400 14px/20px var(--font-sans);
+      --type-desc: 400 13px/20px var(--font-sans);      /* ghi chú món, empty state */
+      --type-caption: 400 12px/16px var(--font-sans);   /* mã đơn, giờ nhận */
+      --type-button: 700 14px/20px var(--font-sans);
+      --type-chip: 600 12px/16px var(--font-sans);
+      --type-badge: 700 11px/16px var(--font-sans);
+      --type-overline: 700 14px/18px var(--font-sans);  /* tiêu đề nhóm (h4) — cỡ 14px theo §2.4 */
+      --shadow-card: 0 4px 14px rgba(15, 23, 42, .06);
+      --shadow-primary: 0 6px 16px rgba(255, 90, 54, .32);
+    }
+    body { font: var(--type-body); color: var(--color-text-main); background: var(--color-neutral-bg); -webkit-font-smoothing: antialiased; }
+    button, input, select { font-family: var(--font-sans); }
+    .numeric, time, .kc-time, [data-clock] { font-variant-numeric: tabular-nums; }
+
+    /* Topbar + thanh demo theo kiểu E-Menu */
+    /* Thanh tiêu đề luôn dính trên cùng khi cuộn trang */
+    .topbar { position: sticky; top: 0; z-index: 30; background: var(--color-neutral-card); }
+    .brand { display: inline-flex; align-items: center; gap: 10px; font: var(--type-subhead); font-weight: 800; }
+    .brand i { font-size: 26px; color: var(--color-primary); }
+    .brand-row > b { font: var(--type-subhead); }
+    .btn-logout { min-height: 44px; padding: 4px 14px; border: none; border-radius: var(--radius-md); background: var(--color-tint); color: #475569; font: var(--type-button); }
+    .btn-logout:hover { background: var(--color-primary-soft); color: var(--color-primary-dark); border: none; }
+    .demo-bar { background: var(--color-neutral-card); border-bottom: 1px solid var(--color-line); }
+    .demo-tag { color: var(--color-primary-dark); }
+    .offline-banner { position: sticky; top: var(--topbar-h, 0px); z-index: 29; font: var(--type-desc); }   /* dính ngay dưới thanh tiêu đề */
+    .offline-banner[hidden] { display: none; }
+
+    /* ---------- Header ---------- */
+    .kds-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .kds-head h2 { display: flex; align-items: center; gap: 8px; font: var(--type-display); letter-spacing: normal; }
+    .kds-head h2 i { color: var(--color-primary); font-size: 26px; }
+    .kds-head p { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; font: var(--type-desc); color: var(--color-text-muted); }
+    .dot { width: 8px; height: 8px; border-radius: var(--radius-full); display: inline-block; background: var(--color-text-muted); flex: none; }
+    .conn { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+    .conn.on { color: var(--color-success); }
+    .conn.on .dot { background: var(--color-success); }
+    .conn.off { color: var(--color-danger); }
+    .conn.off .dot { background: var(--color-danger); }
+    /* Bật/tắt âm báo đơn: nút chữ nhỏ nằm cùng dòng thông tin; vùng chạm vẫn 44px nhờ padding + margin âm */
+    .sound-toggle { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; margin: -12px 0; padding: 0 6px; border-radius: 8px; font: var(--type-desc); font-weight: 600; color: var(--color-text-muted); }
+    .sound-toggle i { font-size: 15px; }
+    .sound-toggle:hover { background: var(--color-tint); color: var(--color-text-main); }
+    .sound-toggle.off { color: var(--color-danger); }
+
+    /* ---------- Kanban (REQ-07) ---------- */
+    .board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 24px; align-items: start; }
+    .col { display: flex; flex-direction: column; min-height: 360px; }
+    .col-head { display: flex; align-items: center; gap: 8px; padding: 0 4px 12px; font: var(--type-overline); text-transform: uppercase; letter-spacing: .04em; color: var(--color-text-muted); }
+    .col-head .count { margin-left: auto; min-width: 28px; height: 28px; padding: 0 8px; border-radius: var(--radius-full); display: grid; place-items: center; background: var(--color-tint); color: var(--color-text-main); font: var(--type-badge); font-variant-numeric: tabular-nums; }
+    .col-ico { font-size: 18px; flex: none; }
+    .col[data-status="PENDING"] .col-ico { color: var(--color-warning); }
+    .col[data-status="COOKING"] .col-ico { color: var(--color-info); }
+    .col[data-status="READY"] .col-ico { color: var(--color-success); }
+    .col-body { display: flex; flex-direction: column; gap: 12px; flex: 1; border-radius: var(--radius-md); transition: background .15s; }
+    .col.drag-over .col-body { background: var(--color-primary-soft); outline: 1.5px dashed var(--color-primary); outline-offset: 4px; }
+    .col-empty { border: 1.5px dashed var(--color-line); border-radius: var(--radius-md); color: var(--color-text-muted); text-align: center; font: var(--type-desc); padding: 32px 12px; }
+
+    /* ---------- Thẻ món (KDSTicketCard) ---------- */
+    .kcard { position: relative; background: var(--color-neutral-card); border-radius: var(--radius-md); padding: 12px 16px 16px; box-shadow: var(--shadow-card); cursor: grab; }
+    .kcard.dragging, .kcard-row.dragging { opacity: .4; }
+    .kcard.is-new { box-shadow: 0 0 0 2px var(--color-primary), var(--shadow-card); }
+    .kc-top { display: flex; align-items: center; gap: 8px; font: var(--type-caption); color: var(--color-text-muted); }
+    .kc-top b { padding: 2px 8px; border-radius: 8px; background: var(--color-tint); color: var(--color-text-main); font-weight: 700; }
+    .kc-time { margin-left: auto; }
+    .kc-more { width: 44px; height: 44px; margin: -6px -12px -6px 0; border-radius: var(--radius-md); display: grid; place-items: center; font-size: 20px; color: var(--color-text-muted); }
+    .kc-more:hover { background: var(--color-primary-soft); color: var(--color-primary-dark); }
+    .kcard h3 { margin-top: 8px; font: var(--type-subhead); color: var(--color-text-main); }
+    .qty { color: var(--color-primary); font-weight: 800; font-variant-numeric: tabular-nums; }
+    .kc-note { margin-top: 2px; font: var(--type-desc); color: var(--color-text-muted); }
+    .kc-sub { margin-top: 6px; font: var(--type-caption); color: var(--color-text-muted); }
+    .kc-btn { width: 100%; min-height: 48px; margin-top: 12px; border-radius: var(--radius-md); border: 1.5px solid var(--color-primary); background: var(--color-neutral-card); color: var(--color-primary-dark); font: var(--type-button); }
+    .kc-btn:hover { background: var(--color-primary-soft); }
+    .kc-btn.solid { background: var(--color-primary); color: #fff; font-weight: 800; box-shadow: var(--shadow-primary); }   /* CTA chính: weight 800 */
+    .kc-btn.solid:hover { background: var(--color-primary-dark); border-color: var(--color-primary-dark); }
+    .kc-btn.danger { border-color: #FECACA; color: var(--color-danger); }
+    .kc-btn.danger:hover { background: #FEF2F2; border-color: var(--color-danger); }
+    /* AC2 — món Chờ nấu luôn có 2 nút: "Nấu" (→ Đang nấu) và "Xong" (→ Đã nấu, báo Phục vụ) */
+    .kc-btn.success { border-color: #BBF7D0; color: var(--color-success); }
+    .kc-btn.success:hover { background: #F0FDF4; border-color: var(--color-success); }
+    .kc-actions { display: flex; gap: 8px; }
+    .kc-actions .kc-btn { flex: 1; }
+    .kc-ready { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; font: var(--type-desc); font-weight: 600; color: var(--color-success); }
+    .link-btn { min-height: 44px; padding: 0 4px; font: var(--type-desc); font-weight: 600; color: var(--color-text-muted); text-decoration: underline; }
+    .link-btn:hover { color: var(--color-primary-dark); }
+    /* Món chờ nấu nhưng nguyên liệu đã hết (ProductCard: out-of-stock) → mờ, chỉ cho xóa khỏi hàng đợi */
+    .kcard.oos-card { background: #F8F8F9; cursor: default; }
+    .kcard.oos-card .kc-top, .kcard.oos-card h3, .kcard.oos-card .kc-note { opacity: .6; filter: grayscale(.8); }
+    .kcard.oos-card h3 { text-decoration: line-through; }
+
+    /* Pill / Badge (type.badge, radius.full, viết hoa + letter-spacing .04em) */
+    .pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: var(--radius-full); font: var(--type-badge); text-transform: uppercase; letter-spacing: .04em; }
+    .pill-warning { background: #FEF3C7; color: #92400E; }
+    .pill-danger { background: #FEF2F2; color: #B91C1C; }
+    .kc-oos { margin-top: 8px; }
+
+    /* ---------- Mẻ gợi ý nấu chung (REQ-08 / AC1) ---------- */
+    .batch { background: var(--color-neutral-card); border-radius: var(--radius-md); padding: 16px; box-shadow: 0 0 0 2px var(--color-primary-soft), var(--shadow-card); }
+    .batch h3 { margin-top: 8px; font: var(--type-title); }
+    .batch h3 b { color: var(--color-primary); font-weight: 800; }
+    .batch-rows { list-style: none; margin-top: 8px; border-top: 1px solid var(--color-line); }
+    .kcard-row { display: flex; align-items: baseline; gap: 10px; min-height: 44px; padding: 12px 0; border-bottom: 1px solid var(--color-line); font: var(--type-body); cursor: grab; }
+    .kcard-row b { font-weight: 700; }
+    .kcard-row span { flex: 1; font: var(--type-desc); color: var(--color-text-muted); }
+    .kcard-row { flex-wrap: wrap; align-items: center; padding: 8px 0; }
+    .kcard-row time { font: var(--type-caption); color: var(--color-text-muted); }
+    .row-actions { display: flex; gap: 6px; }
+    .row-btn { min-width: 64px; min-height: 44px; padding: 0 12px; border-radius: var(--radius-md); border: 1.5px solid var(--color-primary); background: var(--color-neutral-card); color: var(--color-primary-dark); font: var(--type-button); }
+    .row-btn:hover { background: var(--color-primary-soft); }
+    .row-btn.success { border-color: #BBF7D0; color: var(--color-success); }
+    .row-btn.success:hover { background: #F0FDF4; border-color: var(--color-success); }
+
+    /* ---------- Menu "⋯" ---------- */
+    .pop { position: absolute; top: 44px; right: 8px; z-index: 5; min-width: 232px; padding: 4px; background: var(--color-neutral-card); border-radius: var(--radius-md); box-shadow: 0 12px 32px rgba(15, 23, 42, .12); }
+    .pop button { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 8px 12px; border-radius: 8px; font: var(--type-body); text-align: left; }
+    .pop button:hover { background: var(--color-primary-soft); }
+    .pop .danger { color: var(--color-danger); }
+
+    /* ---------- Tồn kho (REQ-09 / BR-03) ---------- */
+    .stock { margin-top: 24px; background: var(--color-neutral-card); border-radius: var(--radius-md); box-shadow: var(--shadow-card); overflow: hidden; }
+    .stock summary { min-height: 44px; padding: 14px 16px; font: var(--type-title); cursor: pointer; }
+    .stock summary span { font: var(--type-desc); color: var(--color-text-muted); }
+    .stock ul { list-style: none; border-top: 1px solid var(--color-line); }
+    .stock li { display: flex; align-items: center; gap: 12px; padding: 6px 16px; border-bottom: 1px solid var(--color-line); font: var(--type-body); }
+    .stock li:last-child { border-bottom: none; }
+    .stock .name { flex: 1; font-weight: 600; }
+    .stock .state { font: var(--type-caption); color: var(--color-text-muted); }
+    .stock li.oos .name { color: var(--color-text-muted); text-decoration: line-through; }
+    .stock li.oos .state { color: #B91C1C; }
+    .stock li button { min-height: 44px; min-width: 104px; padding: 0 14px; border: 1.5px solid var(--color-primary); border-radius: var(--radius-md); background: var(--color-neutral-card); color: var(--color-primary-dark); font: var(--type-chip); }
+    .stock li button:hover { background: var(--color-primary-soft); }
+
+    /* ---------- 403 (AC4), ConfirmDialog, toast ---------- */
+    .forbidden { max-width: 480px; margin: 48px auto; text-align: center; background: var(--color-neutral-card); border-radius: var(--radius-md); box-shadow: var(--shadow-card); padding: 32px 24px; }
+    .forbidden .code { font: 900 48px/1 var(--font-sans); color: var(--color-primary); }
+    .forbidden h2 { margin-top: 8px; font: var(--type-heading); }
+    .forbidden p { margin-top: 8px; font: var(--type-body); color: var(--color-text-muted); }
+    .forbidden .actions { margin-top: 18px; }
+    .forbidden .btn-primary { min-height: 48px; border-radius: var(--radius-md); background: var(--color-primary); font: var(--type-button); font-weight: 800; box-shadow: var(--shadow-primary); }
+    .kds-overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: rgba(15, 23, 42, .45); }
+    .kds-overlay .modal { max-width: 420px; border-radius: var(--radius-md); box-shadow: 0 16px 40px rgba(15, 23, 42, .16); }
+    .kds-overlay .modal h3 { font: var(--type-title); }
+    .kds-overlay .modal h3 i { display: none; }
+    .kds-overlay .modal p { font: var(--type-body); }
+    .kds-overlay .modal .muted { font: var(--type-caption) !important; color: var(--color-text-muted); }
+    .kds-overlay .btn-ghost, .kds-overlay .btn-primary { min-height: 48px; border-radius: var(--radius-md); font: var(--type-button); }
+    .kds-overlay .btn-primary { background: var(--color-primary); font-weight: 800; }   /* modal xóa / hết hàng tự tô đỏ bằng style riêng */
+    /* Hộp chọn số suất khi nấu / xong từng phần */
+    .stepper { display: flex; align-items: center; justify-content: center; gap: 20px; margin: 16px 0 8px; }
+    .stepper button { width: 48px; height: 48px; border-radius: var(--radius-md); border: 1.5px solid var(--color-line); background: var(--color-neutral-card); font-size: 22px; color: var(--color-text-main); }
+    .stepper button:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary-dark); }
+    .stepper output { min-width: 96px; text-align: center; font: 800 32px/40px var(--font-sans); font-variant-numeric: tabular-nums; }
+    .stepper output small { display: block; font: var(--type-caption); color: var(--color-text-muted); }
+    .split-all { display: block; margin: 0 auto; min-height: 44px; padding: 0 12px; font: var(--type-desc); font-weight: 600; color: var(--color-primary-dark); text-decoration: underline; }
+    .kc-part { display: inline-flex; margin-top: 6px; padding: 2px 10px; border-radius: var(--radius-full); background: var(--color-tint); color: var(--color-text-main); font: var(--type-badge); font-variant-numeric: tabular-nums; }
+    .toasts { position: fixed; right: 16px; bottom: 16px; z-index: 60; display: flex; flex-direction: column; gap: 8px; max-width: min(360px, calc(100vw - 32px)); }
+    .toast { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: var(--radius-md); background: var(--color-text-main); color: #fff; font: var(--type-desc); box-shadow: 0 12px 28px rgba(15, 23, 42, .2); }
+    .toast i { font-size: 18px; flex: none; color: var(--color-primary); }
+
+    /* Khung KDS là tablet (min-width 768px — DESIGN.md §3); nhỏ hơn thì xếp 1 cột */
+    @media (max-width: 767px) {
+      .board { grid-template-columns: 1fr; }
+      .col { min-height: 0; }
+      .screen { padding: 16px; padding-bottom: 80px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-row">
+      <span class="brand"><i class="ph-fill ph-storefront"></i> Smart Ordering</span>
+      <b>Màn hình Bếp KDS</b>
+      <a href="../index.html"><button class="btn-logout"><i class="ph-bold ph-house"></i> Về Portal</button></a>
+    </div>
+  </header>
+
+  <!-- Thanh DEMO: tạo đơn mẫu AC1 (cần DEMO_MODE=true ở backend) / giả lập mất mạng AC5 -->
+  <div class="demo-bar">
+    <span class="demo-tag">DEMO</span>
+    <button class="btn-mini" data-action="sim-ac1"><i class="ph-bold ph-broadcast"></i> Đơn mới: Bàn 01 + Bàn 02 gọi Phở bò</button>
+    <label class="switch" style="flex:0 0 auto"><input type="checkbox" id="sim-offline"> Giả lập mất Wi-Fi</label>
+  </div>
+
+  <div id="offline-banner" class="banner offline-banner" hidden>
+    <i class="ph-bold ph-wifi-slash"></i>
+    <span><b>Offline: Đang lưu cục bộ.</b> Thao tác của bạn vẫn được ghi nhận và sẽ tự động đồng bộ lên Server khi có mạng lại.</span>
+    <b id="queue-count"></b>
+  </div>
+
+  <div class="screen">
+    <main id="app"></main>
+  </div>
+
+  <div id="modal-root"></div>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <script src="../assets/js/config.js"></script>
+  <script>
+  'use strict';
+  /* =====================================================================
+     US-03 — KDS (Kitchen Display System) & AI Batching
+     Story Spec: vault/06-Engineering/story-spec-us03-kds.md
+     - REQ-07  : Kanban 3 cột Chờ nấu → Đang nấu → Đã nấu (kéo thả + nút bấm)
+     - REQ-08  : AI Batching gom món giống nhau từ nhiều bàn → "Gợi ý nấu chung"
+     - REQ-09 / BR-03 : Bếp đánh dấu Hết hàng → POST /menu/items/{id}/out-of-stock
+     - NFR-RO-03 : chỉ CHEF / MANAGER được vào KDS, còn lại 403 → /pos
+     - AC5     : mất mạng → thao tác vào hàng đợi cục bộ → tự gửi lại khi có mạng
+     - Nấu / Xong từng phần: món > 1 suất được hỏi số suất → POST /kds/items/{id}/split
+     Dữ liệu thật lấy từ FastAPI (API_BASE_URL trong config.js) — bảng chitietmon trên Supabase.
+     Realtime: WebSocket /ws/kds:tickets và /ws/menu:oos (api-contract.md Mục 5).
+     ===================================================================== */
+
+  /* Giao diện dùng PENDING/COOKING/READY; DB/API dùng cho_nau/dang_nau/da_xong (dtb.md) */
+  const STATUSES = ['PENDING', 'COOKING', 'READY'];
+  const TO_API = { PENDING: 'cho_nau', COOKING: 'dang_nau', READY: 'da_xong' };
+  const FROM_API = { cho_nau: 'PENDING', dang_nau: 'COOKING', da_xong: 'READY' };
+  const COLS = {
+    PENDING: { label: 'Chờ nấu',  icon: 'ph-clock' },
+    COOKING: { label: 'Đang nấu', icon: 'ph-cooking-pot' },
+    READY:   { label: 'Đã nấu',   icon: 'ph-check-circle' },
+  };
+  const ALLOWED_ROLES = ['CHEF', 'MANAGER'];
+  const POS_URL = 'waiter.html';                       /* màn hình /pos của Phục vụ */
+  const KEY = { queue: 'g06-kds-queue-v2', auth: 'g06-auth' };
+  const API_BASE = (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || 'http://localhost:8000';
+  const WS_BASE = API_BASE.replace(/^http/, 'ws');
+  const POLL_MS = 15000;                               /* hỏi lại server khi WebSocket rớt */
+
+  /* ---------- Tiện ích ---------- */
+  const $ = sel => document.querySelector(sel);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmtTime = ts => new Date(ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  const load = (k, fallback) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; } catch { return fallback; } };
+  const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* bộ nhớ bị chặn: vẫn chạy bình thường */ } };
+
+  /* ---------- State ---------- */
+  const S = {
+    items: [],                                         /* thẻ món (đã đổi sang trạng thái giao diện) */
+    menu: [],                                          /* GET /menu — tên món + còn/hết hàng */
+    queue: load(KEY.queue, []),                        /* thao tác chờ gửi khi offline (AC5) */
+    role: (load(KEY.auth, null) || { role: 'CHEF' }).role,
+    loaded: false,
+    loadError: '',
+    wsUp: false,
+    forceOffline: false,
+    soundOn: true,
+    menuFor: null,                                     /* id thẻ đang mở menu "⋯" */
+    newIds: new Set(),
+  };
+  const persistQueue = () => save(KEY.queue, S.queue);
+  const isOnline = () => navigator.onLine && !S.forceOffline;
+  const menuItem = dishId => S.menu.find(m => m.id === dishId);
+  const menuName = dishId => (menuItem(dishId) || {}).name || 'Món';
+  const isOos = dishId => (menuItem(dishId) || {}).status === 'out_of_stock';
+
+  /* ---------- Gọi API ---------- */
+  class ApiError extends Error {
+    constructor(status, code, message) { super(message); this.status = status; this.code = code; }
+  }
+  async function api(method, path, body) {
+    let res;
+    try {
+      res = await fetch(API_BASE + path, {
+        method,
+        headers: body ? { 'Content-Type': 'application/json' } : undefined,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+    } catch {
+      throw new ApiError(0, 'NETWORK', 'Không kết nối được máy chủ');   /* mất mạng / backend tắt */
+    }
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      const msg = data && (data.message || (Array.isArray(data.detail) ? 'Dữ liệu gửi lên không hợp lệ' : data.detail));
+      throw new ApiError(res.status, (data && data.error_code) || `HTTP_${res.status}`, msg || `Lỗi máy chủ (HTTP ${res.status})`);
+    }
+    return data;
+  }
+
+  /* 1 dòng chitietmon → 1 thẻ trên Kanban */
+  function fromApi(x) {
+    return {
+      id: x.id,
+      hoadonId: x.hoadon_id,
+      orderCode: x.hoadon_id || '',                     /* mã hóa đơn, vd. HD-20261006-0001 (migration 007) */
+      table: x.ban || 'Không rõ bàn',
+      dishId: x.thucdon_id,
+      dishName: x.tenmon || 'Món đã xóa khỏi thực đơn',
+      qty: x.soluong,
+      note: x.ghichu || '',
+      status: FROM_API[x.trangthai],
+      placedTs: Date.parse(x.giogoimon),
+    };
+  }
+  /* Các dòng tách suất có chung hóa đơn + món + ghi chú + giờ gọi → tính lại "5/10 suất" */
+  function markSplitParts(items) {
+    const groups = {};
+    items.forEach(it => { (groups[[it.hoadonId, it.dishId, it.note, it.placedTs].join('|')] ||= []).push(it); });
+    Object.values(groups).forEach(g => {
+      const total = g.reduce((s, x) => s + x.qty, 0);
+      g.forEach(it => { it.origQty = g.length > 1 ? total : undefined; });
+    });
+    return items;
+  }
+
+  /* ---------- Âm thanh "ting" (Web Audio, không cần file) ---------- */
+  let audioCtx = null;
+  function ting(freq = 1046) {
+    if (!S.soundOn) return;
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = 'sine'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.35, audioCtx.currentTime + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.6);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(); o.stop(audioCtx.currentTime + 0.62);
+    } catch { /* thiết bị không hỗ trợ âm thanh */ }
+  }
+
+  function toast(msg, kind = 'ok', icon = 'ph-check-circle') {
+    const el = document.createElement('div');
+    el.className = `toast ${kind}`;
+    el.innerHTML = `<i class="ph-fill ${icon}"></i><span>${msg}</span>`;
+    $('#toasts').appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+  }
+
+  /* =====================================================================
+     REQ-08 — AI Batching
+     Stand-in cho AI Service Endpoint (dự kiến POST /api/ai/batching):
+     gom các món Chờ nấu cùng món đến từ ≥ 2 bàn khác nhau thành 1 mẻ.
+     ===================================================================== */
+  function aiBatching(items) {
+    const groups = {};
+    items.filter(it => it.status === 'PENDING' && !isOos(it.dishId)).forEach(it => {
+      (groups[it.dishId] = groups[it.dishId] || []).push(it);
+    });
+    return Object.entries(groups)
+      .filter(([, list]) => new Set(list.map(x => x.table)).size >= 2)
+      .map(([dishId, list]) => ({
+        dishId,
+        items: list.sort((a, b) => a.placedTs - b.placedTs),
+        totalQty: list.reduce((s, x) => s + x.qty, 0),
+        tables: [...new Set(list.map(x => x.table))],
+      }))
+      .sort((a, b) => b.totalQty - a.totalQty);
+  }
+
+  /* ---------- Tải dữ liệu từ server ---------- */
+  async function refresh() {
+    try {
+      const [rows, menu] = await Promise.all([api('GET', '/kds/items'), api('GET', '/menu')]);
+      const before = new Set(S.items.map(i => i.id));
+      const firstLoad = !S.loaded;
+      S.menu = menu;
+      S.items = markSplitParts(rows.map(fromApi));
+      applyQueueLocally();                              /* thao tác offline chưa gửi vẫn hiện trên màn hình */
+      S.loaded = true; S.loadError = '';
+      if (!firstLoad) announceNew(S.items.filter(i => i.status === 'PENDING' && !before.has(i.id)));
+    } catch (err) {
+      if (!S.loaded) S.loadError = err.message;
+    }
+    render();
+  }
+  let refreshTimer = null;
+  const refreshSoon = () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(refresh, 150); };
+
+  /* AC1 — đơn mới: "ting" + nhấp sáng thẻ + báo nếu AI vừa gom được mẻ */
+  function announceNew(fresh) {
+    if (!fresh.length) return;
+    fresh.forEach(it => S.newIds.add(it.id));
+    setTimeout(() => { fresh.forEach(it => S.newIds.delete(it.id)); render(); }, 5000);
+    ting();
+    [...new Set(fresh.map(i => i.table))].forEach(t => toast(`Đơn mới — ${esc(t)}`, 'warn', 'ph-bell-ringing'));
+    const batched = new Set(aiBatching(S.items).flatMap(b => b.items.map(x => x.id)));
+    if (fresh.some(it => batched.has(it.id))) toast('Trợ lý AI vừa gom món thành mẻ <b>Gợi ý nấu chung</b>', 'ai', 'ph-sparkle');
+  }
+
+  /* ---------- Realtime: WebSocket (fallback hỏi lại định kỳ) ---------- */
+  function connectWs(channel, onMessage) {
+    let ws;
+    try { ws = new WebSocket(`${WS_BASE}/ws/${channel}`); } catch { setTimeout(() => connectWs(channel, onMessage), 3000); return; }
+    ws.onopen = () => { S.wsUp = true; updateConnUI(); };
+    ws.onmessage = e => { try { onMessage(JSON.parse(e.data)); } catch { /* bỏ qua message lỗi */ } };
+    ws.onclose = () => { S.wsUp = false; updateConnUI(); setTimeout(() => connectWs(channel, onMessage), 3000); };
+  }
+  connectWs('kds:tickets', () => refreshSoon());
+  connectWs('menu:oos', () => refreshSoon());
+  setInterval(() => { if (!S.wsUp && isOnline()) refresh(); }, POLL_MS);
+
+  /* ---------- Thao tác của Bếp: gửi API, offline thì xếp hàng (AC5) ----------
+     op: { op: 'status' | 'split' | 'cancel' | 'stock', ... }. Màn hình cập nhật ngay (optimistic),
+     sau đó tải lại dữ liệu thật từ server; server từ chối thì báo lỗi và hoàn lại. */
+  function applyLocal(op) {
+    const it = S.items.find(x => x.id === op.id);
+    if (op.op === 'status' && it) it.status = op.to;
+    if (op.op === 'split' && it) {
+      const total = it.origQty || it.qty;
+      S.items.push({ ...it, id: `${it.id}-tam-${S.queue.length}`, qty: op.n, status: op.to, origQty: total });
+      it.qty -= op.n; it.origQty = total;
+    }
+    if (op.op === 'cancel') S.items = S.items.filter(x => x.id !== op.id);
+    if (op.op === 'stock') { const m = menuItem(op.dishId); if (m) m.status = op.available ? 'available' : 'out_of_stock'; }
+  }
+  function applyQueueLocally() { S.queue.forEach(applyLocal); }
+
+  function callApi(op) {
+    if (op.op === 'status') return api('PATCH', `/kds/items/${op.id}/status`, { trangthai: TO_API[op.to] });
+    if (op.op === 'split') return api('POST', `/kds/items/${op.id}/split`, { soluong: op.n, trangthai: TO_API[op.to] });
+    if (op.op === 'cancel') return api('POST', `/kds/items/${op.id}/cancel-out-of-stock`);
+    return api('POST', `/menu/items/${op.dishId}/${op.available ? 'in-stock' : 'out-of-stock'}`);
+  }
+
+  /* Thông báo sau khi server xác nhận (AC2 "Ting!", AC3 khóa món) */
+  function confirmToast(op) {
+    if ((op.op === 'status' || op.op === 'split') && op.to === 'READY') {
+      ting(1318);
+      toast(`Ting! ${esc(op.table)} đã có ${op.part}${esc(op.dish)}`, 'ok', 'ph-bell-ringing');
+    }
+    if (op.op === 'cancel') toast(`Đã xóa ${esc(op.label)} khỏi hàng đợi — đã báo Phục vụ ${esc(op.table)}`, 'ok', 'ph-trash');
+    if (op.op === 'stock') {
+      toast(op.available ? `Đã mở bán lại <b>${esc(op.dish)}</b> trên E-Menu` : `Đã khóa <b>${esc(op.dish)}</b> trên E-Menu & POS (Hết hàng)`,
+        op.available ? 'ok' : 'err', op.available ? 'ph-check-circle' : 'ph-prohibit');
+    }
+  }
+
+  async function perform(op) {
+    applyLocal(op); render();
+    if (!isOnline()) { enqueue(op); return; }
+    try {
+      await callApi(op);
+      confirmToast(op);
+    } catch (err) {
+      if (err.code === 'NETWORK') { enqueue(op); return; }
+      toast(esc(err.message), 'err', 'ph-warning-circle');  /* server từ chối → tải lại để hoàn tác */
+    }
+    refreshSoon();
+  }
+  function enqueue(op) {
+    S.queue.push(op); persistQueue();
+    toast('Offline: Đang lưu cục bộ', 'warn', 'ph-wifi-slash');
+    render();
+  }
+
+  /* AC5 — có mạng lại → gửi lần lượt các thao tác đã lưu */
+  async function flushQueue() {
+    if (!isOnline() || !S.queue.length) { updateConnUI(); return; }
+    let sent = 0;
+    while (S.queue.length && isOnline()) {
+      const op = S.queue[0];
+      try {
+        await callApi(op);
+        confirmToast(op); sent += 1;
+      } catch (err) {
+        if (err.code === 'NETWORK') break;               /* vẫn chưa có mạng — giữ lại, thử sau */
+        toast(`Không đồng bộ được: ${esc(err.message)}`, 'err', 'ph-warning-circle');
+      }
+      S.queue.shift(); persistQueue();
+    }
+    if (sent) toast(`Đã có mạng — đồng bộ ${sent} thao tác lên Server`, 'ok', 'ph-cloud-check');
+    refresh();
+  }
+
+  /* ---------- Hành động cụ thể ---------- */
+  const partOf = it => (it.origQty && it.origQty !== it.qty ? `${it.qty}/${it.origQty} ` : `${it.qty}× `);
+  const isForward = (from, to) => STATUSES.indexOf(to) > STATUSES.indexOf(from);
+
+  function setStatus(id, to) {
+    const it = S.items.find(x => x.id === id);
+    if (!it || it.status === to || !STATUSES.includes(to)) return;
+    if (it.status === 'PENDING' && isOos(it.dishId)) { toast(`${esc(it.dishName)} đã hết hàng — chỉ có thể xóa khỏi hàng đợi`, 'err', 'ph-prohibit'); return; }
+    perform({ op: 'status', id, to, table: it.table, dish: it.dishName, part: partOf(it) });
+  }
+
+  /* Nấu / Xong từng phần: tách n suất sang dòng mới (server tạo dòng chitietmon mới) */
+  function splitItem(id, n, to) {
+    const it = S.items.find(x => x.id === id);
+    if (!it) return;
+    if (n >= it.qty || (it.status === 'PENDING' && isOos(it.dishId))) { setStatus(id, to); return; }
+    perform({ op: 'split', id, n, to, table: it.table, dish: it.dishName, part: `${n}/${it.origQty || it.qty} ` });
+  }
+
+  /* Bấm Nấu / Xong trên món có số lượng > 1 → hỏi "bao nhiêu suất?" */
+  function askQty(id, to) {
+    const it = S.items.find(x => x.id === id);
+    if (!it) return;
+    if (it.qty <= 1 || !isForward(it.status, to) || (it.status === 'PENDING' && isOos(it.dishId))) { setStatus(id, to); return; }
+    S.split = { id, to, n: it.qty };
+    renderSplit();
+  }
+  function renderSplit() {
+    const sp = S.split;
+    const it = sp && S.items.find(x => x.id === sp.id);
+    if (!it) { closeModal(); return; }
+    const name = esc(it.dishName);
+    const verb = sp.to === 'COOKING' ? 'Nấu' : 'Xong';
+    const rest = it.qty - sp.n;
+    $('#modal-root').innerHTML = `
+      <div class="kds-overlay" data-action="close-modal">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="sp-title" data-stop>
+          <h3 id="sp-title">${sp.to === 'COOKING' ? 'Nấu bao nhiêu suất?' : 'Đã nấu xong bao nhiêu suất?'}</h3>
+          <p>${esc(it.table)} · ${esc(it.orderCode)} · <b>${it.qty}× ${name}</b></p>
+          <div class="stepper">
+            <button data-action="split-dec" aria-label="Giảm 1 suất" ${sp.n <= 1 ? 'disabled' : ''}><i class="ph-bold ph-minus"></i></button>
+            <output aria-live="polite">${sp.n}<small>/ ${it.qty} suất</small></output>
+            <button data-action="split-inc" aria-label="Tăng 1 suất" ${sp.n >= it.qty ? 'disabled' : ''}><i class="ph-bold ph-plus"></i></button>
+          </div>
+          ${sp.n < it.qty ? `<button class="split-all" data-action="split-all">Chọn tất cả ${it.qty} suất</button>` : ''}
+          <p class="muted">${rest > 0
+            ? `${rest} suất còn lại vẫn ở cột <b>${COLS[it.status].label}</b>${sp.to === 'READY' ? '. Phục vụ sẽ được báo mang ra trước ' + sp.n + ' suất.' : '.'}`
+            : `Chuyển cả ${it.qty} suất sang cột <b>${COLS[sp.to].label}</b>.`}</p>
+          <div class="modal-actions">
+            <button class="btn-ghost" data-action="close-modal">Hủy</button>
+            <button class="btn-primary" data-action="split-ok">${verb} ${sp.n} suất</button>
+          </div>
+        </div>
+      </div>`;
+    $('#modal-root [data-action="split-ok"]').focus();
+  }
+
+  function cookBatch(dishId) {
+    const batch = aiBatching(S.items).find(b => b.dishId === dishId);
+    if (!batch) return;
+    batch.items.forEach(it => setStatus(it.id, 'COOKING'));
+    toast(`Bắt đầu nấu chung mẻ <b>${batch.totalQty}× ${esc(menuName(dishId))}</b>`, 'ai', 'ph-sparkle');
+  }
+
+  /* AC3 — Đánh dấu Hết hàng / mở bán lại (BR-03) */
+  function setStock(dishId, available) {
+    perform({ op: 'stock', dishId, available, dish: menuName(dishId) });
+  }
+
+  function confirmOos(dishId) {
+    const name = esc(menuName(dishId));
+    $('#modal-root').innerHTML = `
+      <div class="kds-overlay" data-action="close-modal">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="oos-title" data-stop>
+          <h3 id="oos-title"><i class="ph-bold ph-warning" style="color:var(--red)"></i> Đánh dấu Hết hàng?</h3>
+          <p>Xác nhận món <b>${name}</b> đã hết nguyên liệu trong kho.</p>
+          <p class="muted">Món sẽ bị làm mờ và khóa ngay trên E-Menu của tất cả các bàn và máy POS của phục vụ (BR-03).</p>
+          <div class="modal-actions">
+            <button class="btn-ghost" data-action="close-modal">Hủy</button>
+            <button class="btn-primary" style="background:var(--red)" data-action="do-oos" data-dish="${dishId}">Đánh dấu Hết hàng</button>
+          </div>
+        </div>
+      </div>`;
+    $('#modal-root [data-action="do-oos"]').focus();
+  }
+  const closeModal = () => { $('#modal-root').innerHTML = ''; };
+
+  /* Xóa món hết hàng khỏi hàng đợi → trạng thái da_huy + nhật ký loghuymon trên server */
+  function confirmRemove(id) {
+    const it = S.items.find(x => x.id === id);
+    if (!it) return;
+    $('#modal-root').innerHTML = `
+      <div class="kds-overlay" data-action="close-modal">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rm-title" data-stop>
+          <h3 id="rm-title"><i class="ph-bold ph-trash" style="color:var(--red)"></i> Xóa món khỏi hàng đợi?</h3>
+          <p>Xóa <b>${it.qty}× ${esc(it.dishName)}</b> của <b>${esc(it.table)}</b> (${esc(it.orderCode)}) vì đã hết nguyên liệu.</p>
+          <p class="muted">Phục vụ sẽ nhận thông báo để báo lại cho khách.</p>
+          <div class="modal-actions">
+            <button class="btn-ghost" data-action="close-modal">Hủy</button>
+            <button class="btn-primary" style="background:var(--red)" data-action="do-remove" data-id="${it.id}">Xóa món</button>
+          </div>
+        </div>
+      </div>`;
+    $('#modal-root [data-action="do-remove"]').focus();
+  }
+  function removeItem(id) {
+    const it = S.items.find(x => x.id === id);
+    if (!it) return;
+    perform({ op: 'cancel', id, table: it.table, label: `${it.qty}× ${it.dishName}` });
+  }
+
+  /* Demo AC1 — chỉ chạy khi backend bật DEMO_MODE=true */
+  async function demoOrders() {
+    try {
+      await api('POST', '/kds/demo/orders');
+      refreshSoon();
+    } catch (err) {
+      toast(err.status === 404 ? 'Chức năng demo đang tắt — đặt <b>DEMO_MODE=true</b> trong backend/.env rồi chạy lại backend' : esc(err.message),
+        'err', 'ph-warning-circle');
+    }
+  }
+
+  function updateConnUI() {
+    const online = isOnline();
+    $('#offline-banner').hidden = online;
+    $('#queue-count').textContent = S.queue.length ? `${S.queue.length} thao tác chờ sync` : '';
+    const c = $('#conn');
+    if (c) {
+      const live = online && S.wsUp;
+      c.className = `conn ${live ? 'on' : 'off'}`;
+      c.innerHTML = `<span class="dot"></span> ${live ? 'Realtime' : online ? 'Đang kết nối lại…' : 'Offline'}`;
+    }
+  }
+
+  /* ---------- Render ---------- */
+  /* Menu "⋯" — thao tác phụ: trả về Chờ nấu, báo Hết hàng / mở bán lại */
+  function renderMenu(it, oos) {
+    if (S.menuFor !== it.id) return '';
+    return `
+      <div class="pop" role="menu">
+        ${it.status === 'COOKING' ? `<button role="menuitem" data-action="status" data-id="${it.id}" data-to="PENDING"><i class="ph ph-arrow-left"></i> Trả về Chờ nấu</button>` : ''}
+        ${oos
+          ? `<button role="menuitem" data-action="restock" data-dish="${it.dishId}"><i class="ph ph-arrow-counter-clockwise"></i> Mở bán lại món này</button>`
+          : `<button role="menuitem" class="danger" data-action="ask-oos" data-dish="${it.dishId}"><i class="ph ph-prohibit"></i> Đánh dấu Hết hàng (OOS)</button>`}
+      </div>`;
+  }
+
+  /* Mỗi thẻ chỉ 1 hành động chính: Chờ nấu → "Bắt đầu nấu", Đang nấu → "Xong" */
+  function renderCard(it) {
+    const oos = isOos(it.dishId);
+    const queued = S.queue.some(q => q.id === it.id);
+    const blocked = oos && it.status === 'PENDING';    /* hết nguyên liệu khi chưa nấu → chỉ còn nút Xóa */
+    let action;
+    if (blocked) action = `<button class="kc-btn danger" data-action="ask-remove" data-id="${it.id}">Xóa khỏi hàng đợi</button>`;
+    else if (it.status === 'PENDING') action = `
+      <div class="kc-actions">
+        <button class="kc-btn" data-action="status" data-id="${it.id}" data-to="COOKING">Bắt đầu nấu</button>
+        <button class="kc-btn success" data-action="status" data-id="${it.id}" data-to="READY">Xong</button>
+      </div>`;
+    else if (it.status === 'COOKING') action = `<button class="kc-btn solid" data-action="status" data-id="${it.id}" data-to="READY">Xong</button>`;
+    else action = `
+      <div class="kc-ready">
+        <span>${queued ? 'Sẽ báo phục vụ khi có mạng' : 'Đã báo phục vụ'}</span>
+        <button class="link-btn" data-action="status" data-id="${it.id}" data-to="COOKING">Hoàn tác</button>
+      </div>`;
+    return `
+    <article class="kcard ${blocked ? 'oos-card' : ''} ${S.newIds.has(it.id) ? 'is-new' : ''}" draggable="${!blocked}" data-id="${it.id}"
+      aria-label="${esc(it.table)}: ${it.qty} ${esc(it.dishName)} — ${COLS[it.status].label}">
+      <div class="kc-top">
+        <b>${esc(it.table)}</b><span>${esc(it.orderCode)}</span>
+        <span class="kc-time" title="Giờ gọi món">${fmtTime(it.placedTs)}</span>
+        <button class="kc-more" data-action="menu" data-id="${it.id}" aria-label="Tùy chọn khác" aria-expanded="${S.menuFor === it.id}"><i class="ph-bold ph-dots-three"></i></button>
+      </div>
+      <h3><span class="qty">${it.qty}×</span> ${esc(it.dishName)}</h3>
+      ${it.origQty && it.origQty !== it.qty ? `<span class="kc-part">${{ PENDING: 'Còn lại', COOKING: 'Đang nấu', READY: 'Đã nấu' }[it.status]} ${it.qty}/${it.origQty} suất</span>` : ''}
+      ${it.note ? `<p class="kc-note">${esc(it.note)}</p>` : ''}
+      ${blocked ? `<span class="pill pill-danger kc-oos">Hết hàng · không thể nấu</span>` : ''}
+      ${queued && it.status !== 'READY' ? `<p class="kc-sub">Chờ đồng bộ</p>` : ''}
+      ${action}
+      ${renderMenu(it, oos)}
+    </article>`;
+  }
+
+  /* AC1 — mẻ gợi ý nấu chung: 1 khung, liệt kê các bàn, mỗi bàn vẫn có nút riêng (AC2) */
+  function renderBatch(b) {
+    const name = esc(menuName(b.dishId));
+    return `
+    <section class="batch" aria-label="Gợi ý nấu chung ${b.totalQty} ${name}">
+      <span class="pill pill-warning"><i class="ph-bold ph-sparkle"></i> Gợi ý nấu chung</span>
+      <h3><b>${b.totalQty}×</b> ${name}</h3>
+      <ul class="batch-rows">
+        ${b.items.map(it => `
+          <li class="kcard-row" draggable="true" data-id="${it.id}">
+            <b>${esc(it.table)}</b><span>${it.origQty && it.origQty !== it.qty ? `còn ${it.qty}/${it.origQty}` : `${it.qty}×`}${it.note ? ' · ' + esc(it.note) : ''} · <time>${fmtTime(it.placedTs)}</time></span>
+            <div class="row-actions">
+              <button class="row-btn" data-action="status" data-id="${it.id}" data-to="COOKING" aria-label="Nấu riêng ${esc(it.table)}">Nấu</button>
+              <button class="row-btn success" data-action="status" data-id="${it.id}" data-to="READY" aria-label="Xong ${esc(it.table)}">Xong</button>
+            </div>
+          </li>`).join('')}
+      </ul>
+      <button class="kc-btn solid" data-action="cook-batch" data-dish="${b.dishId}">Nấu cả mẻ</button>
+    </section>`;
+  }
+
+  function renderColumn(status, batches) {
+    const list = S.items.filter(it => it.status === status).sort((a, b) => a.placedTs - b.placedTs);   /* FIFO */
+    let body;
+    if (status === 'PENDING') {
+      /* AC1 — mẻ gợi ý nấu chung luôn ưu tiên lên đầu cột */
+      const batched = new Set(batches.flatMap(b => b.items.map(x => x.id)));
+      body = batches.map(renderBatch).join('') + list.filter(it => !batched.has(it.id)).map(renderCard).join('');
+    } else {
+      body = list.map(renderCard).join('');
+    }
+    const empty = { PENDING: 'Chưa có món chờ nấu', COOKING: 'Kéo thẻ vào đây để bắt đầu nấu', READY: 'Kéo thẻ vào đây khi món đã nấu xong' }[status];
+    return `
+    <section class="col" data-status="${status}" data-drop="${status}">
+      <header class="col-head"><i class="ph-bold ${COLS[status].icon} col-ico" aria-hidden="true"></i>${COLS[status].label}<span class="count">${list.length}</span></header>
+      <div class="col-body">${body || `<div class="col-empty">${empty}</div>`}</div>
+    </section>`;
+  }
+
+  function renderForbidden() {
+    return `
+    <div class="forbidden" role="alert">
+      <div class="code">403</div>
+      <h2>Forbidden — Không có quyền truy cập KDS</h2>
+      <p>Tài khoản vai <b>${esc(S.role)}</b> không được phép thao tác trên màn hình Bếp. Chỉ <b>CHEF</b> hoặc <b>MANAGER</b> được truy cập (NFR-RO-03).</p>
+      <p>Đang chuyển về màn hình POS sau <b id="redir">5</b> giây…</p>
+      <div class="actions">
+        <a href="${POS_URL}"><button class="btn-primary">Về màn hình POS ngay</button></a>
+      </div>
+    </div>`;
+  }
+
+  /* Chưa tải được dữ liệu lần đầu: báo lỗi rõ ràng + cách sửa, không treo màn hình */
+  function renderLoadState() {
+    if (!S.loadError) return `<div class="col-empty" role="status">Đang tải dữ liệu bếp…</div>`;
+    return `
+    <div class="forbidden" role="alert">
+      <div class="code"><i class="ph-bold ph-plugs"></i></div>
+      <h2>Không kết nối được máy chủ</h2>
+      <p>KDS không tải được danh sách món từ <b>${esc(API_BASE)}</b>. Kiểm tra backend đang chạy (<code>uv run uvicorn app.main:app --reload</code>) và mạng Wi-Fi.</p>
+      <div class="actions"><button class="btn-primary" data-action="retry">Thử lại</button></div>
+    </div>`;
+  }
+
+  let redirectTimer = null;
+  function render() {
+    clearInterval(redirectTimer);
+    if (!ALLOWED_ROLES.includes(S.role)) {
+      $('#app').innerHTML = renderForbidden();
+      let n = 5;
+      redirectTimer = setInterval(() => {
+        n -= 1;
+        const el = $('#redir'); if (el) el.textContent = n;
+        if (n <= 0) { clearInterval(redirectTimer); location.href = POS_URL; }
+      }, 1000);
+      return;
+    }
+    const batches = aiBatching(S.items);
+    const oosCount = S.menu.filter(d => isOos(d.id)).length;
+
+    $('#app').innerHTML = `
+    <div class="kds-head">
+      <div>
+        <h2><i class="ph-bold ph-chef-hat"></i> Bếp KDS</h2>
+        <p>${S.role === 'CHEF' ? 'Bếp trưởng Hùng' : 'Quản lý ca'} · <span data-clock>${fmtTime(Date.now())}</span> · <span id="conn" class="conn"></span> ·
+          <button class="sound-toggle ${S.soundOn ? '' : 'off'}" data-action="sound" aria-pressed="${S.soundOn}" aria-label="${S.soundOn ? 'Tắt âm thanh báo đơn' : 'Bật âm thanh báo đơn'}">
+            <i class="ph-bold ${S.soundOn ? 'ph-speaker-high' : 'ph-speaker-slash'}"></i> ${S.soundOn ? 'Âm thanh' : 'Đã tắt tiếng'}</button></p>
+      </div>
+    </div>
+
+    ${S.loaded ? `<div class="board">${STATUSES.map(s => renderColumn(s, batches)).join('')}</div>
+
+    <details class="stock" ${S.stockOpen ? 'open' : ''}>
+      <summary>Tồn kho <span>· ${oosCount ? `${oosCount} món hết hàng` : 'tất cả còn hàng'}</span></summary>
+      <ul>
+        ${S.menu.map(d => {
+          const oos = isOos(d.id);
+          return `<li class="${oos ? 'oos' : ''}">
+            <span class="name">${esc(d.name)}</span><span class="state">${oos ? 'Hết hàng' : d.stock != null ? `Còn ${d.stock}` : 'Còn hàng'}</span>
+            <button data-action="${oos ? 'restock' : 'ask-oos'}" data-dish="${d.id}">${oos ? 'Mở bán lại' : 'Báo hết'}</button></li>`;
+        }).join('')}
+      </ul>
+    </details>` : renderLoadState()}`;
+    updateConnUI();
+  }
+
+  /* ---------- Sự kiện giao diện ---------- */
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-action]');
+    if (e.target.closest('[data-stop]') && !el) return;
+    if (!el) { if (S.menuFor) { S.menuFor = null; render(); } return; }
+    if (el.dataset.action === 'close-modal' && e.target.closest('[data-stop]') && el.classList.contains('kds-overlay')) return;
+    const { id, to, dish } = el.dataset;
+    switch (el.dataset.action) {
+      case 'status': S.menuFor = null; askQty(id, to); break;
+      case 'split-dec': S.split.n = Math.max(1, S.split.n - 1); renderSplit(); break;
+      case 'split-inc': S.split.n += 1; renderSplit(); break;
+      case 'split-all': S.split.n = S.items.find(x => x.id === S.split.id).qty; renderSplit(); break;
+      case 'split-ok': { const sp = S.split; S.split = null; closeModal(); splitItem(sp.id, sp.n, sp.to); break; }
+      case 'cook-batch': cookBatch(dish); break;
+      case 'menu': S.menuFor = S.menuFor === id ? null : id; render(); break;
+      case 'menu-close': S.menuFor = null; render(); break;
+      case 'ask-oos': S.menuFor = null; render(); confirmOos(dish); break;
+      case 'do-oos': closeModal(); setStock(dish, false); break;
+      case 'ask-remove': S.menuFor = null; render(); confirmRemove(id); break;
+      case 'do-remove': closeModal(); removeItem(id); break;
+      case 'restock': S.menuFor = null; setStock(dish, true); break;
+      case 'close-modal': S.split = null; closeModal(); break;
+      case 'sound': S.soundOn = !S.soundOn; if (S.soundOn) ting(); render(); break;
+      case 'sim-ac1': demoOrders(); break;
+      case 'retry': S.loadError = ''; render(); refresh(); break;
+    }
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeModal(); if (S.menuFor) { S.menuFor = null; render(); } }
+  });
+
+  /* Giữ trạng thái mở/đóng của khung Tồn kho khi render lại */
+  document.addEventListener('toggle', e => { if (e.target.matches?.('details.stock')) S.stockOpen = e.target.open; }, true);
+
+  /* Kéo thả giữa các cột (AC2) — kéo thẳng từ Chờ nấu sang Đã nấu vẫn được */
+  document.addEventListener('dragstart', e => {
+    const card = e.target.closest?.('.kcard, .kcard-row');
+    if (!card) return;
+    e.dataTransfer.setData('text/plain', card.dataset.id);
+    e.dataTransfer.effectAllowed = 'move';
+    card.classList.add('dragging');
+  });
+  document.addEventListener('dragend', e => {
+    e.target.closest?.('.kcard, .kcard-row')?.classList.remove('dragging');
+    document.querySelectorAll('.col.drag-over').forEach(c => c.classList.remove('drag-over'));
+  });
+  document.addEventListener('dragover', e => {
+    const col = e.target.closest?.('[data-drop]');
+    if (!col) return;
+    e.preventDefault();
+    document.querySelectorAll('.col.drag-over').forEach(c => c !== col && c.classList.remove('drag-over'));
+    col.classList.add('drag-over');
+  });
+  document.addEventListener('drop', e => {
+    const col = e.target.closest?.('[data-drop]');
+    if (!col) return;
+    e.preventDefault();
+    col.classList.remove('drag-over');
+    setStatus(e.dataTransfer.getData('text/plain'), col.dataset.drop);
+  });
+
+  /* Demo: mất mạng */
+  $('#sim-offline').addEventListener('change', e => { S.forceOffline = e.target.checked; S.forceOffline ? updateConnUI() : flushQueue(); render(); });
+  window.addEventListener('offline', () => { updateConnUI(); render(); });
+  window.addEventListener('online', () => { flushQueue(); render(); });
+
+  setInterval(() => { const c = document.querySelector('[data-clock]'); if (c) c.textContent = fmtTime(Date.now()); }, 15000);
+
+  /* Chiều cao thanh tiêu đề (đổi khi xuống dòng trên màn hình hẹp) → banner Offline dính ngay bên dưới */
+  const syncTopbarH = () => document.documentElement.style.setProperty('--topbar-h', `${$('.topbar').offsetHeight}px`);
+  window.addEventListener('resize', syncTopbarH);
+  syncTopbarH();
+
+  render();
+  refresh().then(flushQueue);   /* tải dữ liệu thật; còn thao tác từ phiên offline trước → gửi ngay */
+  </script>
+</body>
+</html>
