@@ -14,8 +14,8 @@ from app.schemas.voice import (
     VoiceInterpretOut,
     VoiceOos,
     VoiceRecommendation,
-    VoiceWarning,
     VoiceStockLimit,
+    VoiceWarning,
 )
 
 QUANTITIES = {
@@ -287,7 +287,8 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
                         allergen=allergen,
                         message=(
                             f"Lưu ý, {dish.tenmon} có chứa hoặc có thể có {allergen}. "
-                            "Vì anh/chị báo dị ứng, em xin phép báo nhân viên kiểm tra trước khi chốt món ạ."
+                            "Vì anh/chị báo dị ứng, em xin phép báo nhân viên"
+                            " kiểm tra trước khi chốt món ạ."
                         ),
                     )
                 )
@@ -304,9 +305,14 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
             and not any(_dish_contains_allergen(item, allergy) for allergy in reported_allergies)
         ][:3]
 
-    intent = "order" if adds or out_of_stock or ambiguities or stock_limits or not_found else (
-        "suggestion" if suggestions else "recommendation" if has_recommendation_intent else "unknown"
-    )
+    if adds or out_of_stock or ambiguities or stock_limits or not_found:
+        intent = "order"
+    elif suggestions:
+        intent = "suggestion"
+    elif has_recommendation_intent:
+        intent = "recommendation"
+    else:
+        intent = "unknown"
     if warnings:
         message_parts = [warning.message for warning in warnings]
     else:
@@ -347,7 +353,10 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
             f"Dạ, em đã ghi nhận {confirmed}. Anh/chị có muốn gọi thêm món nào nữa không ạ?"
         )
     elif out_of_stock:
-        message_parts.append("Dạ, món anh/chị chọn hiện đã hết hàng. Anh/chị chọn món khác giúp em nhé ạ.")
+        message_parts.append(
+            "Dạ, món anh/chị chọn hiện đã hết hàng."
+            " Anh/chị chọn món khác giúp em nhé ạ."
+        )
     elif recommendations:
         message_parts.append(
             "Dạ, em gợi ý "

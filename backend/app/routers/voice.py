@@ -30,8 +30,9 @@ async def interpret_voice(body: VoiceInterpretIn, db: Db) -> VoiceInterpretOut:
     response_model=VoiceInterpretOut,
     summary="Phân tích yêu cầu gọi món bằng AI",
     description=(
-        "US-02: trích xuất món, số lượng và ghi chú từ transcript; đối chiếu giá/tồn kho với database. "
-        "Chỉ cập nhật Order Draft, không gửi đơn xuống KDS."
+        "US-02: trích xuất món, số lượng và ghi chú từ transcript;"
+        " đối chiếu giá/tồn kho với database."
+        " Chỉ cập nhật Order Draft, không gửi đơn xuống KDS."
     ),
 )
 async def parse_voice_order(body: VoiceInterpretIn, db: Db) -> VoiceInterpretOut:

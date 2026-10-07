@@ -11,9 +11,15 @@ class VoiceDraftLine(BaseModel):
 class VoiceInterpretIn(BaseModel):
     """Văn bản transcript do Web Speech API hoặc client STT gửi lên."""
 
-    transcript: str = Field(min_length=1, max_length=2000, description="Nội dung khách vừa nói")
-    draft: list[VoiceDraftLine] = Field(default_factory=list, description="Số lượng món hiện có trong Order Draft")
-    table_name: str | None = Field(default=None, max_length=80, description="Tên bàn để gắn phiên gọi món")
+    transcript: str = Field(
+        min_length=1, max_length=2000, description="Nội dung khách vừa nói"
+    )
+    draft: list[VoiceDraftLine] = Field(
+        default_factory=list, description="Số lượng món hiện có trong Order Draft"
+    )
+    table_name: str | None = Field(
+        default=None, max_length=80, description="Tên bàn để gắn phiên gọi món"
+    )
 
     @field_validator("transcript")
     @classmethod
@@ -67,7 +73,9 @@ class VoiceRecommendation(BaseModel):
 
 class VoiceInterpretOut(BaseModel):
     transcript: str
-    intent: Literal["order", "recommendation", "suggestion", "ingredient_search", "finish", "unknown"]
+    intent: Literal[
+        "order", "recommendation", "suggestion", "ingredient_search", "finish", "unknown"
+    ]
     adds: list[VoiceAdd] = Field(default_factory=list)
     ambiguities: list[VoiceAmbiguity] = Field(default_factory=list)
     oos: list[VoiceOos] = Field(default_factory=list)
