@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
+from app.routers.menu import broadcast_flipped
 from app.schemas.order import (
     CloseTableOut,
     OrderCreateIn,
@@ -14,6 +15,7 @@ from app.schemas.order import (
     TableOut,
 )
 from app.services import orders as service
+from app.ws.manager import KDS_CHANNEL, manager
 
 router = APIRouter(tags=["orders"])
 Db = Annotated[AsyncSession, Depends(get_db)]
@@ -22,7 +24,20 @@ Db = Annotated[AsyncSession, Depends(get_db)]
 @router.post("/orders", response_model=OrderCurrentOut)
 async def create_order(data: OrderCreateIn, db: Db) -> OrderCurrentOut:
     """US-01 — Gửi bếp: đợt 1 tạo phiên + hóa đơn 'da_chot'; đợt 2+ chèn thêm món."""
-    return await service.create_order(db, data)
+    order, changed = await service.create_order(db, data)
+    # US-03 AC1: báo màn hình Bếp (KDS) có món mới — KDS tự tải lại GET /kds/items
+    await manager.publish(
+        KDS_CHANNEL,
+        "KDS_ITEMS_CHANGED",
+        {
+            "item_ids": [i.id for i in order.items if i.trangthai == "cho_nau"],
+            "reason": "new_order",
+            "ban": order.table_name,
+        },
+    )
+    # Món vừa hết hàng do trừ kho → khóa trên E-Menu/KDS ngay (US-03 AC3)
+    await broadcast_flipped(db, changed)
+    return order
 
 
 @router.get("/orders/current", response_model=OrderCurrentOut)

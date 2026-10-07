@@ -237,50 +237,34 @@
                 </div>
             </div>
 
-            <!-- TAB 4: INGREDIENTS (THỰC PHẨM) -->
+            <!-- TAB 4: INGREDIENTS (THỰC PHẨM) — nguyên liệu `tonkho` qua API /inventory/ingredients
+                 Spec: vault/06-Engineering/story-spec-tru-kho-tu-dong.md -->
             <div id="tab-ingredients" class="tab-pane">
                 <div class="panel">
                     <div class="panel-header">
                         <div class="search-box">
                             <i class="ph-bold ph-magnifying-glass"></i>
-                            <input type="text" placeholder="Tìm kiếm nguyên liệu...">
+                            <input type="text" id="ing-search" placeholder="Tìm kiếm nguyên liệu...">
                         </div>
                         <div class="actions">
-                            <button class="btn btn-primary" onclick="alert('Chức năng thêm nguyên liệu')"><i class="ph-bold ph-plus"></i> Thêm nguyên liệu</button>
+                            <button class="btn btn-primary" onclick="openIngredientModal()"><i class="ph-bold ph-plus"></i> Thêm nguyên liệu</button>
                         </div>
                     </div>
+                    <p class="inv-period ing-hint">Tồn kho tự trừ khi khách gửi bếp, theo công thức của từng món (nhập ở nút Sửa món trong tab Thực đơn).</p>
                     <div class="table-responsive">
                         <table class="data-table" id="ingredients-table">
                             <thead>
                                 <tr>
-                                    <th>Mã NVL</th>
+                                    <th>Mã NL</th>
                                     <th>Tên nguyên liệu</th>
                                     <th>Đơn vị tính</th>
-                                    <th>Nhóm</th>
+                                    <th>Tồn kho</th>
+                                    <th>Dùng trong món</th>
                                     <th>Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td>NVL001</td>
-                                    <td>Thịt bò Mỹ</td>
-                                    <td>Kg</td>
-                                    <td>Thịt tươi sống</td>
-                                    <td>
-                                        <button class="btn-icon" title="Sửa"><i class="ph-bold ph-pencil-simple"></i></button>
-                                        <button class="btn-icon" style="color:var(--color-danger)" title="Xóa"><i class="ph-bold ph-trash"></i></button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>NVL002</td>
-                                    <td>Gạo ST25</td>
-                                    <td>Kg</td>
-                                    <td>Nông sản</td>
-                                    <td>
-                                        <button class="btn-icon" title="Sửa"><i class="ph-bold ph-pencil-simple"></i></button>
-                                        <button class="btn-icon" style="color:var(--color-danger)" title="Xóa"><i class="ph-bold ph-trash"></i></button>
-                                    </td>
-                                </tr>
+                                <tr><td colspan="6" class="inv-empty">Đang tải nguyên liệu...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -316,8 +300,17 @@
                   </select>
               </div>
 
-              <!-- Số lượng tồn — tùy chọn cho mọi danh mục -->
-              <div class="form-group" id="menu-stock-group">
+              <!-- Cách tính tồn theo TỪNG MÓN (story-spec-tru-kho-tu-dong.md Mục 3, phương án A) -->
+              <div class="form-group">
+                  <label>Cách tính tồn kho <span class="required">*</span></label>
+                  <div class="radio-group">
+                      <label class="radio-option"><input type="radio" name="menu-stock-mode" value="che_bien" checked> Chế biến (trừ nguyên liệu theo công thức)</label>
+                      <label class="radio-option"><input type="radio" name="menu-stock-mode" value="mua_san"> Mua sẵn (đếm theo số lượng, vd. sữa chua hũ, nước lon)</label>
+                  </div>
+              </div>
+
+              <!-- Số lượng tồn — chỉ hiện với món Mua sẵn -->
+              <div class="form-group" id="menu-stock-group" hidden>
                   <label for="menu-stock">Số lượng tồn</label>
                   <input type="number" min="0" id="menu-stock" class="form-control" placeholder="Nhập số lượng tồn">
               </div>
@@ -429,7 +422,16 @@
                   </select>
               </div>
 
-              <div class="form-group" id="edit-stock-group">
+              <!-- Cách tính tồn theo TỪNG MÓN (story-spec-tru-kho-tu-dong.md Mục 3, phương án A) -->
+              <div class="form-group">
+                  <label>Cách tính tồn kho <span class="required">*</span></label>
+                  <div class="radio-group">
+                      <label class="radio-option"><input type="radio" name="edit-stock-mode" value="che_bien" checked> Chế biến (trừ nguyên liệu theo công thức)</label>
+                      <label class="radio-option"><input type="radio" name="edit-stock-mode" value="mua_san"> Mua sẵn (đếm theo số lượng, vd. sữa chua hũ, nước lon)</label>
+                  </div>
+              </div>
+
+              <div class="form-group" id="edit-stock-group" hidden>
                   <label for="edit-menu-stock">Số lượng tồn</label>
                   <input type="number" min="0" id="edit-menu-stock" class="form-control" placeholder="Nhập số lượng tồn">
               </div>
@@ -494,10 +496,55 @@
                       </div>
                   </div>
               </div>
+
+              <!-- Công thức: định lượng nguyên liệu cho 1 phần → tự trừ kho khi gửi bếp -->
+              <div class="smart-ordering-section recipe-section" id="edit-recipe-section">
+                  <div class="smart-ordering-header">
+                      <i class="ph-bold ph-carrot"></i>
+                      <span>Công thức (tự trừ kho khi gửi bếp)</span>
+                      <span class="recipe-portions" id="edit-recipe-portions"></span>
+                  </div>
+                  <div class="smart-ordering-body">
+                      <div id="edit-recipe-lines" class="recipe-lines"></div>
+                      <button type="button" class="btn btn-outline recipe-add" onclick="addRecipeLine()"><i class="ph-bold ph-plus"></i> Thêm nguyên liệu vào công thức</button>
+                      <p class="recipe-hint">Để trống nếu món không cần trừ nguyên liệu. Nguyên liệu mới thêm ở tab Thực phẩm.</p>
+                  </div>
+              </div>
           </div>
           <div class="modal-footer">
               <button class="btn btn-outline" onclick="closeEditMenuModal()">Hủy bỏ</button>
               <button type="button" class="btn btn-primary" onclick="submitEditMenu()"><i class="ph-bold ph-floppy-disk"></i> Lưu thay đổi</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- MODAL: THÊM / SỬA NGUYÊN LIỆU (tab Thực phẩm) -->
+  <div class="modal-overlay" id="ingredient-modal" style="display: none;">
+      <div class="modal-content form-modal">
+          <div class="modal-header modal-header--orange">
+              <h3 id="ing-modal-title"><i class="ph-bold ph-carrot"></i> Thêm nguyên liệu</h3>
+              <button class="btn-icon btn-icon--light" onclick="closeIngredientModal()" aria-label="Đóng"><i class="ph-bold ph-x"></i></button>
+          </div>
+          <div class="modal-body">
+              <input type="hidden" id="ing-id">
+              <div class="form-group">
+                  <label for="ing-name">Tên nguyên liệu <span class="required">*</span></label>
+                  <input type="text" id="ing-name" class="form-control" placeholder="VD: Thịt bò Mỹ">
+              </div>
+              <div class="form-group">
+                  <label for="ing-unit">Đơn vị tính <span class="required">*</span></label>
+                  <input type="text" id="ing-unit" class="form-control" list="ing-unit-options" placeholder="VD: kg">
+                  <datalist id="ing-unit-options"><option value="kg"><option value="g"><option value="lít"><option value="ml"><option value="quả"><option value="bó"><option value="gói"></datalist>
+              </div>
+              <div class="form-group">
+                  <label for="ing-stock">Tồn kho hiện tại <span class="required">*</span></label>
+                  <input type="number" id="ing-stock" class="form-control" min="0" step="any" placeholder="VD: 10">
+                  <span class="inv-field-error" id="ing-error"></span>
+              </div>
+          </div>
+          <div class="modal-footer">
+              <button class="btn btn-outline" onclick="closeIngredientModal()">Hủy bỏ</button>
+              <button class="btn btn-primary" id="ing-submit" onclick="submitIngredient()"><i class="ph-bold ph-floppy-disk"></i> Lưu</button>
           </div>
       </div>
   </div>

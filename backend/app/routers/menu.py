@@ -212,6 +212,12 @@ async def broadcast_availability(db: AsyncSession, mon: MenuItemOut) -> None:
     )
 
 
+async def broadcast_flipped(db: AsyncSession, dishes: list[ThucDon]) -> None:
+    """Phát realtime cho các món vừa đổi còn ↔ hết do trừ/hoàn kho (story-spec-tru-kho-tu-dong)."""
+    for mon in dishes:
+        await broadcast_availability(db, MenuItemOut.from_thucdon(mon))
+
+
 async def _set_availability(db: AsyncSession, item_id: str, available: bool) -> MenuItemOut:
     mon = MenuItemOut.from_thucdon(await kds_service.set_menu_availability(db, item_id, available))
     await broadcast_availability(db, mon)

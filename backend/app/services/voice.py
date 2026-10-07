@@ -199,7 +199,7 @@ def _build_gemini_system_prompt(dishes: list[ThucDon], draft_quantities: dict[st
     """Tạo system prompt cho Gemini dựa trên dữ liệu menu thực tế từ DB."""
     menu_lines: list[str] = []
     for d in dishes:
-        stock = d.soluongton
+        stock = d.so_phan_con  # mua sẵn: soluongton; chế biến: theo nguyên liệu
         if stock is not None:
             draft_used = draft_quantities.get(d.id, 0)
             available = max(stock - draft_used, 0)
@@ -502,8 +502,9 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
                 VoiceRecommendation(id=dish.id, name=dish.tenmon, price=int(dish.giaban))
             )
         else:
-            if dish.soluongton is not None:
-                available = max(dish.soluongton - draft_quantities.get(dish.id, 0), 0)
+            # Số phần còn: mua sẵn theo soluongton, chế biến theo nguyên liệu
+            if dish.so_phan_con is not None:
+                available = max(dish.so_phan_con - draft_quantities.get(dish.id, 0), 0)
                 if quantity > available:
                     stock_limits.append(VoiceStockLimit(
                         item_id=dish.id,

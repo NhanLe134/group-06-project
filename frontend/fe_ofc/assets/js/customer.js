@@ -583,3 +583,14 @@ loadMenu().catch(e => {
       <button class="btn-primary" style="margin-top:12px;" onclick="loadMenu()">Tải lại thực đơn</button>
     </div>`;
 });
+
+/* US-03 AC3: Bếp/Quản lý báo Hết hàng / Còn hàng → tải lại menu ngay, không cần F5.
+   Món hết hàng đang nằm trong bản nháp sẽ hiện cảnh báo và khóa nút gửi bếp. */
+if (typeof subscribeChannel === 'function') {
+  subscribeChannel('menu:oos', msg => {
+    if (msg.event !== 'ITEM_OOS_BROADCAST') return;
+    loadMenu()
+      .then(() => { renderStickyBar(); renderDraft(); })
+      .catch(() => { /* giữ menu hiện tại nếu tải lại lỗi */ });
+  });
+}

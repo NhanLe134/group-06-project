@@ -19,6 +19,7 @@ from app.schemas.order import (
     PayQrOut,
     TableOut,
 )
+from app.services import stock
 
 DA_CHOT = "da_chot"
 DA_THANH_TOAN = "da_thanh_toan"
@@ -93,8 +94,13 @@ async def current_order(db: AsyncSession, table_name: str) -> OrderCurrentOut:
     )
 
 
-async def create_order(db: AsyncSession, data: OrderCreateIn) -> OrderCurrentOut:
-    """US-01 — gửi bếp: đợt 1 tạo phiên + hóa đơn; đợt 2+ chèn thêm vào hóa đơn cũ."""
+async def create_order(
+    db: AsyncSession, data: OrderCreateIn
+) -> tuple[OrderCurrentOut, list[ThucDon]]:
+    """US-01 — gửi bếp: đợt 1 tạo phiên + hóa đơn; đợt 2+ chèn thêm vào hóa đơn cũ.
+
+    Trả thêm các món vừa đổi còn/hết hàng do trừ kho để router phát realtime.
+    """
     # Kiểm tra món hợp lệ + còn bán (REQ-09/BR-03) ngay tại server, client không bypass được
     ids = [it.thucdon_id for it in data.items]
     menu_rows = (
@@ -107,6 +113,9 @@ async def create_order(db: AsyncSession, data: OrderCreateIn) -> OrderCurrentOut
             raise ApiError(404, "MENU_ITEM_NOT_FOUND", f"Không tìm thấy món {it.thucdon_id}.")
         if mon.het_hang:
             raise ApiError(409, "ITEM_OUT_OF_STOCK", f"Món '{mon.tenmon}' đã hết hàng.")
+
+    # Trừ kho ngay khi gửi bếp (story-spec-tru-kho-tu-dong.md Q1); thiếu hàng → 409, không tạo món
+    watch = await stock.reserve(db, [(it.thucdon_id, it.soluong) for it in data.items])
 
     # Phiên bàn: đợt 1 → tạo mới; đợt 2+ → dùng phiên đang phục vụ
     phien = await get_active_session(db, data.table_name)
@@ -145,7 +154,7 @@ async def create_order(db: AsyncSession, data: OrderCreateIn) -> OrderCurrentOut
     ).scalar_one()
     hoadon.tongtien = int(tongtien)
     await db.commit()
-    return await current_order(db, data.table_name)
+    return await current_order(db, data.table_name), stock.flipped(watch)
 
 
 async def list_cashier_tables(db: AsyncSession) -> list[TableOut]:
