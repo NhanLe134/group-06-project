@@ -28,6 +28,7 @@ async def test_list_menu_items_maps_thucdon_to_api_fields(
     assert body[0]["price"] == 65000
     assert body[0]["category"] == "Món chính"
     assert body[0]["status"] == "available"
+    assert body[0]["bestseller"] is False  # banchay NULL → không phải món bán chạy
 
 
 async def test_menu_item_out_of_stock_when_trangthaiban_false(

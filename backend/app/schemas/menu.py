@@ -15,6 +15,7 @@ class MenuItemOut(BaseModel):
     category: str | None
     status: str
     stock: int | None
+    bestseller: bool = False
     listed: bool = True
     portions: int | None = None  # số phần còn làm được (story-spec-tru-kho-tu-dong.md)
 
@@ -29,6 +30,7 @@ class MenuItemOut(BaseModel):
             category=mon.phanloai,
             status="out_of_stock" if mon.het_hang else "available",
             stock=mon.soluongton,
+            bestseller=bool(mon.banchay),
             listed=mon.trangthaiban is not False,
             portions=mon.so_phan_con,
         )

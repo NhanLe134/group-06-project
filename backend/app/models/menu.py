@@ -50,6 +50,8 @@ class ThucDon(Base):
     loaimon: Mapped[str | None] = mapped_column(String(30), default=None)
     thongtindiung: Mapped[str | None] = mapped_column(Text, default=None)
     soluongton: Mapped[int | None] = mapped_column(Integer, default=None)
+    # Món bán chạy — nhãn 🔥 Bán chạy trên E-Menu (ADR-002)
+    banchay: Mapped[bool | None] = mapped_column(Boolean, default=None)
 
     # Công thức nạp sẵn cùng món (selectin) để tính số phần còn mà không lazy-load trong async
     congthuc: Mapped[list["CongThuc"]] = relationship(

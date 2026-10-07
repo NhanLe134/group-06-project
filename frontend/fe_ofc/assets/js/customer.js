@@ -106,20 +106,27 @@ function renderCard(d) {
   const thumb = d.image_url
     ? `<img class="menu-thumb-img" src="${esc(d.image_url)}" alt="${esc(d.name)}">`
     : '<i class="ph-duotone ph-fork-knife"></i>';
+  /* Badge bán chạy overlay góc ảnh — đặt trong h3 sẽ bị cắt bởi ellipsis tên món */
+  const hotBadge = d.bestseller
+    ? '<span class="badge-hot"><i class="ph-fill ph-fire"></i>Bán chạy</span>'
+    : '';
   return `
     <article class="menu-card ${oos ? 'oos' : ''}">
-      <div class="menu-thumb">${thumb}</div>
+      ${hotBadge}
+      <div class="menu-thumb-wrap">
+        <div class="menu-thumb">${thumb}</div>
+      </div>
       <div class="menu-info">
-        <h3>${esc(d.name)}</h3>
+        <h3 title="${esc(d.name)}">${esc(d.name)}</h3>
         <p class="menu-price">${fmtVND(d.price)}</p>
-        ${oos ? '<span class="badge-oos">Hết hàng</span>' : ''}
       </div>
       ${q === 0
-        ? `<button class="btn-add" data-add="${d.id}" ${oos ? 'disabled' : ''}
-            aria-label="Thêm ${d.name} vào đơn"
-            title="${oos ? 'Món này hiện đã hết, vui lòng chọn món khác.' : 'Thêm vào Order Draft'}">
-            <i class="ph-bold ph-plus"></i>
-          </button>`
+        ? (oos
+          ? '<span class="btn-soldout" title="Món này hiện đã hết, vui lòng chọn món khác.">Hết</span>'
+          : `<button class="btn-add" data-add="${d.id}"
+              aria-label="Thêm ${d.name} vào đơn" title="Thêm vào Order Draft">
+              <i class="ph-bold ph-plus"></i>
+            </button>`)
         : `<div class="qty-ctrl" aria-label="${d.name} đã có ${q} phần trong giỏ">
             <button data-dec-menu="${d.id}" aria-label="Giảm ${d.name}"><i class="ph-bold ph-minus"></i></button>
             <span class="qty-num">${q}</span>
