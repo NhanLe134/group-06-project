@@ -44,7 +44,11 @@ class ThucDon(Base):
     giaban: Mapped[int] = mapped_column(Integer)
     trangthaiban: Mapped[bool | None] = mapped_column(Boolean, server_default=true())
     anhminhhoa: Mapped[str | None] = mapped_column(Text, default=None)
-    # Số lượng tồn của món bán nguyên đơn vị (đồ uống chai/lon...). NULL = không đếm số lượng.
+    mota: Mapped[str | None] = mapped_column(Text, default=None)
+    thanhphan: Mapped[str | None] = mapped_column(Text, default=None)
+    docay: Mapped[str | None] = mapped_column(String(30), default=None)
+    loaimon: Mapped[str | None] = mapped_column(String(30), default=None)
+    thongtindiung: Mapped[str | None] = mapped_column(Text, default=None)
     soluongton: Mapped[int | None] = mapped_column(Integer, default=None)
 
     @property

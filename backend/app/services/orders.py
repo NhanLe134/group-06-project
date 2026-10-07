@@ -11,7 +11,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.errors import ApiError
-from app.models import ChiTietMon, HoaDon, PhienBan, ThucDon
+from app.models import ChiTietMon, HoaDon, LogGiongNoi, PhienBan, ThucDon
 from app.schemas.order import (
     OrderCreateIn,
     OrderCurrentOut,
@@ -223,6 +223,10 @@ async def close_table(db: AsyncSession, phienban_id: str) -> dict:
     hoadon.thoigian_thanhtoan = func.now()
     phien.trangthai = TRONG
     phien.gioketthuc = func.now()
+    # NFR-RO-02: xóa transcript và ý định AI gắn với phiên ngay khi đóng bàn.
+    await db.execute(
+        LogGiongNoi.__table__.delete().where(LogGiongNoi.phienban_id == phien.id)
+    )
     await db.commit()
     return {
         "phienban_id": str(phien.id),

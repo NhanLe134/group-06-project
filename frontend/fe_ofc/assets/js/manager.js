@@ -28,14 +28,41 @@ navItems.forEach(item => {
 // ==========================================
 // NGHIỆP VỤ: CMS QUẢN LÝ THỰC ĐƠN (CRUD MÓN ĂN - REQ-11)
 // ==========================================
-let menuItems = [
-    { id: 'M01', name: 'Lẩu Thái Tomyum', category: 'Món chính', price: 350000, status: 'Đang bán', statusClass: 'badge-success', img: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=200' },
-    { id: 'M02', name: 'Súp cua tuyết', category: 'Khai vị', price: 850000, status: 'Tạm ẩn', statusClass: 'badge-danger', img: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=200' },
-    { id: 'M03', name: 'Cơm chiên hải sản', category: 'Món chính', price: 110000, status: 'Đang bán', statusClass: 'badge-success', img: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=200' }
-];
-
-// Only drinks use tracked stock; keep the rest of the menu stock-free.
-menuItems.forEach(item => { if (item.category === 'Đồ uống') item.stock = 12; });
+let menuItems = [];
+const MENU_API = `${(window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || 'http://localhost:8000'}/api/menu`;
+async function menuRequest(method, path = '', body) {
+    let response;
+    try {
+        response = await fetch(MENU_API + path, {
+            method,
+            headers: body ? { 'Content-Type': 'application/json' } : undefined,
+            body: body ? JSON.stringify(body) : undefined,
+        });
+    } catch {
+        throw new Error('Không kết nối được backend. Hãy kiểm tra FastAPI đang chạy.');
+    }
+    if (response.status === 204) return null;
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.message || data.detail || `Backend trả lỗi HTTP ${response.status}`);
+    return data;
+}
+function mapMenuItem(item) {
+    return {
+        ...item,
+        img: item.image_url || '',
+        stock: item.stock,
+        status: item.is_available ? 'Đang bán' : 'Tạm ẩn',
+        statusClass: item.is_available ? 'badge-success' : 'badge-danger',
+    };
+}
+async function loadMenuItems() {
+    try {
+        menuItems = (await menuRequest('GET')).map(mapMenuItem);
+        renderMenu();
+    } catch (error) {
+        menuTableBody.innerHTML = `<tr><td colspan="8">${error.message} <button class="btn btn-outline" onclick="loadMenuItems()">Thử lại</button></td></tr>`;
+    }
+}
 const menuFilters = { price: 'all', status: 'all', stock: 'all' };
 
 const menuTableBody = document.querySelector('#menu-table tbody');
@@ -60,7 +87,7 @@ function renderMenu() {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${index + 1}</td>
-            <td><div class="mock-img" style="background-image: url('${item.img}')"></div></td>
+            <td><div class="mock-img ${item.img ? '' : 'mock-img-empty'}" ${item.img ? `style="background-image: url('${item.img}')"` : ''}>${item.img ? '' : '<i class="ph-bold ph-image"></i>'}</div></td>
             <td><b>${item.name}</b></td>
             <td>${item.category}</td>
             <td>${item.price.toLocaleString('vi-VN')}đ</td>
@@ -73,9 +100,9 @@ function renderMenu() {
 }
 
 window.updateMenuStock = function(id, value) {
-    const item = menuItems.find(menuItem => menuItem.id === id);
-    if (item) item.stock = Math.max(0, Number.parseInt(value, 10) || 0);
-    renderMenu();
+    menuRequest('PATCH', `/items/${encodeURIComponent(id)}/stock`, { stock: Math.max(0, Number.parseInt(value, 10) || 0) })
+        .then(loadMenuItems)
+        .catch(error => showToast('Không thể cập nhật tồn kho', error.message, 'danger'));
 };
 window.showMenuDetail = function(id) {
     const item = menuItems.find(menuItem => menuItem.id === id);
@@ -119,10 +146,9 @@ window.showMenuDetail = function(id) {
 
             <div class="form-group">
                 <label>Hình ảnh Minh họa</label>
-                <div class="upload-box has-image" style="cursor:default;">
-                    <img src="${item.img}" alt="${item.name}" style="max-height:140px; max-width:100%; border-radius:8px;">
-                    <p style="margin-top:8px; font-size:12px;">${item.name}</p>
-                </div>
+                ${item.img
+                    ? `<div class="upload-box has-image" style="cursor:default;"><img src="${item.img}" alt="${item.name}" style="max-height:140px; max-width:100%; border-radius:8px;"><p style="margin-top:8px; font-size:12px;">${item.name}</p></div>`
+                    : '<div class="menu-no-image"><i class="ph-bold ph-image"></i><span>Chưa có ảnh minh họa</span></div>'}
             </div>
 
             <div class="form-group">
@@ -243,7 +269,7 @@ window.previewEditImage = function(event) {
     reader.readAsDataURL(file);
 };
 
-window.submitEditMenu = function() {
+window.submitEditMenu = async function() {
     const id = document.getElementById('edit-menu-id').value;
     const name = document.getElementById('edit-menu-name').value.trim();
     const category = document.getElementById('edit-menu-category').value;
@@ -258,33 +284,31 @@ window.submitEditMenu = function() {
     if (!ingredients) { showToast('Lỗi nhập liệu', 'Vui lòng nhập Thành phần!', 'danger'); document.getElementById('edit-menu-ingredients').focus(); return; }
     if (!allergens) { showToast('Lỗi nhập liệu', 'Vui lòng nhập Thông tin dị ứng!', 'danger'); document.getElementById('edit-menu-allergens').focus(); return; }
 
-    const item = menuItems.find(i => i.id === id);
-    if (!item) return;
-
     const previewEl = document.getElementById('edit-upload-preview');
-    const imgSrc = previewEl.src || item.img;
+    const oldItem = menuItems.find(item => item.id === id);
+    const imageChanged = document.getElementById('edit-image-input').files.length > 0;
+    const imgSrc = imageChanged ? previewEl.src : (oldItem?.image_url || null);
 
     const status = document.getElementById('edit-menu-status').value;
-    item.name = name;
-    item.category = category;
-    item.price = parseInt(priceStr);
-    item.status = status;
-    item.statusClass = status === 'Đang bán' ? 'badge-success' : 'badge-danger';
-    item.description = description;
-    item.ingredients = ingredients;
-    item.spicy = document.getElementById('edit-menu-spicy').value;
-    item.diet = document.querySelector('input[name="edit-menu-diet"]:checked').value;
-    item.allergens = allergens;
-    item.img = imgSrc;
-    if (category === 'Đồ uống') {
-        item.stock = Number.parseInt(document.getElementById('edit-menu-stock').value, 10) || 0;
-    } else {
-        delete item.stock;
+    const stockInput = document.getElementById('edit-menu-stock').value;
+    showToast('Đang cập nhật món', 'Đang lưu thay đổi vào thực đơn...', 'primary');
+    try {
+        const saved = await menuRequest('PUT', `/${encodeURIComponent(id)}`, {
+            name, category, price: Number.parseInt(priceStr, 10), description,
+            image_url: imgSrc, is_available: status === 'Đang bán',
+            stock: category === 'Đồ uống' && stockInput !== '' ? Number.parseInt(stockInput, 10) : null,
+            ingredients,
+            spicy: document.getElementById('edit-menu-spicy').value,
+            diet: document.querySelector('input[name="edit-menu-diet"]:checked').value,
+            allergens,
+        });
+        menuItems = menuItems.map(item => item.id === id ? mapMenuItem(saved) : item);
+        renderMenu();
+        closeEditMenuModal();
+        showToast('Cập nhật thành công', `Đã lưu thay đổi cho món "${name}".`, 'success');
+    } catch (error) {
+        showToast('Không thể cập nhật món', error.message, 'danger');
     }
-
-    renderMenu();
-    closeEditMenuModal();
-    showToast('Cập nhật thành công', `Đã lưu thay đổi cho món "${name}".`, 'success');
 };
 
 document.querySelectorAll('.filter-menu button').forEach(button => button.addEventListener('click', () => {
@@ -351,7 +375,7 @@ document.getElementById('menu-category')?.addEventListener('change', event => {
     document.getElementById('menu-stock').required = isDrink;
 });
 
-window.submitAddMenu = function() {
+window.submitAddMenu = async function() {
     const name = document.getElementById('menu-name').value.trim();
     const category = document.getElementById('menu-category').value;
     const priceStr = document.getElementById('menu-price').value.trim();
@@ -368,39 +392,41 @@ window.submitAddMenu = function() {
     if (!ingredients) { showToast('Lỗi nhập liệu', 'Vui lòng nhập Thành phần!', 'danger'); document.getElementById('menu-ingredients').focus(); return; }
     if (!allergens) { showToast('Lỗi nhập liệu', 'Vui lòng nhập Thông tin dị ứng!', 'danger'); document.getElementById('menu-allergens').focus(); return; }
 
-    // Lấy ảnh preview nếu có, fallback sang ảnh mặc định
+    // Chỉ lưu ảnh khi người dùng đã chọn ảnh.
     const previewEl = document.getElementById('upload-preview');
     const imgSrc = (previewEl.src && previewEl.style.display !== 'none')
         ? previewEl.src
-        : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200';
+        : null;
 
-    const newItem = {
-        id: 'M0' + (menuItems.length + 1),
-        name,
-        category,
-        price: parseInt(priceStr),
-        status: 'Đang bán',
-        statusClass: 'badge-success',
-        description,
-        ingredients,
-        spicy: document.getElementById('menu-spicy').value,
-        diet: document.querySelector('input[name="menu-diet"]:checked').value,
-        allergens,
-        ...(isDrink ? { stock: Number.parseInt(stock, 10) || 0 } : {}),
-        img: imgSrc
-    };
-
-    menuItems.push(newItem);
-    renderMenu();
-    closeAddMenuModal();
-    showToast('Thêm món thành công', `Đã thêm món "${name}" vào thực đơn.`, 'success');
+    showToast('Đang thêm món', 'Đang lưu món mới vào thực đơn...', 'primary');
+    try {
+        const created = await menuRequest('POST', '', {
+            name, category, price: Number.parseInt(priceStr, 10), description,
+            image_url: imgSrc, is_available: true,
+            stock: isDrink ? (Number.parseInt(stock, 10) || 0) : null,
+            ingredients,
+            spicy: document.getElementById('menu-spicy').value,
+            diet: document.querySelector('input[name="menu-diet"]:checked').value,
+            allergens,
+        });
+        menuItems.push(mapMenuItem(created));
+        renderMenu();
+        closeAddMenuModal();
+        showToast('Thêm món thành công', `Đã thêm món "${name}" vào thực đơn.`, 'success');
+    } catch (error) {
+        showToast('Không thể thêm món', error.message, 'danger');
+    }
 }
 
-window.deleteMenu = function(id) {
+window.deleteMenu = async function(id) {
     if(confirm('Bạn có chắc chắn muốn xóa món này?')) {
-        menuItems = menuItems.filter(i => i.id !== id);
-        renderMenu();
-        showToast('Xóa thành công', 'Món ăn đã bị gỡ khỏi thực đơn.', 'success');
+        try {
+            await menuRequest('DELETE', `/${encodeURIComponent(id)}`);
+            await loadMenuItems();
+            showToast('Xóa thành công', 'Món ăn đã bị gỡ khỏi thực đơn.', 'success');
+        } catch (error) {
+            showToast('Không thể xóa món', error.message, 'danger');
+        }
     }
 }
 
@@ -749,6 +775,6 @@ function showToast(title, msg, type = 'primary') {
 }
 
 // Khởi tạo
-renderMenu();
+loadMenuItems();
 renderIngredients();
 renderInventorySessions();

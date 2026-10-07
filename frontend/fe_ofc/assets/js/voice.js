@@ -1,7 +1,7 @@
 /* =====================================================================
    voice.js — US-02 (Ny): Trợ lý Voice AI
    Lấy nguyên code từ prototype/js/app.js, thích nghi sang customer.html.
-   - Dùng đúng CATALOG, QUANTITY_WORDS, COPY, VOICE_SCENARIOS từ data.js/mock-data.js
+   - Gửi transcript lên backend; chỉ dùng COPY/VOICE_SCENARIOS cho nội dung giao diện
    - FAB + Voice Sheet render vào DOM tĩnh đã có trong customer.html
    - Tất cả event dùng data-action giống prototype → 1 listener duy nhất
    ===================================================================== */
@@ -28,67 +28,16 @@ const VS = {
 };
 
 let recognition = null;
+let recognitionFailures = 0;
 
 /* ───────── Truy vấn CATALOG (dùng lại từ mock-data.js) ───────── */
-const vDishById  = id => CATALOG.find(d => d.id === id);
-const vIsOos     = id => vDishById(id)?.status === 'Out of Stock';
+const vDishById = id =>
+  (typeof MENU !== 'undefined' ? MENU.find(d => d.id === id) : null);
+const vIsOos     = id => ['out_of_stock', 'Out of Stock'].includes(vDishById(id)?.status);
 const vDraftUnits = () => draft.reduce((n,it)=>n+it.qty,0);     /* draft từ customer.js */
 const vDraftTotal = () => draft.reduce((n,it)=>n+it.qty*vDishById(it.id).price,0);
 
-/* ───────── NLU — copy nguyên từ prototype/js/app.js ───────── */
-function vParseUtterance(raw) {
-  const text = String(raw).trim();
-  const res = { adds:[], ambiguities:[], oos:[], notFound:[], done:false };
-
-  if (normV(text).includes('chon mon xong')) { res.done = true; return res; }
-
-  const segs = text.split(/\s*(?:,|\svà\s|\svới\s)\s*/i).map(s=>s.trim()).filter(Boolean);
-  segs.forEach(seg => {
-    let n = normV(seg).replace(/^(cho|them|lay|order)\s+/,'');
-    let qty = 1;
-    const mQty = n.match(/^(\d+|mot|hai|ba|bon|nam|sau)\b\s*/);
-    if (mQty) { qty = QUANTITY_WORDS[mQty[1]] || parseInt(mQty[1],10) || 1; n = n.slice(mQty[0].length); }
-
-    const scored = CATALOG.map(d => {
-      let score = 0;
-      d.kwStrong.forEach(k => { if (n.includes(k)) score += k.split(' ').length * 2; });
-      d.kwWeak.forEach(k   => { if (n.includes(k)) score += 1; });
-      return { d, score };
-    }).filter(x => x.score > 0).sort((a,b) => b.score - a.score);
-
-    if (!scored.length) { res.notFound.push(seg); return; }
-
-    const top  = scored[0];
-    const tied = scored.filter(x => x.score === top.score);
-    if (tied.length === 1) { vResolveSeg(res, top.d, qty, seg); return; }
-
-    const weakHits = tied.map(x => x.d.kwWeak.filter(k => n.includes(k)));
-    const shared   = weakHits.reduce((acc,cur)=>acc.filter(k=>cur.includes(k)), weakHits[0]||[]);
-    const candidates = tied.map(x=>x.d).filter(d => shared.some(k => normV(d.name).split(' ')[0]===k));
-    if (candidates.length > 1) {
-      res.ambiguities.push({ qty, candidates: candidates.map(d=>d.id), segment: seg });
-    } else {
-      vResolveSeg(res, top.d, qty, seg);
-    }
-  });
-  return res;
-}
-
-function vResolveSeg(res, dish, qty, seg) {
-  if (vIsOos(dish.id)) {
-    res.oos.push({ id: dish.id, qty, suggestions: vSuggestFor(dish) });
-  } else {
-    const notes=[], re=/không\s+([\p{L}]+)/gu; let m;
-    while ((m=re.exec(String(seg).toLowerCase()))) notes.push('Không '+m[1]);
-    res.adds.push({ id: dish.id, qty, note: notes.join(', ') });
-  }
-}
-
-function vSuggestFor(dish) {
-  const hits=[...dish.kwStrong,...dish.kwWeak];
-  return CATALOG.filter(d => d.id!==dish.id && !vIsOos(d.id) &&
-    [...d.kwStrong,...d.kwWeak].some(k=>hits.includes(k)));
-}
+/* Transcript NLU is handled by the backend endpoint. */
 
 function vAmbiguityQuestion(a) {
   const ds = a.candidates.map(vDishById);
@@ -104,6 +53,24 @@ function vAiSay(text, chips) {
   if (VS.chat.length > 60) VS.chat.splice(0, VS.chat.length-60);
 }
 
+function vVoiceToast(message) {
+  let toast = document.getElementById('voice-warning-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'voice-warning-toast';
+    Object.assign(toast.style, {
+      position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
+      zIndex: '9999', padding: '12px 18px', borderRadius: '12px',
+      background: '#fff7ed', color: '#9a3412', border: '1px solid #fdba74',
+      boxShadow: '0 8px 24px #0f172a26', fontWeight: '600', maxWidth: '90vw',
+    });
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  clearTimeout(vVoiceToast.timer);
+  vVoiceToast.timer = setTimeout(() => toast.remove(), 5000);
+}
+
 /* ───────── Apply parse — copy logic từ prototype applyParse() ───────── */
 function vApplyParse(parsed) {
   VS.ui = 'idle';
@@ -115,10 +82,24 @@ function vApplyParse(parsed) {
     vRender(); return;
   }
 
+  if (parsed.stock_limits?.length) {
+    const limit = parsed.stock_limits[0];
+    vVoiceToast(`Chỉ còn ${limit.available} phần ${limit.item_name}; giỏ nháp được giữ nguyên.`);
+    vAiSay(
+      parsed.message || `Dạ món ${limit.item_name} hiện chỉ còn ${limit.available} phần. Anh/chị có muốn lấy số lượng đó không ạ?`,
+      limit.available > 0 ? [{
+        id: limit.item_id, qty: limit.available,
+        label: `Lấy ${limit.available} phần ${limit.item_name}`,
+        stockAccept: true,
+      }] : null,
+    );
+    vRender(); return;
+  }
+
   if (parsed.ambiguities.length) {
     VS.ambiguity = parsed.ambiguities[0];
     VS.ui = 'ambiguous';
-    vAiSay(vAmbiguityQuestion(VS.ambiguity));
+    vAiSay(parsed.message || vAmbiguityQuestion(VS.ambiguity));
     vRender(); return;
   }
 
@@ -126,46 +107,73 @@ function vApplyParse(parsed) {
     const o = parsed.oos[0];
     const d = vDishById(o.id);
     vAiSay(
-      `"${d.name}" ${COPY.OOS_MSG}`,
-      o.suggestions.map(s=>({ id:s.id, label:`<i class="ph-bold ph-plus"></i> ${s.name} · ${fmtVND(s.price)}` }))
+      parsed.message || `"${d.name}" ${COPY.OOS_MSG}`,
+      o.suggestions.map(id => vDishById(id)).filter(Boolean)
+        .map(s=>({ id:s.id, label:`<i class="ph-bold ph-plus"></i> ${s.name} · ${fmtVND(s.price)}` }))
     );
     vRender(); return;
   }
 
   if (parsed.adds.length) {
     parsed.adds.forEach(({ id, qty, note }) => addToDraft(id, qty, note)); /* addToDraft từ customer.js */
-    vAiSay('Đã thêm vào bản nháp: ' +
-      parsed.adds.map(a=>`${a.qty}× ${vDishById(a.id).name}${a.note?` (${a.note})`:''}`).join(', ') +
-      '. Anh/chị bấm "Xem đơn" để dò lại trước khi gửi bếp nhé ạ.');
+    vAiSay(parsed.message || 'Dạ, em đã ghi nhận món. Anh/chị có muốn gọi thêm món nào nữa không ạ?');
     renderStickyBar();  /* cập nhật thanh dưới — từ customer.js */
     vRender(); return;
   }
 
-  if (parsed.notFound.length) {
-    vAiSay(`Em không tìm thấy món "${parsed.notFound.join('", "')}" trong menu. Anh/chị thử gọi tên khác nhé ạ.`);
+  if (parsed.suggestions?.length || parsed.recommendations?.length) {
+    vAiSay(parsed.message || 'Dạ, anh/chị muốn dùng món nào ạ?');
+  } else if (parsed.not_found?.length) {
+    vAiSay(parsed.message || `Dạ, em chưa tìm thấy ${parsed.not_found.join(', ')} trong thực đơn ạ.`);
+  } else if (parsed.warnings?.length) {
+    vRender();
+    return;
+  } else if (parsed.message) {
+    vAiSay(parsed.message);
   }
   vRender();
 }
 
-/* ───────── Luồng text (giả lập như prototype runVoiceText) ───────── */
-function vRunText(text) {
+/* ───────── Gửi transcript lên backend NLU ───────── */
+async function vRunText(text) {
   VS.chat.push({ from:'user', text });
   VS.interim = text;
-  VS.ui = 'listening';
+  VS.ui = 'processing';
   vRender();
-  setTimeout(()=>{ VS.ui='processing'; vRender(); }, 400);
-  setTimeout(()=>{ vApplyParse(vParseUtterance(text)); }, 1200);
+  const draftTotals = draft.reduce((totals, item) => {
+    totals[item.id] = (totals[item.id] || 0) + item.qty;
+    return totals;
+  }, {});
+  try {
+    const parsed = await apiFetch('/api/v1/ai/voice-parse', {
+      method: 'POST',
+      body: JSON.stringify({
+        transcript: text,
+        table_name: typeof tableName === 'string' ? tableName : null,
+        draft: Object.entries(draftTotals).map(([item_id, quantity]) => ({ item_id, quantity })),
+      }),
+    });
+    recognitionFailures = 0;
+    vApplyParse(parsed);
+  } catch (error) {
+    VS.ui = 'idle';
+    VS.noisy = true;
+    vVoiceToast('Không kết nối được AI; giỏ nháp vẫn được giữ nguyên. Vui lòng nhập tên món bằng bàn phím.');
+    vAiSay(error.message || 'Em chưa phân tích được yêu cầu. Anh/chị vui lòng thử lại nhé ạ.');
+    vRender();
+  }
+
 }
 
 /* ───────── Web Speech API — copy nguyên từ prototype toggleMic() ───────── */
 function vToggleMic() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) {
-    vAiSay('Trình duyệt này chưa hỗ trợ nhận giọng nói. Anh/chị dùng các câu mẫu bên dưới hoặc gõ vào ô bên dưới nhé ạ.');
+    VS.noisy = true;
+    vAiSay('Trình duyệt chưa hỗ trợ micro. Anh/chị vui lòng nhập tên món bằng bàn phím nhé ạ.');
     vRender(); return;
   }
   if (VS.ui === 'listening' && recognition) { try { recognition.stop(); } catch(e){} return; }
-
   recognition = new SR();
   recognition.lang = 'vi-VN';
   recognition.interimResults = true;
@@ -178,15 +186,14 @@ function vToggleMic() {
     for (const r of e.results) { if (r.isFinal) final+=r[0].transcript; else interim+=r[0].transcript; }
     VS.interim = (final||interim).trim();
     if (final) {
-      VS.chat.push({ from:'user', text: final.trim() });
-      VS.ui = 'processing'; vRender();
-      setTimeout(()=>{ vApplyParse(vParseUtterance(final.trim())); }, 900);
+      vRunText(final.trim());
     } else { vRender(); }
   };
   recognition.onerror = ev => {
     VS.ui = 'idle'; VS.interim = '';
-    /* AC4: chỉ khi no-speech (tiếng ồn) mới bật text fallback */
-    if (ev.error === 'no-speech' || ev.error === 'audio-capture') {
+    /* AC4: hai lần lỗi nhận diện liên tiếp mới chuyển sang text fallback. */
+    recognitionFailures += 1;
+    if (['no-speech', 'audio-capture', 'not-allowed', 'service-not-allowed'].includes(ev.error) && recognitionFailures >= 2) {
       VS.noisy = true;
       vAiSay('Không nhận diện được giọng nói do tiếng ồn. Vui lòng nhập tên món bằng bàn phím.');
     } else {
@@ -265,7 +272,7 @@ function vRender() {
         ${VS.ambiguity.candidates.map(id => {
           const d = vDishById(id), oos = vIsOos(id);
           return `<button class="v-cand ${oos?'oos':''}" data-action="v-pick" data-id="${d.id}" ${oos?'disabled':''}>
-            <span style="font-size:22px">${d.emoji}</span>
+            <span style="font-size:22px">${d.emoji || '<i class="ph-duotone ph-fork-knife"></i>'}</span>
             <span class="v-cand-info"><b>${escV(d.name)}</b><small>${fmtVND(d.price)}</small></span>
             <span class="v-cand-add">${oos ? 'Hết' : 'Chọn'}</span>
           </button>`;
@@ -276,11 +283,7 @@ function vRender() {
   }
 
   /* ── Scenarios ── */
-  const scenarioHTML = VOICE_SCENARIOS.map((sc, i) => `
-    <button class="chip-flow" data-action="v-scenario" data-i="${i}" ${busy?'disabled':''}
-      title="${escV(sc.text)}">
-      <small>${sc.tag}</small>${escV(sc.text)}
-    </button>`).join('');
+  const scenarioHTML = '';
 
   /* ── Chat ── */
   const chatHTML = VS.chat.map(m => `
@@ -289,7 +292,7 @@ function vRender() {
       <div class="bubble">
         <p>${escV(m.text)}</p>
         ${m.chips ? `<div class="chips-row">${m.chips.map(ch =>
-          `<button class="chip" data-action="v-add-sug" data-id="${ch.id}">${ch.label}</button>`
+          `<button class="chip" data-action="${ch.stockAccept ? 'v-stock-accept' : 'v-add-sug'}" data-id="${ch.id}" data-qty="${ch.qty || 1}">${ch.label}</button>`
         ).join('')}</div>` : ''}
       </div>
     </div>`).join('');
@@ -353,23 +356,28 @@ document.addEventListener('click', e => {
     case 'v-open':              vOpenSheet(); break;
     case 'v-close':             vCloseSheet(); break;
     case 'v-mic':               vToggleMic(); break;
-    case 'v-scenario':          vRunText(VOICE_SCENARIOS[Number(el.dataset.i)].text); break;
     case 'v-dismiss-ambiguous':
       VS.ambiguity = null; VS.ui = 'idle';
       vAiSay('Dạ không sao ạ, khi nào sẵn sàng anh/chị chọn lại nhé.');
       vRender(); break;
     case 'v-pick': {
-      const qty = VS.ambiguity ? VS.ambiguity.qty : 1;
-      addToDraft(el.dataset.id, qty, '');
-      vAiSay(`Đã chọn ${qty}× ${vDishById(el.dataset.id).name} vào bản nháp ạ.`);
-      VS.ambiguity = null; VS.ui = 'idle';
-      renderStickyBar();
-      vRender(); break;
+      const ambiguity = VS.ambiguity;
+      const qty = ambiguity ? ambiguity.qty : 1;
+      const name = vDishById(el.dataset.id)?.name;
+      const note = ambiguity?.segment.match(/(?:không\s+(?:lấy\s+)?[\p{L}]+|bỏ\s+[\p{L}]+|ít\s+[\p{L}]+|nhiều\s+[\p{L}]+|thêm\s+[\p{L}]+)/iu)?.[0] || '';
+      VS.ambiguity = null;
+      VS.ui = 'idle';
+      vRunText(`${qty} ${name}${note ? ` ${note}` : ''}`);
+      break;
     }
     case 'v-add-sug': {
-      addToDraft(el.dataset.id, 1, '');
-      vAiSay(`Đã thêm 1× ${vDishById(el.dataset.id).name} (món thay thế) vào bản nháp ạ.`);
-      VS.ui = 'idle';
+      const name = vDishById(el.dataset.id)?.name;
+      if (name) vRunText(`1 ${name}`);
+      break;
+    }
+    case 'v-stock-accept': {
+      addToDraft(el.dataset.id, Number(el.dataset.qty) || 1, '');
+      vAiSay(`Dạ, em đã thêm ${el.dataset.qty} phần ${vDishById(el.dataset.id).name} vào giỏ nháp ạ.`);
       renderStickyBar();
       vRender(); break;
     }

@@ -385,7 +385,7 @@
           </div>
           <div class="modal-footer">
               <button class="btn btn-outline" onclick="closeAddMenuModal()">Hủy bỏ</button>
-              <button class="btn btn-primary" onclick="submitAddMenu()"><i class="ph-bold ph-floppy-disk"></i> Lưu</button>
+              <button type="button" class="btn btn-primary" onclick="submitAddMenu()"><i class="ph-bold ph-floppy-disk"></i> Lưu</button>
           </div>
       </div>
   </div>
@@ -497,7 +497,7 @@
           </div>
           <div class="modal-footer">
               <button class="btn btn-outline" onclick="closeEditMenuModal()">Hủy bỏ</button>
-              <button class="btn btn-primary" onclick="submitEditMenu()"><i class="ph-bold ph-floppy-disk"></i> Lưu thay đổi</button>
+              <button type="button" class="btn btn-primary" onclick="submitEditMenu()"><i class="ph-bold ph-floppy-disk"></i> Lưu thay đổi</button>
           </div>
       </div>
   </div>
@@ -514,7 +514,7 @@
               <p class="inv-pin-warn"><i class="ph-bold ph-warning"></i> Sau khi chốt, phiếu sẽ bị khóa (chỉ xem) và tồn thực tế được dùng làm tồn đầu ca tiếp theo.</p>
               <div class="form-group">
                   <label for="inv-pin-input">Mã PIN Quản lý <span class="required">*</span></label>
-                  <input type="password" id="inv-pin-input" class="form-control" inputmode="numeric" autocomplete="off" placeholder="••••">
+                  <input type="password" id="inv-pin-input" name="manager_pin" class="form-control" inputmode="numeric" autocomplete="one-time-code" placeholder="••••">
                   <span class="inv-field-error" id="inv-pin-error"></span>
               </div>
           </div>
