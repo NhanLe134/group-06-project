@@ -283,95 +283,104 @@
               <button class="btn-icon btn-icon--light" onclick="closeAddMenuModal()"><i class="ph-bold ph-x"></i></button>
           </div>
           <div class="modal-body">
-              <!-- Tên món -->
-              <div class="form-group">
-                  <label>Tên món ăn <span class="required">*</span></label>
-                  <input type="text" id="menu-name" class="form-control" placeholder="VD: Sườn sụn rang muối" required>
-              </div>
-
-              <!-- Danh mục -->
-              <div class="form-group">
-                  <label>Danh mục <span class="required">*</span></label>
-                  <select id="menu-category" class="form-control" required>
-                      <option value="Món chính">Món chính</option>
-                      <option value="Khai vị">Khai vị</option>
-                      <option value="Tráng miệng">Tráng miệng</option>
-                      <option value="Đồ uống">Đồ uống</option>
-                  </select>
-              </div>
-
-              <!-- Cách tính tồn theo TỪNG MÓN (story-spec-tru-kho-tu-dong.md Mục 3, phương án A) -->
-              <div class="form-group">
-                  <label>Cách tính tồn kho <span class="required">*</span></label>
-                  <div class="radio-group">
-                      <label class="radio-option"><input type="radio" name="menu-stock-mode" value="che_bien" checked> Chế biến (trừ nguyên liệu theo công thức)</label>
-                      <label class="radio-option"><input type="radio" name="menu-stock-mode" value="mua_san"> Mua sẵn (đếm theo số lượng, vd. sữa chua hũ, nước lon)</label>
-                  </div>
-              </div>
-
-              <!-- Số lượng tồn — chỉ hiện với món Mua sẵn -->
-              <div class="form-group" id="menu-stock-group" hidden>
-                  <label for="menu-stock">Số lượng tồn</label>
-                  <input type="number" min="0" id="menu-stock" class="form-control" placeholder="Nhập số lượng tồn">
-              </div>
-
-              <!-- Giá bán -->
-              <div class="form-group">
-                  <label>Giá bán (VNĐ) <span class="required">*</span></label>
-                  <input type="number" id="menu-price" class="form-control" placeholder="VD: 150000" required>
-              </div>
-
-              <!-- Hình ảnh — cho phép tải lên -->
-              <div class="form-group">
-                  <label>Hình ảnh Minh họa</label>
-                  <div class="upload-box" id="upload-box" onclick="document.getElementById('menu-image-input').click()">
-                      <i class="ph-duotone ph-image" id="upload-icon"></i>
-                      <img id="upload-preview" src="" alt="Xem trước ảnh" style="display:none; max-height:120px; max-width:100%; border-radius:8px; margin-bottom:8px;">
-                      <p id="upload-label">Click hoặc Kéo thả ảnh vào đây</p>
-                      <input type="file" id="menu-image-input" accept="image/*" style="display:none" onchange="previewMenuImage(event)">
-                  </div>
-              </div>
-
-              <!-- Mô tả (liên kết Smart Ordering) -->
-              <div class="form-group">
-                  <label>Mô tả <span class="required">*</span></label>
-                  <textarea id="menu-description" class="form-control" rows="3" placeholder="Mô tả ngắn về món ăn..." required></textarea>
-              </div>
-
-              <!-- Thông tin phục vụ Smart Ordering -->
-              <div class="smart-ordering-section">
-                  <div class="smart-ordering-header">
-                      <i class="ph-bold ph-robot"></i>
-                      <span>Thông tin phục vụ Smart Ordering</span>
-                  </div>
-                  <div class="smart-ordering-body">
+              <div class="form-grid">
+                  <!-- Cột trái: Thông tin cơ bản & Giá -->
+                  <div class="form-col">
+                      <!-- Tên món -->
                       <div class="form-group">
-                          <label>Thành phần <span class="required">*</span></label>
-                          <input type="text" id="menu-ingredients" class="form-control" placeholder="VD: Thịt bò, rau xà lách, cà chua..." required>
+                          <label>Tên món ăn <span class="required">*</span></label>
+                          <input type="text" id="menu-name" class="form-control" placeholder="VD: Sườn sụn rang muối" required>
                       </div>
-                      <div class="form-group">
-                          <label>Độ cay <span class="required">*</span></label>
-                          <select id="menu-spicy" class="form-control" required>
-                              <option value="Không cay">Không cay</option>
-                              <option value="Cay nhẹ">Cay nhẹ</option>
-                              <option value="Cay vừa">Cay vừa</option>
-                              <option value="Cay nhiều">Cay nhiều</option>
-                          </select>
-                      </div>
-                      <div class="form-group">
-                          <label>Loại món <span class="required">*</span></label>
-                          <div class="radio-group">
-                              <label class="radio-option">
-                                  <input type="radio" name="menu-diet" value="Mặn" checked> Mặn
-                              </label>
-                              <label class="radio-option">
-                                  <input type="radio" name="menu-diet" value="Chay"> Chay
-                              </label>
+
+                      <!-- Hàng đôi: Danh mục & Giá bán -->
+                      <div class="form-row-2">
+                          <div class="form-group">
+                              <label>Danh mục <span class="required">*</span></label>
+                              <select id="menu-category" class="form-control" required>
+                                  <option value="Món chính">Món chính</option>
+                                  <option value="Khai vị">Khai vị</option>
+                                  <option value="Tráng miệng">Tráng miệng</option>
+                                  <option value="Đồ uống">Đồ uống</option>
+                              </select>
+                          </div>
+                          <div class="form-group">
+                              <label>Giá bán (VNĐ) <span class="required">*</span></label>
+                              <input type="number" id="menu-price" class="form-control" placeholder="VD: 150000" required>
                           </div>
                       </div>
+
+                      <!-- Cách tính tồn kho -->
                       <div class="form-group">
-                          <label>Thông tin dị ứng <span class="required">*</span></label>
-                          <input type="text" id="menu-allergens" class="form-control" placeholder="VD: Hải sản, đậu phộng, sữa..." required>
+                          <label>Cách tính tồn kho <span class="required">*</span></label>
+                          <div class="radio-group">
+                              <label class="radio-option"><input type="radio" name="menu-stock-mode" value="che_bien" checked> Chế biến</label>
+                              <label class="radio-option"><input type="radio" name="menu-stock-mode" value="mua_san"> Mua sẵn</label>
+                          </div>
+                      </div>
+
+                      <!-- Số lượng tồn — chỉ hiện với món Mua sẵn -->
+                      <div class="form-group" id="menu-stock-group" hidden>
+                          <label for="menu-stock">Số lượng tồn</label>
+                          <input type="number" min="0" id="menu-stock" class="form-control" placeholder="Nhập số lượng tồn">
+                      </div>
+
+                      <!-- Mô tả -->
+                      <div class="form-group">
+                          <label>Mô tả <span class="required">*</span></label>
+                          <textarea id="menu-description" class="form-control" rows="3" placeholder="Mô tả ngắn về món ăn..." required></textarea>
+                      </div>
+
+                      <!-- Hình ảnh -->
+                      <div class="form-group">
+                          <label>Hình ảnh Minh họa</label>
+                          <div class="upload-box upload-box--compact" id="upload-box" onclick="document.getElementById('menu-image-input').click()">
+                              <i class="ph-duotone ph-image" id="upload-icon"></i>
+                              <img id="upload-preview" src="" alt="Xem trước ảnh" style="display:none; max-height:100px; max-width:100%; border-radius:8px; margin-bottom:8px;">
+                              <p id="upload-label">Click hoặc Kéo thả ảnh vào đây</p>
+                              <input type="file" id="menu-image-input" accept="image/*" style="display:none" onchange="previewMenuImage(event)">
+                          </div>
+                      </div>
+                  </div>
+
+                  <!-- Cột phải: Thông tin Smart Ordering -->
+                  <div class="form-col">
+                      <div class="smart-ordering-section">
+                          <div class="smart-ordering-header">
+                              <i class="ph-bold ph-robot"></i>
+                              <span>Thông tin phục vụ Smart Ordering</span>
+                          </div>
+                          <div class="smart-ordering-body">
+                              <div class="form-group">
+                                  <label>Thành phần <span class="required">*</span></label>
+                                  <input type="text" id="menu-ingredients" class="form-control" placeholder="VD: Thịt bò, rau xà lách, cà chua..." required>
+                              </div>
+                              <div class="form-row-2">
+                                  <div class="form-group">
+                                      <label>Độ cay <span class="required">*</span></label>
+                                      <select id="menu-spicy" class="form-control" required>
+                                          <option value="Không cay">Không cay</option>
+                                          <option value="Cay nhẹ">Cay nhẹ</option>
+                                          <option value="Cay vừa">Cay vừa</option>
+                                          <option value="Cay nhiều">Cay nhiều</option>
+                                      </select>
+                                  </div>
+                                  <div class="form-group">
+                                      <label>Loại món <span class="required">*</span></label>
+                                      <div class="radio-group" style="padding-top:10px;">
+                                          <label class="radio-option">
+                                              <input type="radio" name="menu-diet" value="Mặn" checked> Mặn
+                                          </label>
+                                          <label class="radio-option">
+                                              <input type="radio" name="menu-diet" value="Chay"> Chay
+                                          </label>
+                                      </div>
+                                  </div>
+                              </div>
+                              <div class="form-group">
+                                  <label>Thông tin dị ứng <span class="required">*</span></label>
+                                  <input type="text" id="menu-allergens" class="form-control" placeholder="VD: Hải sản, đậu phộng, sữa..." required>
+                              </div>
+                          </div>
                       </div>
                   </div>
               </div>
@@ -407,107 +416,118 @@
           <div class="modal-body">
               <input type="hidden" id="edit-menu-id">
 
-              <div class="form-group">
-                  <label>Tên món ăn <span class="required">*</span></label>
-                  <input type="text" id="edit-menu-name" class="form-control" placeholder="VD: Sườn sụn rang muối" required>
-              </div>
-
-              <div class="form-group">
-                  <label>Danh mục <span class="required">*</span></label>
-                  <select id="edit-menu-category" class="form-control" required>
-                      <option value="Món chính">Món chính</option>
-                      <option value="Khai vị">Khai vị</option>
-                      <option value="Tráng miệng">Tráng miệng</option>
-                      <option value="Đồ uống">Đồ uống</option>
-                  </select>
-              </div>
-
-              <!-- Cách tính tồn theo TỪNG MÓN (story-spec-tru-kho-tu-dong.md Mục 3, phương án A) -->
-              <div class="form-group">
-                  <label>Cách tính tồn kho <span class="required">*</span></label>
-                  <div class="radio-group">
-                      <label class="radio-option"><input type="radio" name="edit-stock-mode" value="che_bien" checked> Chế biến (trừ nguyên liệu theo công thức)</label>
-                      <label class="radio-option"><input type="radio" name="edit-stock-mode" value="mua_san"> Mua sẵn (đếm theo số lượng, vd. sữa chua hũ, nước lon)</label>
-                  </div>
-              </div>
-
-              <div class="form-group" id="edit-stock-group" hidden>
-                  <label for="edit-menu-stock">Số lượng tồn</label>
-                  <input type="number" min="0" id="edit-menu-stock" class="form-control" placeholder="Nhập số lượng tồn">
-              </div>
-
-              <div class="form-group">
-                  <label>Giá bán (VNĐ) <span class="required">*</span></label>
-                  <input type="number" id="edit-menu-price" class="form-control" placeholder="VD: 150000" required>
-              </div>
-
-              <div class="form-group">
-                  <label>Trạng thái <span class="required">*</span></label>
-                  <select id="edit-menu-status" class="form-control" required>
-                      <option value="Đang bán">Đang bán</option>
-                      <option value="Tạm ẩn">Tạm ẩn</option>
-                  </select>
-              </div>
-
-              <div class="form-group">
-                  <label>Hình ảnh Minh họa</label>
-                  <div class="upload-box" id="edit-upload-box" onclick="document.getElementById('edit-image-input').click()">
-                      <i class="ph-duotone ph-image" id="edit-upload-icon"></i>
-                      <img id="edit-upload-preview" src="" alt="Xem trước ảnh" style="display:none; max-height:120px; max-width:100%; border-radius:8px; margin-bottom:8px;">
-                      <p id="edit-upload-label">Click hoặc Kéo thả ảnh vào đây</p>
-                      <input type="file" id="edit-image-input" accept="image/*" style="display:none" onchange="previewEditImage(event)">
-                  </div>
-              </div>
-
-              <div class="form-group">
-                  <label>Mô tả <span class="required">*</span></label>
-                  <textarea id="edit-menu-description" class="form-control" rows="3" placeholder="Mô tả ngắn về món ăn..." required></textarea>
-              </div>
-
-              <div class="smart-ordering-section">
-                  <div class="smart-ordering-header">
-                      <i class="ph-bold ph-robot"></i>
-                      <span>Thông tin phục vụ Smart Ordering</span>
-                  </div>
-                  <div class="smart-ordering-body">
+              <div class="form-grid">
+                  <!-- Cột trái: Thông tin cơ bản -->
+                  <div class="form-col">
                       <div class="form-group">
-                          <label>Thành phần <span class="required">*</span></label>
-                          <input type="text" id="edit-menu-ingredients" class="form-control" placeholder="VD: Thịt bò, rau xà lách, cà chua..." required>
+                          <label>Tên món ăn <span class="required">*</span></label>
+                          <input type="text" id="edit-menu-name" class="form-control" placeholder="VD: Sườn sụn rang muối" required>
                       </div>
-                      <div class="form-group">
-                          <label>Độ cay <span class="required">*</span></label>
-                          <select id="edit-menu-spicy" class="form-control" required>
-                              <option value="Không cay">Không cay</option>
-                              <option value="Cay nhẹ">Cay nhẹ</option>
-                              <option value="Cay vừa">Cay vừa</option>
-                              <option value="Cay nhiều">Cay nhiều</option>
-                          </select>
-                      </div>
-                      <div class="form-group">
-                          <label>Loại món <span class="required">*</span></label>
-                          <div class="radio-group">
-                              <label class="radio-option"><input type="radio" name="edit-menu-diet" value="Mặn"> Mặn</label>
-                              <label class="radio-option"><input type="radio" name="edit-menu-diet" value="Chay"> Chay</label>
+
+                      <div class="form-row-2">
+                          <div class="form-group">
+                              <label>Danh mục <span class="required">*</span></label>
+                              <select id="edit-menu-category" class="form-control" required>
+                                  <option value="Món chính">Món chính</option>
+                                  <option value="Khai vị">Khai vị</option>
+                                  <option value="Tráng miệng">Tráng miệng</option>
+                                  <option value="Đồ uống">Đồ uống</option>
+                              </select>
+                          </div>
+                          <div class="form-group">
+                              <label>Giá bán (VNĐ) <span class="required">*</span></label>
+                              <input type="number" id="edit-menu-price" class="form-control" placeholder="VD: 150000" required>
                           </div>
                       </div>
+
+                      <div class="form-row-2">
+                          <div class="form-group">
+                              <label>Cách tính tồn kho <span class="required">*</span></label>
+                              <div class="radio-group" style="padding-top:4px;">
+                                  <label class="radio-option"><input type="radio" name="edit-stock-mode" value="che_bien" checked> Chế biến</label>
+                                  <label class="radio-option"><input type="radio" name="edit-stock-mode" value="mua_san"> Mua sẵn</label>
+                              </div>
+                          </div>
+                          <div class="form-group">
+                              <label>Trạng thái <span class="required">*</span></label>
+                              <select id="edit-menu-status" class="form-control" required>
+                                  <option value="Đang bán">Đang bán</option>
+                                  <option value="Tạm ẩn">Tạm ẩn</option>
+                              </select>
+                          </div>
+                      </div>
+
+                      <div class="form-group" id="edit-stock-group" hidden>
+                          <label for="edit-menu-stock">Số lượng tồn</label>
+                          <input type="number" min="0" id="edit-menu-stock" class="form-control" placeholder="Nhập số lượng tồn">
+                      </div>
+
                       <div class="form-group">
-                          <label>Thông tin dị ứng <span class="required">*</span></label>
-                          <input type="text" id="edit-menu-allergens" class="form-control" placeholder="VD: Hải sản, đậu phộng, sữa..." required>
+                          <label>Mô tả <span class="required">*</span></label>
+                          <textarea id="edit-menu-description" class="form-control" rows="3" placeholder="Mô tả ngắn về món ăn..." required></textarea>
+                      </div>
+
+                      <div class="form-group">
+                          <label>Hình ảnh Minh họa</label>
+                          <div class="upload-box upload-box--compact" id="edit-upload-box" onclick="document.getElementById('edit-image-input').click()">
+                              <i class="ph-duotone ph-image" id="edit-upload-icon"></i>
+                              <img id="edit-upload-preview" src="" alt="Xem trước ảnh" style="display:none; max-height:100px; max-width:100%; border-radius:8px; margin-bottom:8px;">
+                              <p id="edit-upload-label">Click hoặc Kéo thả ảnh vào đây</p>
+                              <input type="file" id="edit-image-input" accept="image/*" style="display:none" onchange="previewEditImage(event)">
+                          </div>
                       </div>
                   </div>
-              </div>
 
-              <!-- Công thức: định lượng nguyên liệu cho 1 phần → tự trừ kho khi gửi bếp -->
-              <div class="smart-ordering-section recipe-section" id="edit-recipe-section">
-                  <div class="smart-ordering-header">
-                      <i class="ph-bold ph-carrot"></i>
-                      <span>Công thức (tự trừ kho khi gửi bếp)</span>
-                      <span class="recipe-portions" id="edit-recipe-portions"></span>
-                  </div>
-                  <div class="smart-ordering-body">
-                      <div id="edit-recipe-lines" class="recipe-lines"></div>
-                      <button type="button" class="btn btn-outline recipe-add" onclick="addRecipeLine()"><i class="ph-bold ph-plus"></i> Thêm nguyên liệu vào công thức</button>
-                      <p class="recipe-hint">Để trống nếu món không cần trừ nguyên liệu. Nguyên liệu mới thêm ở tab Thực phẩm.</p>
+                  <!-- Cột phải: Smart Ordering & Công thức -->
+                  <div class="form-col">
+                      <div class="smart-ordering-section">
+                          <div class="smart-ordering-header">
+                              <i class="ph-bold ph-robot"></i>
+                              <span>Thông tin phục vụ Smart Ordering</span>
+                          </div>
+                          <div class="smart-ordering-body">
+                              <div class="form-group">
+                                  <label>Thành phần <span class="required">*</span></label>
+                                  <input type="text" id="edit-menu-ingredients" class="form-control" placeholder="VD: Thịt bò, rau xà lách, cà chua..." required>
+                              </div>
+                              <div class="form-row-2">
+                                  <div class="form-group">
+                                      <label>Độ cay <span class="required">*</span></label>
+                                      <select id="edit-menu-spicy" class="form-control" required>
+                                          <option value="Không cay">Không cay</option>
+                                          <option value="Cay nhẹ">Cay nhẹ</option>
+                                          <option value="Cay vừa">Cay vừa</option>
+                                          <option value="Cay nhiều">Cay nhiều</option>
+                                      </select>
+                                  </div>
+                                  <div class="form-group">
+                                      <label>Loại món <span class="required">*</span></label>
+                                      <div class="radio-group" style="padding-top:10px;">
+                                          <label class="radio-option"><input type="radio" name="edit-menu-diet" value="Mặn"> Mặn</label>
+                                          <label class="radio-option"><input type="radio" name="edit-menu-diet" value="Chay"> Chay</label>
+                                      </div>
+                                  </div>
+                              </div>
+                              <div class="form-group">
+                                  <label>Thông tin dị ứng <span class="required">*</span></label>
+                                  <input type="text" id="edit-menu-allergens" class="form-control" placeholder="VD: Hải sản, đậu phộng, sữa..." required>
+                              </div>
+                          </div>
+                      </div>
+
+                      <!-- Công thức -->
+                      <div class="smart-ordering-section recipe-section" id="edit-recipe-section">
+                          <div class="smart-ordering-header">
+                              <i class="ph-bold ph-carrot"></i>
+                              <span>Công thức (tự trừ kho khi gửi bếp)</span>
+                              <span class="recipe-portions" id="edit-recipe-portions"></span>
+                          </div>
+                          <div class="smart-ordering-body">
+                              <div id="edit-recipe-lines" class="recipe-lines"></div>
+                              <button type="button" class="btn btn-outline recipe-add" onclick="addRecipeLine()"><i class="ph-bold ph-plus"></i> Thêm nguyên liệu vào công thức</button>
+                              <p class="recipe-hint">Để trống nếu món không cần trừ nguyên liệu.</p>
+                          </div>
+                      </div>
                   </div>
               </div>
           </div>

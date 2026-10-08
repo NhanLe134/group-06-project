@@ -115,6 +115,7 @@ test.describe('US-03 — KDS Bếp', () => {
       await expect(emenu.locator('.menu-card.oos').filter({ hasText: D.PHO_BO })).toContainText('Hết');
       await kds.openStockPanel();
       await expect(kds.stockRow(D.PHO_BO)).toContainText('Hết nguyên liệu');
+      await kds.closeStockPanel();
       const row = kds.card(T.NO_INGREDIENT);
       await row.getByRole('button', { name: 'Nấu' }).click();
       await expect.poll(async () => (await kdsItem(request, T.NO_INGREDIENT, D.PHO_BO))?.trangthai)

@@ -118,69 +118,73 @@ window.showMenuDetail = function(id) {
 
     document.getElementById('menu-detail-body').innerHTML = `
         <div class="modal-body">
-
-            <div class="form-group">
-                <label>Tên món ăn</label>
-                <input type="text" class="form-control" value="${item.name}" readonly>
-            </div>
-
-            <div class="form-group">
-                <label>Danh mục</label>
-                <input type="text" class="form-control" value="${item.category}" readonly>
-            </div>
-
-            <div class="form-group">
-                <label>Số lượng tồn</label>
-                <input type="text" class="form-control" value="${item.stock ?? 'Chế biến — tính theo nguyên liệu'}" readonly>
-            </div>
-
-            <div class="form-group">
-                <label>Giá bán (VNĐ)</label>
-                <input type="text" class="form-control" value="${item.price.toLocaleString('vi-VN')}đ" readonly>
-            </div>
-
-            <div class="form-group">
-                <label>Trạng thái</label>
-                <div style="padding-top:4px"><span class="badge ${item.statusClass}">${item.status}</span></div>
-            </div>
-
-            <div class="form-group">
-                <label>Hình ảnh Minh họa</label>
-                ${item.img
-                    ? `<div class="upload-box has-image" style="cursor:default;"><img src="${item.img}" alt="${item.name}" style="max-height:140px; max-width:100%; border-radius:8px;"><p style="margin-top:8px; font-size:12px;">${item.name}</p></div>`
-                    : '<div class="menu-no-image"><i class="ph-bold ph-image"></i><span>Chưa có ảnh minh họa</span></div>'}
-            </div>
-
-            <div class="form-group">
-                <label>Mô tả</label>
-                <textarea class="form-control" rows="3" readonly style="resize:none;">${item.description || '—'}</textarea>
-            </div>
-
-            <div class="smart-ordering-section">
-                <div class="smart-ordering-header">
-                    <i class="ph-bold ph-robot"></i>
-                    <span>Thông tin phục vụ Smart Ordering</span>
-                </div>
-                <div class="smart-ordering-body">
+            <div class="form-grid">
+                <div class="form-col">
                     <div class="form-group">
-                        <label>Thành phần</label>
-                        <input type="text" class="form-control" value="${item.ingredients || '—'}" readonly>
+                        <label>Tên món ăn</label>
+                        <input type="text" class="form-control" value="${item.name}" readonly>
+                    </div>
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label>Danh mục</label>
+                            <input type="text" class="form-control" value="${item.category}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Giá bán (VNĐ)</label>
+                            <input type="text" class="form-control" value="${item.price.toLocaleString('vi-VN')}đ" readonly>
+                        </div>
+                    </div>
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label>Số lượng tồn</label>
+                            <input type="text" class="form-control" value="${item.stock ?? 'Chế biến — tính theo nguyên liệu'}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Trạng thái</label>
+                            <div style="padding-top:8px"><span class="badge ${item.statusClass}">${item.status}</span></div>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>Độ cay</label>
-                        <input type="text" class="form-control" value="${spicyLabel[item.spicy] || item.spicy || '—'}" readonly>
+                        <label>Mô tả</label>
+                        <textarea class="form-control" rows="3" readonly style="resize:none;">${item.description || '—'}</textarea>
                     </div>
                     <div class="form-group">
-                        <label>Loại món</label>
-                        <div style="padding-top:4px">${item.diet ? dietLabel : '—'}</div>
-                    </div>
-                    <div class="form-group">
-                        <label>Thông tin dị ứng</label>
-                        <input type="text" class="form-control" value="${item.allergens || '—'}" readonly>
+                        <label>Hình ảnh Minh họa</label>
+                        ${item.img
+                            ? `<div class="upload-box has-image upload-box--compact" style="cursor:default;"><img src="${item.img}" alt="${item.name}" style="max-height:100px; max-width:100%; border-radius:8px;"></div>`
+                            : '<div class="menu-no-image"><i class="ph-bold ph-image"></i><span>Chưa có ảnh minh họa</span></div>'}
                     </div>
                 </div>
-            </div>
 
+                <div class="form-col">
+                    <div class="smart-ordering-section">
+                        <div class="smart-ordering-header">
+                            <i class="ph-bold ph-robot"></i>
+                            <span>Thông tin phục vụ Smart Ordering</span>
+                        </div>
+                        <div class="smart-ordering-body">
+                            <div class="form-group">
+                                <label>Thành phần</label>
+                                <input type="text" class="form-control" value="${item.ingredients || '—'}" readonly>
+                            </div>
+                            <div class="form-row-2">
+                                <div class="form-group">
+                                    <label>Độ cay</label>
+                                    <input type="text" class="form-control" value="${spicyLabel[item.spicy] || item.spicy || '—'}" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label>Loại món</label>
+                                    <div style="padding-top:8px">${item.diet ? dietLabel : '—'}</div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Thông tin dị ứng</label>
+                                <input type="text" class="form-control" value="${item.allergens || '—'}" readonly>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     `;
 

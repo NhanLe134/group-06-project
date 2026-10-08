@@ -30,7 +30,7 @@ Test case: US-03 **21 `Passed` · 0 `Failed` · 2 `Blocked`**; US-08 **9 `Passed
 | BUG-US03-005 Đơn gửi đúng lúc bếp báo hết vẫn được nhận | P2 | **Integration Postgres** TC-OP-005 | Fixed |
 | BUG-US08-001 Tồn đầu ca bị trừ hai lần | P2 | Thiết kế + integration | Fixed |
 
-Còn mở: **0** P1/P2 — đạt tiêu chí `test-strategy.md` §4.1 mục 6. Báo cáo: `testing/bug-reports/`.
+Còn mở: **0** P1/P2 — đạt tiêu chí `test-strategy.md` §4.1 mục 6. Bảng tổng hợp: [`testing/bug-reports/bug-report.md`](../../bug-reports/bug-report.md); hồ sơ chi tiết nằm trong `testing/bug-reports/`.
 
 ## 3. Đối chiếu tiêu chí đóng (`test-strategy.md` §4.1)
 

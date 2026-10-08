@@ -146,10 +146,21 @@
     .pop .danger { color: var(--color-danger); }
 
     /* ---------- Tồn kho (REQ-09 / BR-03) ---------- */
-    .stock { margin-top: 24px; background: var(--color-neutral-card); border-radius: var(--radius-md); box-shadow: var(--shadow-card); overflow: hidden; }
-    .stock summary { min-height: 44px; padding: 14px 16px; font: var(--type-title); cursor: pointer; }
-    .stock summary span { font: var(--type-desc); color: var(--color-text-muted); }
-    .stock ul { list-style: none; border-top: 1px solid var(--color-line); }
+    /* Tồn kho: nút nổi góc dưới phải + ngăn kéo bên phải (không phải lướt xuống cuối trang — A-115) */
+    .board { padding-bottom: 88px; }   /* chừa chỗ để nút nổi không che nút Nấu/Xong cuối danh sách */
+    .stock-fab { position: fixed; right: 20px; bottom: 20px; z-index: 40; display: inline-flex; align-items: center; gap: 8px; min-height: 56px; padding: 0 18px; border: none; border-radius: 999px; background: var(--color-neutral-card); color: var(--color-text-main); font: var(--type-button); box-shadow: 0 8px 24px rgba(15, 23, 42, .18); cursor: pointer; }
+    .stock-fab i { font-size: 22px; color: var(--color-primary); }
+    .stock-fab .badge { min-width: 24px; height: 24px; padding: 0 7px; border-radius: 999px; background: #DC2626; color: #fff; font: var(--type-chip); line-height: 24px; text-align: center; }
+    .stock-fab:hover { opacity: .9; }
+    .stock-fab:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; }
+    .stock-backdrop { position: fixed; inset: 0; z-index: 44; background: rgba(15, 23, 42, .35); }
+    .stock { position: fixed; top: 0; right: 0; bottom: 0; z-index: 45; width: min(420px, 100vw); display: flex; flex-direction: column; background: var(--color-neutral-card); box-shadow: -12px 0 32px rgba(15, 23, 42, .18); }
+    .stock-head { display: flex; align-items: center; gap: 8px; min-height: 60px; padding: 8px 8px 8px 16px; border-bottom: 1px solid var(--color-line); }
+    .stock-head h3 { flex: 1; font: var(--type-title); }
+    .stock-head h3 span { font: var(--type-desc); color: var(--color-text-muted); }
+    .stock-head .icon-btn { width: 44px; height: 44px; border: none; border-radius: var(--radius-md); background: transparent; font-size: 20px; cursor: pointer; }
+    .stock-head .icon-btn:hover { background: var(--color-tint); }
+    .stock ul { list-style: none; overflow-y: auto; flex: 1; }
     .stock li { display: flex; align-items: center; gap: 12px; padding: 6px 16px; border-bottom: 1px solid var(--color-line); font: var(--type-body); }
     .stock li:last-child { border-bottom: none; }
     .stock .name { flex: 1; font-weight: 600; }
@@ -186,7 +197,7 @@
     .stepper output small { display: block; font: var(--type-caption); color: var(--color-text-muted); }
     .split-all { display: block; margin: 0 auto; min-height: 44px; padding: 0 12px; font: var(--type-desc); font-weight: 600; color: var(--color-primary-dark); text-decoration: underline; }
     .kc-part { display: inline-flex; margin-top: 6px; padding: 2px 10px; border-radius: var(--radius-full); background: var(--color-tint); color: var(--color-text-main); font: var(--type-badge); font-variant-numeric: tabular-nums; }
-    .toasts { position: fixed; right: 16px; bottom: 16px; z-index: 60; display: flex; flex-direction: column; gap: 8px; max-width: min(360px, calc(100vw - 32px)); }
+    .toasts { position: fixed; right: 16px; bottom: 92px; /* nằm trên nút nổi Tồn kho */ z-index: 60; display: flex; flex-direction: column; gap: 8px; max-width: min(360px, calc(100vw - 32px)); }
     .toast { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: var(--radius-md); background: var(--color-text-main); color: #fff; font: var(--type-desc); box-shadow: 0 12px 28px rgba(15, 23, 42, .2); }
     .toast i { font-size: 18px; flex: none; color: var(--color-primary); }
 
@@ -720,8 +731,15 @@
 
     ${S.loaded ? `<div class="board">${STATUSES.map(s => renderColumn(s, batches)).join('')}</div>
 
-    <details class="stock" ${S.stockOpen ? 'open' : ''}>
-      <summary>Tồn kho <span>· ${oosCount ? `${oosCount} món hết hàng` : 'tất cả còn hàng'}</span></summary>
+    <button class="stock-fab" data-action="stock-open" aria-haspopup="dialog" aria-expanded="${S.stockOpen}"
+      aria-label="Mở Tồn kho${oosCount ? ` — ${oosCount} món hết hàng` : ''}">
+      <i class="ph-bold ph-package"></i> Tồn kho${oosCount ? ` <span class="badge">${oosCount}</span>` : ''}</button>
+    ${S.stockOpen ? `<div class="stock-backdrop" data-action="stock-close"></div>
+    <aside class="stock" role="dialog" aria-modal="false" aria-labelledby="stock-title">
+      <div class="stock-head">
+        <h3 id="stock-title">Tồn kho <span>· ${oosCount ? `${oosCount} món hết hàng` : 'tất cả còn hàng'}</span></h3>
+        <button class="icon-btn" data-action="stock-close" aria-label="Đóng Tồn kho"><i class="ph-bold ph-x"></i></button>
+      </div>
       <ul>
         ${S.menu.map(d => {
           const oos = isOos(d.id), stopped = d.listed === false;
@@ -731,7 +749,7 @@
             <button data-action="${stopped ? 'restock' : 'ask-oos'}" data-dish="${d.id}">${stopped ? 'Mở bán lại' : 'Báo hết'}</button></li>`;
         }).join('')}
       </ul>
-    </details>` : renderLoadState()}`;
+    </aside>` : ''}` : renderLoadState()}`;
     updateConnUI();
   }
 
@@ -759,14 +777,17 @@
       case 'close-modal': S.split = null; closeModal(); break;
       case 'sound': S.soundOn = !S.soundOn; if (S.soundOn) ting(); render(); break;
       case 'retry': S.loadError = ''; render(); refresh(); break;
+      case 'stock-open': S.stockOpen = true; render(); $('.stock .icon-btn')?.focus(); break;
+      case 'stock-close': S.stockOpen = false; render(); $('.stock-fab')?.focus(); break;
     }
   });
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeModal(); if (S.menuFor) { S.menuFor = null; render(); } }
+    if (e.key !== 'Escape') return;
+    if ($('#modal-root').innerHTML.trim()) { closeModal(); return; }   /* đóng hộp thoại trước, ngăn kéo sau */
+    if (S.menuFor) { S.menuFor = null; render(); }
+    if (S.stockOpen) { S.stockOpen = false; render(); $('.stock-fab')?.focus(); }
   });
 
-  /* Giữ trạng thái mở/đóng của khung Tồn kho khi render lại */
-  document.addEventListener('toggle', e => { if (e.target.matches?.('details.stock')) S.stockOpen = e.target.open; }, true);
 
   /* Kéo thả giữa các cột (AC2) — kéo thẳng từ Chờ nấu sang Đã nấu vẫn được */
   document.addEventListener('dragstart', e => {
