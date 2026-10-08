@@ -78,32 +78,62 @@
 .panel-head h3 i { color: var(--color-primary); }
 .badge { background: var(--color-danger); color: #fff; padding: 2px 9px; border-radius: var(--radius-full); font-size: 12px; font-weight: 800; }
 .table-list { display: flex; flex-direction: column; padding: 8px; }
-.table-item {
-  display: flex; align-items: center; gap: 10px;
-  width: 100%; text-align: left;
-  padding: 14px 16px; margin-bottom: 10px;
-  border: 2px solid #E2E8F0; border-radius: 16px;
-  background: var(--color-neutral-card);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  font: inherit; color: inherit;
+
+/* ---------- Thẻ bàn (kiểu mockup: pill + chip + tiến độ lên món) ---------- */
+.tc-card {
+  display: block; width: 100%; text-align: left;
+  border: 1.5px solid; border-radius: 16px;
+  padding: 16px; margin-bottom: 12px;
+  cursor: pointer; font: inherit; color: inherit;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
 }
+.tc-card:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08); }
+.tc-card.active { box-shadow: 0 0 0 2.5px var(--color-primary), 0 8px 18px rgba(0, 0, 0, 0.1); }
+.tc-green { background: #ECFDF5; border-color: #A7F3D0; }
+.tc-red   { background: #FEF2F2; border-color: #FECACA; }
+.tc-amber { background: #FFFBEB; border-color: #FDE68A; }
+
+.tc-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tc-name { font-size: 19px; font-weight: 800; color: var(--color-text-main); }
+.tc-pill {
+  display: inline-flex; align-items: center;
+  padding: 4px 12px; border-radius: var(--radius-full);
+  font-size: 12px; font-weight: 800; white-space: nowrap;
+  background: #fff;
+}
+.tc-card .pill-green     { background: #ECFDF5; color: #16A34A; border: 1px solid #A7F3D0; }
+.tc-card .pill-amber     { background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }
+.tc-card .pill-red-line  { background: #fff; color: var(--color-danger); border: 1px solid #FECACA; }
+.tc-card .pill-red-solid { background: var(--color-danger); color: #fff; border: 1px solid var(--color-danger); }
+
+.tc-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.tc-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #fff; border: 1px solid #E2E8F0; border-radius: var(--radius-full);
+  padding: 6px 12px; font-size: 12.5px; font-weight: 700; color: var(--color-text-main);
+}
+.tc-chip i { color: var(--color-danger); }
+
+.tc-progress { margin-top: 14px; }
+.tc-progress-label {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12.5px; font-weight: 700; color: var(--color-text-main); margin-bottom: 6px;
+}
+.tc-progress-label .done { color: #16A34A; }
+.tc-progress-bar {
+  height: 7px; border-radius: var(--radius-full);
+  background: #E2E8F0; overflow: hidden;
+}
+.tc-progress-fill {
+  height: 100%; border-radius: var(--radius-full);
+  background: var(--color-danger); transition: width 0.4s ease;
+}
+.tc-progress-fill.done { background: #16A34A; }
+
 /* viền màu theo trạng thái bàn */
-.table-item.st1 { border-style: dashed; }                          /* trống — đứt nét */
-.table-item.st2 { border-color: #FECACA; background: #FEF2F2; }    /* đang phục vụ — đỏ nhạt */
-.table-item.st3 { border-color: #FDE68A; background: #FFFBEB; }    /* chờ dọn — vàng nhạt */
-.table-item:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08); }
-.table-item.active {
-  border-color: var(--color-primary); background: var(--primary-soft);
-  box-shadow: 0 4px 12px rgba(13, 92, 117, 0.18);
-}
-.table-item.empty { border-style: dashed; }
-.table-item.empty .ti-name { color: var(--color-text-muted); font-weight: 600; }
-.st-clean { background: #FEF3C7; color: #B45309; }
-.ti-name { font-weight: 800; font-size: 14.5px; color: var(--color-text-main); }
-.ti-info { flex: 1; display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
-.ti-total { font-size: 12.5px; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
-.ti-arrow { color: #CBD5E1; font-size: 14px; }
+                          /* trống — đứt nét */
+    /* đang phục vụ — đỏ nhạt */
+    /* chờ dọn — vàng nhạt */
 
 /* Công tắc mô phỏng lỗi (AC5) */
 .sim-box { padding: 12px 16px; border-top: 1px dashed #E2E8F0; background: #FFFBEB; }
@@ -259,4 +289,3 @@
 }
 
 /* Danh sách rỗng */
-.table-empty { padding: 24px 16px; text-align: center; font-size: 13px; color: var(--color-text-muted); line-height: 1.6; }

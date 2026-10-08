@@ -59,20 +59,47 @@ function renderTableList() {
   const occupied = tables.filter(t => t.trangthai === '2');
   $('#occupied-count').textContent = occupied.length;
 
-  $('#table-list').innerHTML = tables.length ? tables.map(t => `
-    <button class="table-item card ${t.id === selectedId ? 'active' : ''} st${t.trangthai || '1'}"
-      data-table="${t.id}">
-      <span class="ti-name">${esc(t.tenban)}</span>
-      <span class="ti-info">
-        ${t.trangthai === '2'
-          ? `<span class="status-pill st-occupied">Đang ăn</span>
-             <b class="ti-total">${fmtVND(t.tongtien)}</b>`
-          : t.trangthai === '3'
-          ? '<span class="status-pill st-clean">Chờ dọn</span>'
-          : '<span class="status-pill st-empty">Trống</span>'}
-      </span>
-      <i class="ph-bold ph-caret-right ti-arrow"></i>
-    </button>`).join('')
+  $('#table-list').innerHTML = tables.length ? tables.map(t => {
+    let pill, pillCls, cardCls;
+    if (t.trangthai === '3') {
+      pill = 'Cần dọn dẹp'; pillCls = 'pill-amber'; cardCls = 'tc-amber';
+    } else if (t.trangthai === '2') {
+      cardCls = 'tc-red';
+      if (t.mon_phuc_vu === t.tong_mon && t.tong_mon > 0) {
+        pill = 'Đã đủ món'; pillCls = 'pill-green';
+      } else if (t.mon_da_xong > 0) {
+        pill = 'CẦN BUNG'; pillCls = 'pill-red-solid';
+      } else {
+        pill = 'Chờ lên món'; pillCls = 'pill-red-line';
+      }
+    } else {
+      pill = 'Trống'; pillCls = 'pill-green'; cardCls = 'tc-green';
+    }
+    const gio = t.gio_vao
+      ? new Date(t.gio_vao).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+      : '';
+    return `
+    <button class="tc-card ${cardCls} ${t.id === selectedId ? 'active' : ''}" data-table="${t.id}">
+      <div class="tc-top">
+        <span class="tc-name">${esc(t.tenban)}</span>
+        <span class="tc-pill ${pillCls}">${pill}</span>
+      </div>
+      ${t.trangthai === '2' ? `
+      <div class="tc-chips">
+        <span class="tc-chip"><i class="ph-fill ph-users"></i> ${t.so_phieuban} phiếu</span>
+        <span class="tc-chip"><i class="ph-bold ph-clock"></i> ${gio}</span>
+      </div>
+      <div class="tc-progress">
+        <div class="tc-progress-label">
+          <span>Tiến độ lên món</span>
+          <b class="${t.mon_phuc_vu === t.tong_mon ? 'done' : ''}">${t.mon_phuc_vu}/${t.tong_mon} Món</b>
+        </div>
+        <div class="tc-progress-bar">
+          <div class="tc-progress-fill ${t.mon_phuc_vu === t.tong_mon ? 'done' : ''}" style="width:${t.tong_mon ? Math.round(t.mon_phuc_vu / t.tong_mon * 100) : 0}%"></div>
+        </div>
+      </div>` : ''}
+    </button>`;
+  }).join('')
     : '<div class="table-empty">Chưa có phiên bàn nào.<br>Hãy để khách gọi món trước.</div>';
 }
 

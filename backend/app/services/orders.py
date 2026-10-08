@@ -23,6 +23,7 @@ from app.schemas.order import (
 from app.services import stock
 
 DA_PHUC_VU = "da_phuc_vu"
+DA_XONG = "da_xong"
 BAN_SAN_SANG, BAN_DANG_PHUC_VU, BAN_CHO_DON = 1, 2, 3
 
 
@@ -145,7 +146,7 @@ async def create_order(
 
 
 async def list_cashier_tables(db: AsyncSession) -> list[dict]:
-    """US-05 — 6 bàn master + tổng tiền các phiếu chưa tính tiền."""
+    """US-05 — 6 bàn master + tiến độ món + tổng tiền các phiếu chưa tính tiền."""
     bans = (await db.execute(select(Ban).order_by(Ban.ban_id))).scalars().all()
     out: list[dict] = []
     for ban in bans:
@@ -156,11 +157,14 @@ async def list_cashier_tables(db: AsyncSession) -> list[dict]:
                 "id": ban.ban_id,
                 "tenban": ban.tenban,
                 "trangthai": str(ban.trangthai or BAN_SAN_SANG),
-                "giobatdau": (
+                "gio_vao": (
                     phieu_list[0].giogoimon.isoformat() if phieu_list else None
                 ),
                 "tongtien": sum(i.thanhtien for i in items),
                 "so_phieuban": len(phieu_list),
+                "tong_mon": len(items),
+                "mon_phuc_vu": sum(1 for i in items if i.trangthai == DA_PHUC_VU),
+                "mon_da_xong": sum(1 for i in items if i.trangthai == DA_XONG),
             }
         )
     return out
