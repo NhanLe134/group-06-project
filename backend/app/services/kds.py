@@ -7,7 +7,7 @@ from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.errors import ApiError
-from app.models import ChiTietMon, HoaDon, LogHuyMon, PhienBan, ThucDon
+from app.models import Ban, ChiTietPhieu, LogHuyMon, PhieuBan, ThucDon
 from app.schemas.kds import KdsItemOut
 from app.services import stock
 
@@ -32,25 +32,31 @@ def _bep_bao_het(trangthaiban: bool | None) -> bool:
 
 def _item_query() -> Select:
     return (
-        select(ChiTietMon, ThucDon.tenmon, ThucDon.trangthaiban, PhienBan.tenban)
-        .outerjoin(ThucDon, ChiTietMon.thucdon_id == ThucDon.id)
-        .outerjoin(HoaDon, ChiTietMon.hoadon_id == HoaDon.id)
-        .outerjoin(PhienBan, HoaDon.phienban_id == PhienBan.id)
+        select(
+            ChiTietPhieu,
+            ThucDon.tenmon,
+            ThucDon.trangthaiban,
+            Ban.tenban,
+            PhieuBan.giogoimon,
+        )
+        .outerjoin(ThucDon, ChiTietPhieu.mon_id == ThucDon.id)
+        .outerjoin(PhieuBan, ChiTietPhieu.phieuban_id == PhieuBan.phieuban_id)
+        .outerjoin(Ban, PhieuBan.ban_id == Ban.ban_id)
     )
 
 
 def _to_out(row) -> KdsItemOut:
-    item, tenmon, trangthaiban, tenban = row
+    item, tenmon, trangthaiban, tenban, giogoimon = row
     return KdsItemOut(
-        id=item.id,
-        hoadon_id=item.hoadon_id,
+        id=item.chitietphieu_id,
+        phieuban_id=item.phieuban_id,
         ban=tenban,
-        thucdon_id=item.thucdon_id,
+        mon_id=item.mon_id,
         tenmon=tenmon,
         soluong=item.soluong or 1,
         ghichu=item.ghichu,
         trangthai=item.trangthai or CHO_NAU,
-        giogoimon=item.giogoimon,
+        giogoimon=giogoimon,
         het_hang=_bep_bao_het(trangthaiban),
     )
 
@@ -59,26 +65,26 @@ async def list_items(db: AsyncSession) -> list[KdsItemOut]:
     """Món đang ở 3 cột KDS, cũ nhất trước (FIFO)."""
     rows = await db.execute(
         _item_query()
-        .where(ChiTietMon.trangthai.in_(KDS_STATUSES))
-        .order_by(ChiTietMon.giogoimon, ChiTietMon.id)
+        .where(ChiTietPhieu.trangthai.in_(KDS_STATUSES))
+        .order_by(PhieuBan.giogoimon, ChiTietPhieu.chitietphieu_id)
     )
     return [_to_out(r) for r in rows.all()]
 
 
 async def get_item(db: AsyncSession, item_id: str) -> KdsItemOut:
-    row = (await db.execute(_item_query().where(ChiTietMon.id == item_id))).first()
+    row = (await db.execute(_item_query().where(ChiTietPhieu.chitietphieu_id == item_id))).first()
     if row is None:
         raise ApiError(404, "ORDER_ITEM_NOT_FOUND", "Không tìm thấy món này.")
     return _to_out(row)
 
 
-async def _load_for_update(db: AsyncSession, item_id: str) -> tuple[ChiTietMon, bool]:
+async def _load_for_update(db: AsyncSession, item_id: str) -> tuple[ChiTietPhieu, bool]:
     row = (
         await db.execute(
-            select(ChiTietMon, ThucDon.trangthaiban)
-            .outerjoin(ThucDon, ChiTietMon.thucdon_id == ThucDon.id)
-            .where(ChiTietMon.id == item_id)
-            .with_for_update(of=ChiTietMon)
+            select(ChiTietPhieu, ThucDon.trangthaiban)
+            .outerjoin(ThucDon, ChiTietPhieu.mon_id == ThucDon.id)
+            .where(ChiTietPhieu.chitietphieu_id == item_id)
+            .with_for_update(of=ChiTietPhieu)
         )
     ).first()
     if row is None:
@@ -87,7 +93,7 @@ async def _load_for_update(db: AsyncSession, item_id: str) -> tuple[ChiTietMon, 
     return item, _bep_bao_het(trangthaiban)
 
 
-def _check_transition(item: ChiTietMon, het_hang: bool, target: str) -> None:
+def _check_transition(item: ChiTietPhieu, het_hang: bool, target: str) -> None:
     current = item.trangthai or CHO_NAU
     if target not in TRANSITIONS.get(current, set()):
         raise ApiError(
@@ -121,18 +127,17 @@ async def split_item(
             f"Số suất tách phải nhỏ hơn {current_qty}; muốn chuyển cả món thì đổi trạng thái.",
         )
     _check_transition(item, het_hang, target)
-    part = ChiTietMon(
-        hoadon_id=item.hoadon_id,
-        thucdon_id=item.thucdon_id,
+    part = ChiTietPhieu(
+        phieuban_id=item.phieuban_id,
+        mon_id=item.mon_id,
         soluong=soluong,
         trangthai=target,
-        ghichu=item.ghichu,
-        giogoimon=item.giogoimon,  # giữ giờ gọi gốc để thứ tự FIFO không đổi
+        ghichu=item.ghichu,  # cùng phiếu → cùng giờ gọi, FIFO giữ nguyên
     )
     item.soluong = current_qty - soluong
     db.add(part)
     await db.commit()
-    return await get_item(db, item.id), await get_item(db, part.id)
+    return await get_item(db, item.chitietphieu_id), await get_item(db, part.chitietphieu_id)
 
 
 async def cancel_out_of_stock(
@@ -151,8 +156,8 @@ async def cancel_out_of_stock(
             "Chỉ xóa được món đang chờ nấu và đã bị đánh dấu hết hàng.",
         )
     item.trangthai = DA_HUY
-    db.add(LogHuyMon(chitietmon_id=item.id, lydohuy=LY_DO_HET_HANG))
-    watch = await stock.release(db, [(item.thucdon_id, item.soluong or 1)])
+    db.add(LogHuyMon(chitietphieu_id=item.chitietphieu_id, lydohuy=LY_DO_HET_HANG))
+    watch = await stock.release(db, [(item.mon_id, item.soluong or 1)])
     await db.commit()
     return await get_item(db, item_id), stock.flipped(watch)
 
@@ -198,9 +203,9 @@ async def set_menu_stock(db: AsyncSession, mon_id: str, stock: int | None) -> Th
 async def draft_sessions_with_item(db: AsyncSession, mon_id: str) -> list[str]:
     """Phiên bàn đang có món này trong hóa đơn nháp (để client làm mờ — ADR-001)."""
     rows = await db.execute(
-        select(HoaDon.phienban_id)
-        .join(ChiTietMon, ChiTietMon.hoadon_id == HoaDon.id)
-        .where(ChiTietMon.thucdon_id == mon_id, HoaDon.trangthai == "ban_nhap")
+        select(PhieuBan.phieuban_id)
+        .join(ChiTietPhieu, ChiTietPhieu.phieuban_id == PhieuBan.phieuban_id)
+        .where(ChiTietPhieu.mon_id == mon_id, PhieuBan.hoadon_id.is_(None))
         .distinct()
     )
     return [str(pid) for pid in rows.scalars().all() if pid is not None]

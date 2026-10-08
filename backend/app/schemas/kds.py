@@ -11,9 +11,9 @@ class KdsItemOut(BaseModel):
     """1 thẻ món trên KDS = 1 dòng chitietmon kèm tên bàn, tên món."""
 
     id: str
-    hoadon_id: str | None
+    phieuban_id: str | None
     ban: str | None
-    thucdon_id: str | None
+    mon_id: str | None
     tenmon: str | None
     soluong: int
     ghichu: str | None

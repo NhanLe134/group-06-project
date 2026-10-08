@@ -4,7 +4,8 @@
    API (theo yêu cầu nối FE ↔ Backend/Supabase):
    - GET  /cashier/tables            → danh sách bàn + hóa đơn đang mở
    - GET  /orders/current?table_name → chi tiết món đợt 1, đợt 2 của bàn
-   - POST /orders/{hoadon_id}/pay-qr → tạo QR thanh toán
+   - POST /tables/{ban_id}/pay-qr → tạo QR cho các phiếu chưa tính tiền
+   - POST /tables/{ban_id}/close → tạo hoadon + bàn về chờ dọn
    - POST /tables/{phienban_id}/close → hoadon 'da_thanh_toan', bàn về 'trong'
    QR trả về từ backend (mock qrserver.com; sau này thay bằng MoMo/VNPAY).
    Công tắc "Mô phỏng lỗi cổng thanh toán" giữ lại cho AC5.
@@ -55,15 +56,15 @@ async function loadTables() {
 }
 
 function renderTableList() {
-  const occupied = tables.filter(t => t.trangthai === 'dang_phuc_vu');
+  const occupied = tables.filter(t => t.trangthai === '2');
   $('#occupied-count').textContent = occupied.length;
 
   $('#table-list').innerHTML = tables.length ? tables.map(t => `
-    <button class="table-item ${t.id === selectedId ? 'active' : ''} ${t.trangthai === 'dang_phuc_vu' ? '' : 'empty'}"
+    <button class="table-item ${t.id === selectedId ? 'active' : ''} ${t.trangthai === '2' ? '' : 'empty'}"
       data-table="${t.id}">
       <span class="ti-name">${esc(t.tenban)}</span>
       <span class="ti-info">
-        ${t.trangthai === 'dang_phuc_vu' && t.hoadon_id
+        ${t.trangthai === '2'
           ? `<span class="status-pill st-occupied">Đang ăn</span>
              <b class="ti-total">${fmtVND(t.tongtien)}</b>`
           : '<span class="status-pill st-empty">Trống</span>'}
@@ -93,8 +94,8 @@ async function openTable(id) {
   panel.innerHTML = `
     <div class="detail-head">
       <div>
-        <h2>${esc(t.tenban)} <span class="status-pill ${t.trangthai === 'dang_phuc_vu' ? 'st-occupied' : 'st-empty'}">
-          ${t.trangthai === 'dang_phuc_vu' ? 'Đang ăn' : 'Trống'}</span></h2>
+        <h2>${esc(t.tenban)} <span class="status-pill ${t.trangthai === '2' ? 'st-occupied' : 'st-empty'}">
+          ${t.trangthai === '2' ? 'Đang ăn' : 'Trống'}</span></h2>
       </div>
     </div>
     <div class="draft-empty"><i class="ph-duotone ph-spinner"></i><p>Đang tải hóa đơn...</p></div>`;
@@ -176,7 +177,7 @@ function createQR() {
     return;
   }
   run(async () => {
-    qr = await apiFetch(`/orders/${bill.hoadon_id}/pay-qr`, { method: 'POST' });
+    qr = await apiFetch(`/tables/${selectedId}/pay-qr`, { method: 'POST' });
     await openTable(selectedId);   /* render lại với QR + nút xác nhận */
   });
 }

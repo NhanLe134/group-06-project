@@ -33,8 +33,8 @@ class LogHuyMon(Base):
 
     # Mã do database tự sinh (migration 007, ADR-ARCH-004), vd. MON001, HD-20261006-0001
     id: Mapped[str] = mapped_column(String(30), primary_key=True, server_default=FetchedValue())
-    chitietmon_id: Mapped[str | None] = mapped_column(
-        String(30), ForeignKey("chitietmon.id", ondelete="CASCADE"), default=None
+    chitietphieu_id: Mapped[str | None] = mapped_column(
+        String(30), ForeignKey("chitietphieu.chitietphieu_id", ondelete="CASCADE"), default=None
     )
     nguoiduyet_id: Mapped[str | None] = mapped_column(
         String(30), ForeignKey("nguoidung.id"), default=None

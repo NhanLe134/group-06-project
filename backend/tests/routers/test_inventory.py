@@ -8,7 +8,7 @@ from datetime import UTC, datetime, timedelta
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import ChiTietMon, HoaDon, NguoiDung, PhienBan, ThucDon
+from app.models import Ban, ChiTietPhieu, NguoiDung, PhieuBan, ThucDon
 
 PIN = "1234"
 
@@ -25,15 +25,19 @@ async def _setup(db: AsyncSession, stock: int = 50):
 
 
 async def _order(db: AsyncSession, mon: ThucDon, qty: int, *, when=None, trangthai="da_xong"):
-    phien = PhienBan(tenban="Bàn 01")
-    db.add(phien)
+    ban = Ban(tenban="Bàn 01", trangthai=2)
+    db.add(ban)
     await db.flush()
-    hd = HoaDon(phienban_id=phien.id, trangthai="da_chot")
-    db.add(hd)
-    await db.flush()
-    item = ChiTietMon(hoadon_id=hd.id, thucdon_id=mon.id, soluong=qty, trangthai=trangthai)
+    phieu = PhieuBan(ban_id=ban.ban_id, hoadon_id=None)
     if when is not None:
-        item.giogoimon = when
+        from datetime import UTC, datetime
+
+        phieu.giogoimon = datetime.fromtimestamp(when.timestamp(), tz=UTC).replace(tzinfo=None)
+    db.add(phieu)
+    await db.flush()
+    item = ChiTietPhieu(
+        phieuban_id=phieu.phieuban_id, mon_id=mon.id, soluong=qty, trangthai=trangthai
+    )
     # Gửi bếp trừ `soluongton` ngay (story-spec-tru-kho-tu-dong.md); món hủy đã được hoàn kho.
     # Đơn ngoài kỳ (`when`) coi như đã trừ trước khi kỳ bắt đầu → `stock` của _setup là tồn đầu kỳ.
     if mon.soluongton is not None and trangthai != "da_huy" and when is None:

@@ -22,8 +22,8 @@ class LogGiongNoi(Base):
 
     # Mã do database tự sinh (migration 007, ADR-ARCH-004), vd. MON001, HD-20261006-0001
     id: Mapped[str] = mapped_column(String(30), primary_key=True, server_default=FetchedValue())
-    phienban_id: Mapped[str | None] = mapped_column(
-        String(30), ForeignKey("phienban.id", ondelete="CASCADE"), default=None
+    phieuban_id: Mapped[str | None] = mapped_column(
+        String(30), ForeignKey("phieuban.phieuban_id", ondelete="CASCADE"), default=None
     )
     vanbangoc: Mapped[str] = mapped_column(Text)
     # jsonb trên Postgres/Supabase; JSON thường khi test bằng SQLite in-memory
