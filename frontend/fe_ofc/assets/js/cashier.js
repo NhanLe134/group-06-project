@@ -91,13 +91,14 @@ async function openTable(id) {
     return;
   }
 
-  panel.innerHTML = `
+  const headHTML = `
     <div class="detail-head">
       <div>
         <h2>${esc(t.tenban)} <span class="status-pill ${t.trangthai === '2' ? 'st-occupied' : 'st-empty'}">
           ${t.trangthai === '2' ? 'Đang ăn' : 'Trống'}</span></h2>
       </div>
-    </div>
+    </div>`;
+  panel.innerHTML = headHTML + `
     <div class="draft-empty"><i class="ph-duotone ph-spinner"></i><p>Đang tải hóa đơn...</p></div>`;
 
   /* Chi tiết món đợt 1, đợt 2 từ GET /orders/current */
@@ -107,11 +108,12 @@ async function openTable(id) {
     );
   } catch (e) {
     bill = null;
-    panel.insertAdjacentHTML('beforeend', `
+    /* THAY TOÀN BỘ nội dung (không append) — khung "Đang tải..." phải biến mất */
+    panel.innerHTML = headHTML + `
       <div class="detail-empty">
         <i class="ph-duotone ph-armchair"></i>
         <p>${e.status === 404 ? `${esc(t.tenban)} đang trống hoặc chưa gọi món.` : esc(e.message)}</p>
-      </div>`);
+      </div>`;
     return;
   }
 
@@ -120,7 +122,6 @@ async function openTable(id) {
     <div class="detail-head">
       <div>
         <h2>${esc(bill.table_name)} <span class="status-pill st-occupied">Đang ăn</span></h2>
-        <p>Hóa đơn <b>${bill.hoadon_id.slice(0, 8)}</b>…</p>
       </div>
     </div>
 
