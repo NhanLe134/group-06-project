@@ -85,7 +85,7 @@ const COPY = {
   ADR001: name => `Dạ món ${name} vừa hết hàng, anh/chị vui lòng bỏ món khỏi danh sách để chốt đơn nhé!`,
   BR05_NOTE: 'Theo BR-RO-05, đơn sau khi gửi không thể tự hủy trên máy. Cần hỗ trợ, xin gọi nhân viên.',
   DONE_MSG: 'Dạ em kết thúc phiên gọi món. Anh/chị kiểm tra lại bản nháp đơn hàng trước khi gửi bếp nhé ạ.',
-  GREETING: 'Xin chào Anh Tuấn! Em là trợ lý gọi món của quán. Anh/chị chạm chọn món bên dưới, gõ vào ô tìm kiếm, hoặc bấm micro để gọi món bằng giọng nói ạ.',
+  GREETING: 'Xin chào! Em là trợ lý gọi món của quán. Anh/chị chạm chọn món bên dưới, gõ vào ô tìm kiếm, hoặc bấm micro để gọi món bằng giọng nói ạ.',
 };
 
 /* ---------- Trạng thái vòng đời đơn (FLOW D) ---------- */
