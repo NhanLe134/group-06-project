@@ -26,4 +26,5 @@ class WaiterTableOut(BaseModel):
 
 
 class ManagerAuthIn(BaseModel):
-    pin: str
+    pin: str | None = None
+    new_quantity: int = 0

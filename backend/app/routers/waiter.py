@@ -33,6 +33,6 @@ async def clean_table(ban_id: str, db: Db):
 
 @router.post("/items/{item_id}/void")
 async def void_item(item_id: str, body: ManagerAuthIn, db: Db):
-    """Hủy món ăn với quyền quản lý (cần mã PIN)"""
-    await service.void_item(db, item_id, body.pin)
-    return {"message": "Đã hủy món thành công"}
+    """Điều chỉnh số lượng hoặc Hủy món ăn"""
+    await service.void_item(db, item_id, body.new_quantity)
+    return {"message": "Đã điều chỉnh/hủy món thành công"}

@@ -33,7 +33,7 @@ let currentActionCb = null;
 let currentZone = 'all';
 
 // Initialize Zone Filter Event Listener
-document.addEventListener('DOMContentLoaded', () => {
+function initZoneFilter() {
     const zoneFilter = document.getElementById('zone-filter');
     if (zoneFilter) {
         zoneFilter.addEventListener('change', (e) => {
@@ -41,7 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
             renderTables();
         });
     }
-});
+}
+initZoneFilter();
 
 // 1. RENDER TABLE MAP CHUYÊN NGHIỆP CÓ TÍNH TOÁN TIẾN ĐỘ LÊN MÓN
 function renderTables() {
@@ -187,10 +188,8 @@ function renderOrderItems(table) {
         }
         
         let cancelBtn = '';
-        if (item.status === 'pending') {
-            cancelBtn = `<button class="btn-void-item" title="Hủy món" onclick="requestVoid('${table.id}', '${item.id}', '${item.name}', '${item.status}')"><i class="ph-bold ph-trash"></i></button>`;
-        } else if (item.status === 'cooking' || item.status === 'ready') {
-            cancelBtn = `<button class="btn-void-item" title="Không thể tự hủy" style="opacity: 0.3; cursor: not-allowed;" onclick="alert('Món này Bếp đang làm hoặc đã xong! Không thể tự hủy, vui lòng gọi Manager.')"><i class="ph-bold ph-trash"></i></button>`;
+        if (item.status === 'pending' || item.status === 'cooking' || item.status === 'ready') {
+            cancelBtn = `<button class="btn-void-item" title="Điều chỉnh/Hủy món" onclick="requestVoid('${table.id}', '${item.id}', '${item.name}', '${item.status}')"><i class="ph-bold ph-trash"></i></button>`;
         } else {
             cancelBtn = `<div style="width: 36px"></div>`; 
         }
@@ -247,44 +246,46 @@ window.markTableClean = async function(tableId) {
     }
 }
 
-// 5. MANAGER AUTH & VOID
+// 5. ĐIỀU CHỈNH SỐ LƯỢNG & HỦY MÓN
 window.requestVoid = function(tableId, itemId, itemName, itemStatus) {
-    const extraMsg = (itemStatus === 'cooking' || itemStatus === 'ready') 
-        ? `<br><br><span style="color: var(--color-danger); font-weight: 600;"><i class="ph-bold ph-warning-circle"></i> Món đang ở bếp! Hủy món sẽ báo Bếp dừng làm ngay lập tức.</span>` 
-        : '';
-        
-    document.getElementById('auth-desc').innerHTML = `Nhập mã PIN quản lý để xác nhận hủy món <b>${itemName}</b>.${extraMsg}`;
-
-    authModal.style.display = 'flex';
-    pinInput.value = '';
-    authError.style.display = 'none';
-    pinInput.focus();
+    if (itemStatus === 'served') {
+        showToast('Lỗi', 'Không thể sửa món đã phục vụ', 'danger');
+        return;
+    }
+    
+    const qtyStr = prompt(`Nhập số lượng bạn muốn giữ lại cho món [${itemName}].\n(Nhập 0 để HỦY hoàn toàn món này):`, "0");
+    if (qtyStr === null) return; // User cancelled
+    
+    const qty = parseInt(qtyStr, 10);
+    if (isNaN(qty) || qty < 0) {
+        alert("Số lượng không hợp lệ!");
+        return;
+    }
     
     currentActionCb = async () => {
         try {
             const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/waiter/items/${itemId}/void`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pin: pinInput.value })
+                body: JSON.stringify({ pin: "", new_quantity: qty })
             });
             if (!res.ok) {
-                if (res.status === 401) throw new Error('Mã PIN không đúng');
-                throw new Error('Không thể hủy món');
+                throw new Error('Không thể cập nhật món');
             }
             
-            authModal.style.display = 'none';
             await loadTables();
             
             if (document.getElementById('table-drawer').classList.contains('active')) {
                 const table = tables.find(t => t.id === tableId);
                 if (table) renderOrderItems(table);
             }
-            showToast('Đã hủy món', `Yêu cầu hủy đã bắn trực tiếp xuống KDS.`, 'danger');
+            showToast('Thành công', qty === 0 ? 'Đã hủy món.' : `Đã điều chỉnh thành ${qty} phần.`, 'success');
         } catch (e) {
-            authError.style.display = 'block';
-            authError.innerText = e.message;
+            showToast('Lỗi', e.message, 'danger');
         }
     };
+    
+    currentActionCb();
 };
 
 document.getElementById('btn-cancel-auth').addEventListener('click', () => { authModal.style.display = 'none'; });
@@ -474,6 +475,9 @@ function renderTasks() {
     
     // 1. Phân loại tasks
     tables.forEach(t => {
+        // Lọc thông báo nhiệm vụ theo khu vực Waiter đang chọn
+        if (currentZone !== 'all' && t.zone !== currentZone) return;
+
         if (t.status === 'cleaning') {
             cleaningTasks.push(t);
             totalTasks++;

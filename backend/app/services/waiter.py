@@ -149,22 +149,7 @@ async def clean_table(db: AsyncSession, ban_id: str) -> None:
     await db.commit()
 
 
-async def void_item(db: AsyncSession, item_id: str, pin: str) -> None:
-    # 1. Xác thực Quản lý bằng mã PIN
-    manager = (
-        (
-            await db.execute(
-                select(NguoiDung).where(and_(NguoiDung.vaitro == "QUAN_LY", NguoiDung.mapin == pin))
-            )
-        )
-        .scalars()
-        .first()
-    )
-
-    if not manager:
-        raise ApiError(401, "UNAUTHORIZED", "Mã PIN Quản lý không hợp lệ")
-
-    # 2. Hủy món
+async def void_item(db: AsyncSession, item_id: str, new_quantity: int = 0) -> None:
     ct = (
         (await db.execute(select(ChiTietPhieu).where(ChiTietPhieu.chitietphieu_id == item_id)))
         .scalars()
@@ -173,5 +158,12 @@ async def void_item(db: AsyncSession, item_id: str, pin: str) -> None:
     if not ct:
         raise ApiError(404, "NOT_FOUND", "Không tìm thấy món ăn này")
 
-    ct.trangthai = "da_huy"
+    if ct.trangthai == "da_phuc_vu":
+        raise ApiError(400, "INVALID_STATE", "Tuyệt đối không được sửa món đã phục vụ")
+
+    if new_quantity <= 0:
+        ct.trangthai = "da_huy"
+    else:
+        ct.soluong = new_quantity
+
     await db.commit()
