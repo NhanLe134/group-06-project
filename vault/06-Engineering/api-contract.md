@@ -250,14 +250,14 @@ Phát khi `POST /menu/items/{id}/out-of-stock` được gọi — broadcast toà
 
 > Thêm 2026-10-06 cùng `story-spec-us03-kds.md`. Code: `backend/app/routers/kds.py`, `backend/app/routers/menu.py`, nghiệp vụ ở `backend/app/services/kds.py`. Tên trường theo bảng thật trên Supabase (`frontend/fe_ofc/dtb.md`, ADR-ARCH-003). **Auth: TBD** — chưa có JWT, xem Story Spec Mục 7.
 
-**Đối tượng `KdsItem`** (1 dòng `chitietmon` kèm tên bàn, tên món):
+**Đối tượng `KdsItem`** (1 dòng `chitietphieu` kèm tên bàn, tên món, giờ gọi của phiếu). Cập nhật 2026-10-08 theo ADR-N14: `hoadon_id` → `phieuban_id`, `thucdon_id` → `mon_id` (KDS đọc cả 2 tên — BUG-US03-004):
 
 ```json
 {
-  "id": "CTM-20261007-0004",
-  "hoadon_id": "HD-20261007-0003",
+  "id": "CTP-20261008-0004",
+  "phieuban_id": "PB-20261008-0003",
   "ban": "Bàn 04",
-  "thucdon_id": "MON005",
+  "mon_id": "MON005",
   "tenmon": "Bún chả Hà Nội",
   "soluong": 1,
   "ghichu": "Ít cay",
@@ -267,9 +267,12 @@ Phát khi `POST /menu/items/{id}/out-of-stock` được gọi — broadcast toà
 }
 ```
 
-`trangthai` ∈ `cho_nau | dang_nau | da_xong`. `giogoimon` luôn trả kèm múi giờ UTC. `het_hang = true` khi món bị tắt bán **hoặc** `soluongton = 0`.
+`trangthai` ∈ `cho_nau | dang_nau | da_xong`. `giogoimon` luôn trả kèm múi giờ UTC. `het_hang = true` **chỉ khi bếp/quản lý báo hết bằng tay** (`trangthaiban = false`) — cập nhật 2026-10-07 (ADR-NA07): món đã gửi bếp đã được trừ kho nên số phần còn = 0 không chặn nấu.
 
-`MenuItem` (`GET /menu`) có thêm trường `stock` (số lượng tồn, `null` = món không đếm số lượng); `status = out_of_stock` khi tắt bán hoặc `stock = 0`.
+`MenuItem` (`GET /menu`) có thêm:
+- `stock` — số lượng tồn của món **mua sẵn**; `null` = món **chế biến** (tính theo nguyên liệu).
+- `portions` — số phần còn bán được: mua sẵn = `stock`; chế biến = min(⌊tồn nguyên liệu ÷ định lượng⌋) theo công thức; `null` = không giới hạn (chưa có công thức). Thêm 2026-10-07 (Mục 8).
+- `status = out_of_stock` khi tắt bán **hoặc** `portions = 0`.
 
 | Method | Path | Body | Response | Lỗi |
 | :--- | :--- | :--- | :--- | :--- |
@@ -278,7 +281,7 @@ Phát khi `POST /menu/items/{id}/out-of-stock` được gọi — broadcast toà
 | POST | `/kds/items/{id}/split` | `{ "soluong": 4, "trangthai": "dang_nau" }` | `{ "goc": KdsItem, "moi": KdsItem }` | như trên + 422 `INVALID_SPLIT_QUANTITY` |
 | POST | `/kds/items/{id}/cancel-out-of-stock` | — | `KdsItem` (`trangthai = da_huy`), ghi `loghuymon` | 404; 409 `ITEM_NOT_CANCELLABLE` (món không ở `cho_nau` hoặc chưa hết hàng) |
 | POST | `/menu/items/{id}/out-of-stock` | — | `MenuItem` (`status = out_of_stock`) + phát `ITEM_OOS_BROADCAST` (Mục 5.2) | 404 `MENU_ITEM_NOT_FOUND` |
-| POST | `/menu/items/{id}/in-stock` | — | `MenuItem` (`status = available`) + phát `ITEM_OOS_BROADCAST` | 404 `MENU_ITEM_NOT_FOUND`; 409 `STOCK_EMPTY` (món đếm số lượng đang = 0) |
+| POST | `/menu/items/{id}/in-stock` | — | `MenuItem` (`status = available`) + phát `ITEM_OOS_BROADCAST` | 404 `MENU_ITEM_NOT_FOUND`; 409 `STOCK_EMPTY` (`portions = 0`: hết số lượng hoặc hết nguyên liệu — nhập thêm hàng trước) |
 | PATCH | `/menu/items/{id}/stock` | `{ "stock": 24 }` (số nguyên ≥ 0, hoặc `null` = không đếm số lượng) | `MenuItem` (có trường `stock`); về 0 → `status = out_of_stock`. Phát `ITEM_OOS_BROADCAST` khi trạng thái còn/hết thay đổi | 404 `MENU_ITEM_NOT_FOUND`; 422 số âm |
 | POST | `/kds/demo/orders` | — | `KdsItem[]` — đơn mẫu AC1 (2 bàn cùng gọi Phở bò). **Chỉ khi `DEMO_MODE=true`**, ẩn khỏi Swagger | 404 khi tắt; 409 `MENU_ITEM_MISSING` |
 
@@ -286,7 +289,7 @@ Phát khi `POST /menu/items/{id}/out-of-stock` được gọi — broadcast toà
 
 | Event | Payload | Khi nào |
 | :--- | :--- | :--- |
-| `KDS_ITEMS_CHANGED` | `{ "item_ids": ["..."], "reason": "status \| split \| cancel_out_of_stock \| new_order" }` | Sau mỗi thao tác ghi ở trên — màn hình KDS tải lại danh sách |
+| `KDS_ITEMS_CHANGED` | `{ "item_ids": ["..."], "reason": "status \| split \| cancel_out_of_stock \| new_order", "ban"?: "Bàn 06" }` | Sau mỗi thao tác ghi ở trên, **và sau `POST /orders` (khách gửi bếp, `reason = new_order`, có `ban`)** — màn hình KDS tải lại danh sách |
 | `ITEM_READY` | `{ "chitietmon_id": "...", "ban": "Bàn 01", "tenmon": "Phở bò tái lăn", "soluong": 2 }` | Món chuyển sang `da_xong` (US-03 AC2) — màn hình Phục vụ dùng để báo "Ting!" |
 
 > Sự kiện `TICKET_OVERDUE` (Mục 5.1) **chưa triển khai** — chưa có job quét món chờ quá 15 phút.
@@ -312,3 +315,21 @@ Phát khi `POST /menu/items/{id}/out-of-stock` được gọi — broadcast toà
 | DELETE | `/inventory/shifts/{id}` | — | 204 | 404; 409 `SHIFT_CLOSED` (BR-07) |
 
 Body lỗi có thể kèm `details` (mở rộng body chuẩn ở đầu tài liệu) để client chỉ ra đúng dòng vi phạm.
+
+## 8. Trừ kho tự động — nguyên liệu & công thức — đã triển khai (Proposed)
+
+> Thêm 2026-10-07 cùng `story-spec-tru-kho-tu-dong.md` (trạng thái Proposed — chờ PO). Code: `backend/app/routers/ingredients.py`, `backend/app/services/stock.py`. Bảng `tonkho` (nguyên liệu, mã `NL001`), `congthuc` (định lượng, mã `CT001`). **Auth: TBD** (chờ JWT).
+
+**Quy tắc** (ADR-NA05, ADR-NA06): món **mua sẵn** (`soluongton` khác `null`) trừ `soluongton`; món **chế biến** trừ `tonkho.tonhethong` = định lượng × số phần. Trừ ngay khi `POST /orders` (khóa dòng `SELECT … FOR UPDATE`); thiếu → **409 `ITEM_OUT_OF_STOCK`** cho cả đơn, `details = [{ "thucdon_id", "tenmon", "con_lai" }]`, không trừ gì. `POST /kds/items/{id}/cancel-out-of-stock` cộng trả kho. Món đổi còn ↔ hết → phát `ITEM_OOS_BROADCAST` (Mục 5.2), kể cả món khác dùng chung nguyên liệu.
+
+| Method | Path | Body | Response | Lỗi |
+| :--- | :--- | :--- | :--- | :--- |
+| GET | `/inventory/ingredients` | — | `[{ "id": "NL001", "name": "Thịt bò", "unit": "kg", "stock": 9.4, "used_in": ["Phở bò"] }]` | — |
+| POST | `/inventory/ingredients` | `{ "name", "unit", "stock": số ≥ 0 }` | 201 `Ingredient` | 422 |
+| PUT | `/inventory/ingredients/{id}` | `{ "name"?, "unit"?, "stock"? }` (nhập hàng = đặt tồn mới) | `Ingredient`; phát `ITEM_OOS_BROADCAST` cho món đổi còn/hết | 404 `INGREDIENT_NOT_FOUND`; 422 |
+| DELETE | `/inventory/ingredients/{id}` | — | 204 | 404; 409 `INGREDIENT_IN_USE` (`details` = tên món) |
+| GET | `/menu/items/{id}/recipe` | — | `{ "thucdon_id", "tenmon", "portions", "lines": [{ "ingredient_id", "ingredient_name", "unit", "quantity", "stock" }] }` | 404 `MENU_ITEM_NOT_FOUND` |
+| PUT | `/menu/items/{id}/recipe` | `{ "lines": [{ "ingredient_id": "NL001", "quantity": 0.2 }] }` — thay toàn bộ; `[]` = không trừ nguyên liệu | `Recipe` | 404 `MENU_ITEM_NOT_FOUND` / `INGREDIENT_NOT_FOUND`; 422 `DUPLICATE_INGREDIENT`; 422 `quantity ≤ 0` |
+
+DB: migration `011_tonkho_congthuc_rang_buoc.sql` (CHECK `tonhethong >= 0`, `dinhluong > 0`, UNIQUE món–nguyên liệu) — **chưa chạy trên Supabase, chờ nhóm duyệt**.
+

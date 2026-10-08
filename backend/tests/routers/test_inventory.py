@@ -8,7 +8,7 @@ from datetime import UTC, datetime, timedelta
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import ChiTietMon, HoaDon, NguoiDung, PhienBan, ThucDon
+from app.models import Ban, ChiTietPhieu, NguoiDung, PhieuBan, ThucDon
 
 PIN = "1234"
 
@@ -25,15 +25,19 @@ async def _setup(db: AsyncSession, stock: int = 50):
 
 
 async def _order(db: AsyncSession, mon: ThucDon, qty: int, *, when=None, trangthai="da_xong"):
-    phien = PhienBan(tenban="Bàn 01")
-    db.add(phien)
+    ban = Ban(tenban="Bàn 01", trangthai=2)
+    db.add(ban)
     await db.flush()
-    hd = HoaDon(phienban_id=phien.id, trangthai="da_chot")
-    db.add(hd)
-    await db.flush()
-    item = ChiTietMon(hoadon_id=hd.id, thucdon_id=mon.id, soluong=qty, trangthai=trangthai)
+    phieu = PhieuBan(ban_id=ban.ban_id, hoadon_id=None)
     if when is not None:
-        item.giogoimon = when
+        from datetime import UTC, datetime
+
+        phieu.giogoimon = datetime.fromtimestamp(when.timestamp(), tz=UTC).replace(tzinfo=None)
+    db.add(phieu)
+    await db.flush()
+    item = ChiTietPhieu(
+        phieuban_id=phieu.phieuban_id, mon_id=mon.id, soluong=qty, trangthai=trangthai
+    )
     # Gửi bếp trừ `soluongton` ngay (story-spec-tru-kho-tu-dong.md); món hủy đã được hoàn kho.
     # Đơn ngoài kỳ (`when`) coi như đã trừ trước khi kỳ bắt đầu → `stock` của _setup là tồn đầu kỳ.
     if mon.soluongton is not None and trangthai != "da_huy" and when is None:
@@ -242,3 +246,22 @@ async def test_save_lines_rejects_negative_and_unknown_items(
     resp = await client.put(url, json={"lines": [{"thucdon_id": str(pho.id), "tonthucte": 1}]})
     assert resp.status_code == 422
     assert resp.json()["error_code"] == "UNKNOWN_ITEM"
+
+
+async def test_opening_stock_not_double_counted_after_real_orders(
+    client: AsyncClient, db_session: AsyncSession
+):
+    """Regression BUG-US08-001: gửi bếp tự trừ soluongton (story-spec-tru-kho-tu-dong.md), nên
+    phiếu tạo sau khi đã bán phải cộng lại số đã bán: A = 10, B = 3, C = 7
+    (lỗi cũ: A = 7, C = 4)."""
+    tra, _ = await _setup(db_session, stock=10)
+    db_session.add(Ban(tenban="Bàn 01", trangthai=1))  # bàn master (ADR-N14)
+    await db_session.commit()
+    resp = await client.post(
+        "/orders", json={"table_name": "Bàn 01", "items": [{"thucdon_id": tra.id, "soluong": 3}]}
+    )
+    assert resp.status_code == 200
+
+    line = _line((await client.post("/inventory/shifts")).json(), "Trà đá")
+
+    assert (line["tondauca"], line["daban"], line["tonlythuyet"]) == (10, 3, 7)

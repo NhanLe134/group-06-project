@@ -313,7 +313,14 @@ window.submitEditMenu = async function() {
             allergens,
         });
         // Công thức lưu riêng (story-spec-tru-kho-tu-dong.md); số phần còn đổi theo → tải lại món
-        if (recipeLines) await stockApi('PUT', `/menu/items/${encodeURIComponent(id)}/recipe`, { lines: recipeLines });
+        if (recipeLines) {
+            await stockApi('PUT', `/menu/items/${encodeURIComponent(id)}/recipe`, { lines: recipeLines })
+                .catch(err => {
+                    // Lỗi công thức không ảnh hưởng tới việc cập nhật thông tin món
+                    console.warn('Cập nhật công thức thất bại:', err.message);
+                    showToast('Cảnh báo', 'Thông tin món đã lưu nhưng công thức chưa cập nhật được.', 'warning');
+                });
+        }
         const refreshed = await menuRequest('GET', `/${encodeURIComponent(id)}`).catch(() => saved);
         menuItems = menuItems.map(item => item.id === id ? mapMenuItem(refreshed) : item);
         renderMenu();

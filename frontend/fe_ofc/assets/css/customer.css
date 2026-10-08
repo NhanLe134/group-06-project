@@ -913,3 +913,15 @@
   .customer-app *::-webkit-scrollbar { display: none; }
   .customer-app * { scrollbar-width: none; }
 }
+
+/* ---------- Hóa đơn nhóm theo đợt gọi (ADR-N13) ---------- */
+.bill-table .dot-row td {
+  color: var(--color-primary);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 7px 6px;
+  border-bottom: 1px solid #E2E8F0;
+}
+.bill-table .dot-row td i { margin-right: 4px; }

@@ -11,21 +11,29 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.models import ChiTietMon, HoaDon, LogHuyMon, PhienBan, ThucDon
+from app.models import Ban, ChiTietPhieu, LogHuyMon, PhieuBan, ThucDon
 from app.ws.manager import ConnectionManager
 
 
 async def _seed(db: AsyncSession, *, het_hang: bool = False, soluong: int = 2, **item_kw):
     mon = ThucDon(tenmon="Phở bò tái lăn", phanloai="Món chính", giaban=65000)
     mon.trangthaiban = not het_hang
-    phien = PhienBan(tenban="Bàn 01")
-    db.add_all([mon, phien])
+    ban = Ban(tenban="Bàn 01", trangthai=2)
+    phieu = PhieuBan(ban_id=None, hoadon_id=None)
+    gio = item_kw.pop("giogoimon", None)
+    if gio is not None:
+        phieu.giogoimon = gio  # giờ gọi thuộc PHIẾU (ADR-N14) — FIFO theo phiếu
+    db.add_all([mon, ban])
     await db.flush()
-    hoadon = HoaDon(phienban_id=phien.id, trangthai="da_chot")
-    db.add(hoadon)
+    phieu.ban_id = ban.ban_id
+    db.add(phieu)
     await db.flush()
-    item = ChiTietMon(
-        hoadon_id=hoadon.id, thucdon_id=mon.id, soluong=soluong, ghichu="Không hành", **item_kw
+    item = ChiTietPhieu(
+        phieuban_id=phieu.phieuban_id,
+        mon_id=mon.id,
+        soluong=soluong,
+        ghichu="Không hành",
+        **item_kw,
     )
     db.add(item)
     await db.commit()
@@ -44,7 +52,7 @@ async def test_list_items_returns_card_fields_sorted_fifo(
 
     assert resp.status_code == 200
     body = resp.json()
-    assert [i["id"] for i in body] == [str(older.id), str(newer.id)]
+    assert [i["id"] for i in body] == [older.chitietphieu_id, newer.chitietphieu_id]
     assert body[0]["ban"] == "Bàn 01"
     assert body[0]["tenmon"] == "Phở bò tái lăn"
     assert body[0]["trangthai"] == "cho_nau"  # mặc định DB
@@ -72,7 +80,9 @@ async def test_update_status_valid_transitions(
     """AC2: đổi trạng thái hợp lệ (kể cả Chờ nấu → Đã nấu bằng nút Xong) được lưu vào DB."""
     _, item = await _seed(db_session, trangthai=start)
 
-    resp = await client.patch(f"/kds/items/{item.id}/status", json={"trangthai": target})
+    resp = await client.patch(
+        f"/kds/items/{item.chitietphieu_id}/status", json={"trangthai": target}
+    )
 
     assert resp.status_code == 200
     assert resp.json()["trangthai"] == target
@@ -84,14 +94,18 @@ async def test_update_status_rejects_invalid_transition(
     client: AsyncClient, db_session: AsyncSession
 ):
     _, item = await _seed(db_session, trangthai="da_xong")
-    resp = await client.patch(f"/kds/items/{item.id}/status", json={"trangthai": "cho_nau"})
+    resp = await client.patch(
+        f"/kds/items/{item.chitietphieu_id}/status", json={"trangthai": "cho_nau"}
+    )
     assert resp.status_code == 409
     assert resp.json()["error_code"] == "INVALID_STATUS_TRANSITION"
 
 
 async def test_update_status_rejects_unknown_value(client: AsyncClient, db_session: AsyncSession):
     _, item = await _seed(db_session)
-    resp = await client.patch(f"/kds/items/{item.id}/status", json={"trangthai": "READY"})
+    resp = await client.patch(
+        f"/kds/items/{item.chitietphieu_id}/status", json={"trangthai": "READY"}
+    )
     assert resp.status_code == 422
 
 
@@ -106,7 +120,9 @@ async def test_cannot_cook_pending_item_when_out_of_stock(
 ):
     """BR-03: món hết hàng khi còn Chờ nấu thì server chặn nấu — client không bypass được."""
     _, item = await _seed(db_session, het_hang=True)
-    resp = await client.patch(f"/kds/items/{item.id}/status", json={"trangthai": "dang_nau"})
+    resp = await client.patch(
+        f"/kds/items/{item.chitietphieu_id}/status", json={"trangthai": "dang_nau"}
+    )
     assert resp.status_code == 409
     assert resp.json()["error_code"] == "ITEM_OUT_OF_STOCK"
 
@@ -116,7 +132,7 @@ async def test_split_moves_part_and_keeps_rest(client: AsyncClient, db_session: 
     _, item = await _seed(db_session, soluong=10)
 
     resp = await client.post(
-        f"/kds/items/{item.id}/split", json={"soluong": 4, "trangthai": "dang_nau"}
+        f"/kds/items/{item.chitietphieu_id}/split", json={"soluong": 4, "trangthai": "dang_nau"}
     )
 
     assert resp.status_code == 200
@@ -133,7 +149,8 @@ async def test_split_rejects_quantity_not_less_than_current(
 ):
     _, item = await _seed(db_session, soluong=10)
     resp = await client.post(
-        f"/kds/items/{item.id}/split", json={"soluong": soluong, "trangthai": "dang_nau"}
+        f"/kds/items/{item.chitietphieu_id}/split",
+        json={"soluong": soluong, "trangthai": "dang_nau"},
     )
     assert resp.status_code == 422
     assert resp.json()["error_code"] == "INVALID_SPLIT_QUANTITY"
@@ -145,19 +162,19 @@ async def test_cancel_out_of_stock_marks_cancelled_and_logs(
     """Món chờ nấu đã hết hàng → xóa khỏi hàng đợi (da_huy) và có nhật ký loghuymon."""
     _, item = await _seed(db_session, het_hang=True)
 
-    resp = await client.post(f"/kds/items/{item.id}/cancel-out-of-stock")
+    resp = await client.post(f"/kds/items/{item.chitietphieu_id}/cancel-out-of-stock")
 
     assert resp.status_code == 200
     assert resp.json()["trangthai"] == "da_huy"
     logs = (await db_session.execute(select(LogHuyMon))).scalars().all()
-    assert len(logs) == 1 and logs[0].chitietmon_id == item.id
+    assert len(logs) == 1 and logs[0].chitietphieu_id == item.chitietphieu_id
 
 
 async def test_cancel_out_of_stock_rejected_when_dish_available(
     client: AsyncClient, db_session: AsyncSession
 ):
     _, item = await _seed(db_session, het_hang=False)
-    resp = await client.post(f"/kds/items/{item.id}/cancel-out-of-stock")
+    resp = await client.post(f"/kds/items/{item.chitietphieu_id}/cancel-out-of-stock")
     assert resp.status_code == 409
     assert resp.json()["error_code"] == "ITEM_NOT_CANCELLABLE"
 
@@ -242,5 +259,43 @@ async def test_kds_still_cooks_reserved_item_when_drink_stock_is_zero(
     await db_session.commit()
 
     assert (await client.get("/kds/items")).json()[0]["het_hang"] is False
-    resp = await client.patch(f"/kds/items/{item.id}/status", json={"trangthai": "da_xong"})
+    resp = await client.patch(
+        f"/kds/items/{item.chitietphieu_id}/status", json={"trangthai": "da_xong"}
+    )
     assert resp.status_code == 200
+
+
+async def test_double_click_done_second_request_is_409(
+    client: AsyncClient, db_session: AsyncSession
+):
+    """TC-OP-KDS-005 (§11.3 double click): bấm "Xong" 2 lần liên tiếp → lần 2 bị 409,
+    trạng thái trong DB vẫn đúng 1 lần chuyển."""
+    _, item = await _seed(db_session)
+    url = f"/kds/items/{item.chitietphieu_id}/status"
+    first = await client.patch(url, json={"trangthai": "da_xong"})
+    second = await client.patch(url, json={"trangthai": "da_xong"})
+
+    assert first.status_code == 200
+    assert second.status_code == 409
+    assert second.json()["error_code"] == "INVALID_STATUS_TRANSITION"
+
+
+async def test_vietnamese_and_emoji_note_shown_unchanged_on_kds(
+    client: AsyncClient, db_session: AsyncSession
+):
+    """TC-OP-KDS-012 (§11.3 Unicode/tiếng Việt/emoji): ghi chú khách nhập hiện nguyên vẹn."""
+    note = "Không hành, ít cay 🌶️ — thêm chanh"
+    mon = ThucDon(tenmon="Bún bò Huế", phanloai="Món chính", giaban=60000)
+    db_session.add_all([mon, Ban(tenban="Bàn 09", trangthai=1)])  # bàn master (ADR-N14)
+    await db_session.commit()
+
+    resp = await client.post(
+        "/orders",
+        json={
+            "table_name": "Bàn 09",
+            "items": [{"thucdon_id": mon.id, "soluong": 1, "ghichu": note}],
+        },
+    )
+    assert resp.status_code == 200
+    card = next(i for i in (await client.get("/kds/items")).json() if i["ban"] == "Bàn 09")
+    assert (card["tenmon"], card["ghichu"]) == ("Bún bò Huế", note)

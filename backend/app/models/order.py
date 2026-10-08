@@ -1,72 +1,107 @@
-"""Phiên bàn, hóa đơn & chi tiết món — khớp bảng trên Supabase.
+"""Bàn, phiếu bàn, chi tiết phiếu & hóa đơn — khớp thiết kế mới (ADR-N14).
 
-Xem ADR-ARCH-003, vault/06-Engineering/data-model.md Mục 5 và frontend/fe_ofc/dtb.md.
+Xem vault/08-Decisions/decision_log_Nhan.md ADR-N14 và frontend/fe_ofc/dtb.md.
+
+- `ban`           : MASTER — 6 bàn vật lý, trangthai 1=sẵn sàng, 2=đang phục vụ, 3=chờ dọn
+- `hoadon`        : TRANSACTION — chỉ tạo khi THANH TOÁN, tổng hợp các phiếu bàn
+- `phieuban`      : TRANSACTION — 1 lần khách gửi bếp = 1 phiếu; hoadon_id NULL = khách đang dùng
+- `chitietphieu`  : TRANSACTION — món trong phiếu (giờ gọi theo phieuban.giogoimon)
 """
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, FetchedValue, ForeignKey, Index, Integer, String, Text, func
+from sqlalchemy import (
+    DateTime,
+    FetchedValue,
+    ForeignKey,
+    Integer,
+    SmallInteger,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
 
 
-class PhienBan(Base):
-    """Phiên ngồi của 1 bàn (TABLES + TABLE_SESSIONS)."""
+class Ban(Base):
+    """Bàn vật lý (TABLES — master data)."""
 
-    __tablename__ = "phienban"
+    __tablename__ = "ban"
 
-    # Mã do database tự sinh (migration 007, ADR-ARCH-004), vd. MON001, HD-20261006-0001
-    id: Mapped[str] = mapped_column(String(30), primary_key=True, server_default=FetchedValue())
+    ban_id: Mapped[str] = mapped_column(
+        String(30), primary_key=True, server_default=FetchedValue()
+    )
     tenban: Mapped[str] = mapped_column(String)
-    trangthai: Mapped[str | None] = mapped_column(String, server_default="trong")
-    giobatdau: Mapped[datetime | None] = mapped_column(DateTime(timezone=False), default=None)
-    gioketthuc: Mapped[datetime | None] = mapped_column(DateTime(timezone=False), default=None)
+    # 1 = sẵn sàng, 2 = đang phục vụ, 3 = chờ dọn (lưu số để giảm dữ liệu)
+    trangthai: Mapped[int | None] = mapped_column(SmallInteger, server_default="1")
 
 
 class HoaDon(Base):
-    """Đơn / hóa đơn của 1 phiên bàn (ORDERS)."""
+    """Hóa đơn — tạo khi THANH TOÁN, tổng hợp các phiếu bàn chưa tính tiền (BILLS)."""
 
     __tablename__ = "hoadon"
 
-    # Mã do database tự sinh (migration 007, ADR-ARCH-004), vd. MON001, HD-20261006-0001
-    id: Mapped[str] = mapped_column(String(30), primary_key=True, server_default=FetchedValue())
-    phienban_id: Mapped[str | None] = mapped_column(
-        String(30), ForeignKey("phienban.id", ondelete="CASCADE"), default=None
+    hoadon_id: Mapped[str] = mapped_column(
+        String(30), primary_key=True, server_default=FetchedValue()
     )
+    ban_id: Mapped[str | None] = mapped_column(
+        String(30), ForeignKey("ban.ban_id"), default=None
+    )
+    # Thu ngân xác nhận thu tiền (RBAC sau này); NULL = chưa gán
+    nhanvien_id: Mapped[str | None] = mapped_column(
+        String(30), ForeignKey("nguoidung.id"), default=None
+    )
+    so_phieuban: Mapped[int | None] = mapped_column(Integer, server_default="0")
     tongtien: Mapped[int | None] = mapped_column(Integer, server_default="0")
-    trangthai: Mapped[str | None] = mapped_column(String, server_default="ban_nhap")
-    thoigian: Mapped[datetime | None] = mapped_column(
+    # Hóa đơn chỉ sinh khi chốt tiền → mặc định đã thanh toán
+    trangthai: Mapped[str | None] = mapped_column(String, server_default="da_thanh_toan")
+    thoigianthanhtoan: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=False), server_default=func.now()
     )
-    thoigian_thanhtoan: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=False), default=None
+
+
+class PhieuBan(Base):
+    """Phiếu bàn = 1 lần khách gửi bếp (TABLE_TICKETS).
+
+    `hoadon_id = NULL` → phiếu của khách ĐANG sử dụng (chưa tính tiền);
+    có `hoadon_id` → phiếu đã thuộc hóa đơn khách trước (ADR-N14).
+    """
+
+    __tablename__ = "phieuban"
+
+    phieuban_id: Mapped[str] = mapped_column(
+        String(30), primary_key=True, server_default=FetchedValue()
+    )
+    ban_id: Mapped[str | None] = mapped_column(
+        String(30), ForeignKey("ban.ban_id"), default=None
+    )
+    giogoimon: Mapped[datetime] = mapped_column(
+        DateTime(timezone=False), server_default=func.now()
+    )
+    hoadon_id: Mapped[str | None] = mapped_column(
+        ForeignKey("hoadon.hoadon_id", ondelete="CASCADE"), default=None
     )
 
 
-class ChiTietMon(Base):
-    """1 dòng món trong hóa đơn (ORDER_ITEMS).
+class ChiTietPhieu(Base):
+    """1 dòng món trong phiếu bàn (ORDER_ITEMS).
 
+    Giờ gọi của món = `phieuban.giogoimon` (cả phiếu chung 1 giờ gọi) — không lưu trùng.
     `trangthai` là trạng thái món trên KDS (US-03 AC2):
     cho_nau, dang_nau, da_xong, da_phuc_vu, da_huy.
     """
 
-    __tablename__ = "chitietmon"
-    __table_args__ = (Index("idx_chitietmon_trangthai_giogoimon", "trangthai", "giogoimon"),)
-    # Đọc lại giá trị DB tự sinh (giogoimon, trangthai...) ngay khi insert,
-    # tránh lazy-load ngầm trong async session
-    __mapper_args__ = {"eager_defaults": True}
+    __tablename__ = "chitietphieu"
 
-    # Mã do database tự sinh (migration 007, ADR-ARCH-004), vd. MON001, HD-20261006-0001
-    id: Mapped[str] = mapped_column(String(30), primary_key=True, server_default=FetchedValue())
-    hoadon_id: Mapped[str | None] = mapped_column(
-        String(30), ForeignKey("hoadon.id", ondelete="CASCADE"), default=None
+    chitietphieu_id: Mapped[str] = mapped_column(
+        String(30), primary_key=True, server_default=FetchedValue()
     )
-    thucdon_id: Mapped[str | None] = mapped_column(
-        String(30), ForeignKey("thucdon.id"), default=None
+    phieuban_id: Mapped[str | None] = mapped_column(
+        String(30), ForeignKey("phieuban.phieuban_id", ondelete="CASCADE"), default=None
     )
+    mon_id: Mapped[str | None] = mapped_column(ForeignKey("thucdon.id"), default=None)
     soluong: Mapped[int | None] = mapped_column(Integer, server_default="1")
     trangthai: Mapped[str | None] = mapped_column(String, server_default="cho_nau")
     ghichu: Mapped[str | None] = mapped_column(Text, default=None)
-    # Giờ gọi món (UTC) — migration 001; KDS xếp FIFO và hiển thị "Nhận lúc ..."
-    giogoimon: Mapped[datetime] = mapped_column(DateTime(timezone=False), server_default=func.now())

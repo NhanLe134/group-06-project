@@ -1,8 +1,8 @@
 import { type Page, type Locator } from '@playwright/test';
 
 /**
- * Page Object: Màn hình KDS Bếp
- * US-03 — xem ticket, bấm Done, bấm OOS
+ * Page Object: Màn hình Bếp KDS — frontend/fe_ofc/pages/kitchen.html (US-03).
+ * Thẻ món đơn lẻ: `article.kcard`; món được AI gom mẻ: `section.batch` > `li.kcard-row`.
  */
 export class KdsPage {
   readonly page: Page;
@@ -12,22 +12,46 @@ export class KdsPage {
   }
 
   async goto() {
-    await this.page.goto('/fe_ofc/pages/kds.html');
+    await this.page.goto('/pages/kitchen.html');
+    await this.page.locator('.board').waitFor();
   }
 
-  ticketCard(tableName: string): Locator {
-    return this.page.locator('.kds-ticket', { hasText: tableName });
+  /** Cột trạng thái: PENDING (Chờ nấu) | COOKING (Đang nấu) | READY (Đã nấu). */
+  column(status: 'PENDING' | 'COOKING' | 'READY'): Locator {
+    return this.page.locator(`.col[data-status="${status}"]`);
   }
 
-  doneButton(tableName: string): Locator {
-    return this.ticketCard(tableName).locator('[data-done]');
+  /** Thẻ món của 1 bàn (thẻ đơn lẻ hoặc 1 dòng trong mẻ). */
+  card(table: string): Locator {
+    return this.page.locator('article.kcard, li.kcard-row').filter({ hasText: table }).first();
   }
 
-  oosToggle(itemName: string): Locator {
-    return this.page.locator('[data-oos]', { hasText: itemName });
+  batch(dish: string): Locator {
+    return this.page.locator('section.batch').filter({ hasText: dish });
   }
 
-  get flashingTickets(): Locator {
-    return this.page.locator('.kds-ticket.overdue');
+  get connection(): Locator {
+    return this.page.locator('#conn');
+  }
+
+  get offlineBanner(): Locator {
+    return this.page.locator('#offline-banner');
+  }
+
+  /** Dòng của 1 món trong khung "Tồn kho". */
+  stockRow(dish: string): Locator {
+    return this.page.locator('details.stock li').filter({ hasText: dish });
+  }
+
+  async openStockPanel() {
+    const panel = this.page.locator('details.stock');
+    if (!(await panel.getAttribute('open'))) await panel.locator('summary').click();
+  }
+
+  /** Báo hết 1 món ở khung Tồn kho (có hộp xác nhận — REQ-09 tránh bấm nhầm). */
+  async markOutOfStock(dish: string) {
+    await this.openStockPanel();
+    await this.stockRow(dish).getByRole('button', { name: 'Báo hết' }).click();
+    await this.page.locator('#modal-root [data-action="do-oos"]').click();
   }
 }

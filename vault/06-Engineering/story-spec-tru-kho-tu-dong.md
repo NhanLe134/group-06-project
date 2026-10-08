@@ -14,6 +14,12 @@
 
 Khi khách gửi bếp, hệ thống **tự trừ** nguyên liệu theo công thức (và trừ `soluongton` với món thành phẩm như nước chai/lon). Món nào không còn đủ nguyên liệu cho 1 phần thì **tự chuyển Hết hàng** trên E-Menu, KDS, Phục vụ mà không cần bếp bấm tay.
 
+## 1b. Preconditions
+
+- Món chế biến đã có công thức (`congthuc`) và nguyên liệu có tồn (`tonkho.tonhethong`); món mua sẵn đã nhập Số lượng tồn.
+- Nguyên liệu, công thức được Quản lý nhập ở trang Quản lý (tab Thực phẩm, form Sửa món).
+- Bàn gửi bếp qua `POST /orders` (US-01).
+
 ## 2. Quyết định nghiệp vụ (Q1–Q6)
 
 | # | Quyết định | Lý do |
@@ -66,6 +72,51 @@ Lỗi khi gửi bếp: 409 `ITEM_OUT_OF_STOCK` kèm `details` = danh sách `{thu
 - DB: `backend/db/migrations/011_tonkho_congthuc_rang_buoc.sql` (CHECK + UNIQUE) — **cần nhóm duyệt trước khi chạy trên Supabase**.
 - Frontend: `manager.html` / `manager.js` (tab Thực phẩm — Trang; form Sửa món — Ny), `kitchen.html`.
 - Test: `tests/routers/test_stock.py` (mới), cập nhật `test_kds.py`.
+
+## 6b. Data read / write
+
+| Bảng | Đọc | Ghi |
+| :--- | :--- | :--- |
+| `thucdon` | `soluongton`, `trangthaiban`, `phanloai` | `soluongton` (trừ/hoàn khi món mua sẵn) |
+| `congthuc` | định lượng theo món | thay toàn bộ khi `PUT /menu/items/{id}/recipe` |
+| `tonkho` | `tonhethong` | `tonhethong` (trừ/hoàn, nhập hàng) |
+| `chitietmon`, `hoadon`, `phienban` | — | tạo khi gửi bếp (US-01) |
+
+## 6c. Authorization
+
+Chưa có đăng nhập (chờ JWT — AI_USAGE_LOG A-84). Khi có: nguyên liệu/công thức chỉ role `QUAN_LY`; gửi bếp theo phiên bàn khách (`X-Session-Token`).
+
+## 6d. Validation / business rules
+
+- Số lượng gọi ≥ 1; tồn nguyên liệu ≥ 0; định lượng > 0; 1 nguyên liệu chỉ xuất hiện 1 lần trong công thức (422 `DUPLICATE_INGREDIENT`; DB UNIQUE ở migration 011).
+- Không đủ hàng → 409 `ITEM_OUT_OF_STOCK` cho **cả đơn**, không trừ phần nào.
+- Kiểm tra và trừ trong **cùng transaction** có `SELECT … FOR UPDATE` trên `thucdon` và `tonkho` → nhiều bàn đặt cùng lúc không bán vượt.
+- Xóa nguyên liệu đang có trong công thức → 409 `INGREDIENT_IN_USE`.
+
+## 6e. Observability / logging
+
+- Mọi món đổi còn ↔ hết phát `ITEM_OOS_BROADCAST` trên `menu:oos` (E-Menu, KDS cập nhật không F5).
+- Hủy món chờ nấu ghi `loghuymon`. Chưa có log riêng cho từng lần trừ kho — đối soát qua `chitietmon` (số đã bán) và phiếu kiểm kê US-08.
+
+## 6f. Test plan
+
+| Tầng | Test | AC |
+| :--- | :--- | :--- |
+| Unit | `backend/tests/unit/test_stock_rules.py` (số phần còn, hết hàng, biên 0.01 kg), `test_kds_rules.py` | AC1, AC6 |
+| Integration | `backend/tests/routers/test_stock.py` (11 test) | AC1–AC5, AC7 |
+| Integration Postgres | `backend/tests/pg/test_race_last_portion.py` — 6 bàn tranh suất cuối | Q6 |
+| E2E | `testing/test_scripts/tests/us03-kds.spec.ts` TC-OP-KDS-010 | AC3, AC6 |
+| Regression | `test_inventory.py::test_opening_stock_not_double_counted_after_real_orders` (BUG-US08-001) | Mục 3 (US-08) |
+
+Test case: `testing/test_cases/test-cases-US03.md`. Kết quả: `testing/reports/US-03/`.
+
+## 6g. Definition of Done
+
+- [x] Spec viết trước khi code (A-77); test chạy pass (2026-10-07).
+- [x] API + giao diện Quản lý + KDS; `ruff`, `pytest`, `vitest`, Playwright pass.
+- [ ] PO/nhóm xác nhận Q1–Q6 và mở scope (đang Proposed).
+- [ ] Nhóm duyệt rồi chạy migration 011 trên Supabase.
+- [ ] PR có Story ID được thành viên khác review.
 
 ## 7. Ngoài phạm vi
 

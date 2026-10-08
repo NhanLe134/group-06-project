@@ -33,6 +33,15 @@ async def _ingredient(client: AsyncClient, name: str, stock: float, unit: str = 
 
 
 async def _dish(db: AsyncSession, name: str, phanloai: str = "Món chính", **kw) -> ThucDon:
+    # POST /orders yêu cầu bàn đã seed trong bảng master `ban`
+    from sqlalchemy import select as _select
+
+    from app.models.order import Ban
+
+    if not (await db.execute(_select(Ban).where(Ban.tenban == "Bàn 01"))).scalars().first():
+        for i in range(1, 7):
+            db.add(Ban(tenban=f"Bàn {i:02d}", trangthai=1))
+        await db.commit()
     mon = ThucDon(tenmon=name, phanloai=phanloai, giaban=80000, **kw)
     db.add(mon)
     await db.commit()
@@ -245,3 +254,39 @@ async def test_each_dish_counts_by_quantity_or_recipe_regardless_of_category(
     assert (item["stock"], item["portions"]) == (46, 46)
     assert await _stock(client, duong) == pytest.approx(0.7)  # chỉ chè trừ đường
     assert (await _menu(client, che))["portions"] == 7
+
+
+async def test_boundary_inputs_rejected_and_stock_untouched(
+    client: AsyncClient, db_session: AsyncSession, published
+):
+    """TC-OP-KDS-015 (§11.3 boundary/invalid): số lượng 0, tồn âm, định lượng 0 → 422;
+    kho không bị trừ."""
+    bo = await _ingredient(client, "Thịt bò", 1)
+    mon = await _dish(db_session, "Bò xào")
+    await _recipe(client, mon, **{bo: 0.2})
+
+    assert (await _order(client, mon, 0)).status_code == 422
+    resp = await client.post(
+        "/inventory/ingredients", json={"name": "Tôm", "unit": "kg", "stock": -1}
+    )
+    assert resp.status_code == 422
+    resp = await client.put(
+        f"/menu/items/{mon.id}/recipe", json={"lines": [{"ingredient_id": bo, "quantity": 0}]}
+    )
+    assert resp.status_code == 422
+    assert await _stock(client, bo) == pytest.approx(1.0)
+
+
+async def test_exact_last_portion_then_next_order_rejected(
+    client: AsyncClient, db_session: AsyncSession, published
+):
+    """TC-OP-005 (tuần tự): đủ đúng 1 phần cuối → bán được; đơn tiếp theo 409, kho không âm.
+    Bản chạy đồng thời trên Postgres: tests/pg/test_race_last_portion.py."""
+    bo = await _ingredient(client, "Thịt bò", 0.2)
+    mon = await _dish(db_session, "Bò xào")
+    await _recipe(client, mon, **{bo: 0.2})
+
+    assert (await _order(client, mon, 1, table="Bàn 01")).status_code == 200
+    resp = await _order(client, mon, 1, table="Bàn 02")
+    assert resp.status_code == 409 and resp.json()["error_code"] == "ITEM_OUT_OF_STOCK"
+    assert await _stock(client, bo) == pytest.approx(0.0)

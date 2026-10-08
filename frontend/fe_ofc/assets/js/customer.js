@@ -326,15 +326,31 @@ async function sendToKitchen() {
 }
 
 /* ----- US-09: Trang xem Hóa đơn tạm tính (ADR-N05) — dữ liệu GET /orders/current ----- */
+/* 3 trạng thái khách thấy (ADR-N14): cho_nau/dang_nau → Chờ nấu,
+   da_xong → Chờ phục vụ, da_phuc_vu → Đã phục vụ */
 const TRANGTHAI_LABEL = {
   cho_nau: 'Chờ nấu',
-  dang_nau: 'Đang nấu',
-  da_xong: 'Đã xong — chờ phục vụ',
+  dang_nau: 'Chờ nấu',
+  da_xong: 'Chờ phục vụ',
   da_phuc_vu: 'Đã phục vụ',
 };
 
+/* ADR-N13: nhóm món theo đợt gọi (backend gán `dot` theo mốc giogoimon) */
 function buildBillTable(bill) {
-  const rows = bill.items.map(it => {
+  const groups = [];
+  bill.items.forEach(it => {
+    let g = groups.find(x => x.dot === it.dot);
+    if (!g) {
+      g = { dot: it.dot, gio: it.giogoimon, items: [] };
+      groups.push(g);
+    }
+    g.items.push(it);
+  });
+
+  const fmtTime = iso => iso
+    ? new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+    : '';
+  const itemRow = it => {
     const done = it.trangthai === 'da_phuc_vu';
     return `
       <tr>
@@ -344,13 +360,21 @@ function buildBillTable(bill) {
         <td><span class="status-pill ${done ? 'st-served' : 'st-pending'}">
           ${TRANGTHAI_LABEL[it.trangthai] || it.trangthai}</span></td>
       </tr>`;
-  }).join('');
+  };
+
+  const body = groups.map((g, idx) => `
+    <tr class="dot-row"><td colspan="4">
+      <i class="ph-bold ph-basket"></i> Đợt ${idx + 1} — gọi lúc ${fmtTime(g.items[0].giogoimon)}
+      · ${g.items.length} món
+    </td></tr>
+    ${g.items.map(itemRow).join('')}`).join('');
+
   const totalQty = bill.items.reduce((n, it) => n + it.soluong, 0);
   return `
     <div class="bill">
       <table class="bill-table">
         <thead><tr><th>Món</th><th class="num">SL</th><th class="num">Thành tiền</th><th>Trạng thái</th></tr></thead>
-        <tbody>${rows}</tbody>
+        <tbody>${body}</tbody>
       </table>
       <div class="bill-foot">
         <span>Tổng số món: <b>${totalQty}</b></span>

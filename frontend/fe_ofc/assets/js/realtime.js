@@ -8,8 +8,12 @@
 
 'use strict';
 
-const WS_BASE = (window.APP_CONFIG?.API_BASE_URL || `${location.protocol}//${location.hostname}:8000`)
-  .replace(/^http/, 'ws').replace(/\/$/, '');
+/** Địa chỉ WebSocket từ địa chỉ API: http → ws, https → wss (có unit test: frontend/tests/). */
+function wsBaseFrom(apiBase, loc) {
+  return (apiBase || `${loc.protocol}//${loc.hostname}:8000`).replace(/^http/, 'ws').replace(/\/$/, '');
+}
+
+const WS_BASE = wsBaseFrom(window.APP_CONFIG?.API_BASE_URL, location);
 
 /** Đăng ký nghe 1 kênh; mất kết nối thì tự nối lại sau 3 giây. */
 function subscribeChannel(channel, onMessage) {

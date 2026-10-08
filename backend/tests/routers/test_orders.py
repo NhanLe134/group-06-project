@@ -7,8 +7,12 @@ pytestmark = pytest.mark.asyncio
 
 @pytest.fixture
 async def menu_ids(db_session):
-    """Tạo 2 món mẫu, trả về (id_phở, id_trà_đá)."""
+    """Tạo Bàn 06 + 2 món mẫu, trả về (id_phở, id_trà_đá)."""
     from app.models.menu import ThucDon
+    from app.models.order import Ban
+
+    db_session.add(Ban(tenban="Bàn 06", trangthai=1))
+    await db_session.flush()
 
     pho = ThucDon(tenmon="Phở bò tái lăn", phanloai="Món chính", giaban=65000)
     tra = ThucDon(tenmon="Trà đá", phanloai="Đồ uống", giaban=5000)
@@ -72,6 +76,9 @@ async def test_gui_dot_2_cong_vao_hoa_don_cu(client, menu_ids):
     )
     hoadon_1 = res1.json()["hoadon_id"]
 
+    import time
+    time.sleep(1.1)  # SQLite CURRENT_TIMESTAMP chính xác tới giây — đảm bảo đợt 2 lệch mốc giờ
+
     res2 = await client.post(
         "/orders",
         json={"table_name": "Bàn 06", "items": [{"thucdon_id": str(tra_id), "soluong": 4}]},
@@ -81,6 +88,7 @@ async def test_gui_dot_2_cong_vao_hoa_don_cu(client, menu_ids):
     assert data2["hoadon_id"] == hoadon_1            # giữ nguyên hóa đơn cũ
     assert len(data2["items"]) == 2                  # món đợt 1 + đợt 2
     assert data2["tongtien"] == 130000 + 4 * 5000    # tính lại toàn bộ
+    assert [i["dot"] for i in data2["items"]] == [1, 2]  # ADR-N13: gán đợt theo mốc gọi
 
 
 async def test_gui_mon_het_hang_bao_409(client, menu_ids, db_session):
@@ -117,9 +125,9 @@ async def test_order_current_va_trang_thai_phuc_vu(client, menu_ids, db_session)
     assert items[0]["thanhtien"] == 65000
 
     # Đánh dấu món đã phục vụ (giả lập Waiter bấm "Đã phục vụ" — US-04)
-    from app.models.order import ChiTietMon
+    from app.models.order import ChiTietPhieu
 
-    mon = await db_session.get(ChiTietMon, items[0]["id"])
+    mon = await db_session.get(ChiTietPhieu, items[0]["id"])
     mon.trangthai = "da_phuc_vu"
     await db_session.commit()
 
@@ -146,22 +154,25 @@ async def test_cashier_tables_va_qr_va_dong_ban(client, menu_ids):
     assert tables.status_code == 200
     rows = tables.json()
     ban06 = next(r for r in rows if r["tenban"] == "Bàn 06")
-    assert ban06["trangthai"] == "dang_phuc_vu"
+    assert ban06["trangthai"] == "2"                       # đang phục vụ
     assert ban06["tongtien"] == 130000
+    assert ban06["so_phieuban"] == 1
 
-    qr = await client.post(f"/orders/{ban06['hoadon_id']}/pay-qr")
+    qr = await client.post(f"/tables/{ban06['id']}/pay-qr")
     assert qr.status_code == 200
     assert qr.json()["amount"] == 130000
+    assert qr.json()["so_phieuban"] == 1
     assert qr.json()["qr_url"].startswith("https://")
 
     closed = await client.post(f"/tables/{ban06['id']}/close")
     assert closed.status_code == 200
     assert closed.json()["tongtien"] == 130000
+    assert closed.json()["hoadon_id"]                       # hoadon sinh khi thanh toán
 
     tables2 = (await client.get("/cashier/tables")).json()
     ban06_sau = next(r for r in tables2 if r["tenban"] == "Bàn 06")
-    assert ban06_sau["trangthai"] == "trong"
-    assert ban06_sau["hoadon_id"] is None  # hóa đơn đã 'da_thanh_toan', không còn 'da_chot'
+    assert ban06_sau["trangthai"] == "3"                   # chờ dọn
+    assert ban06_sau["tongtien"] == 0                      # phiếu đã gắn vào hóa đơn
 
 
 async def test_dong_ban_khi_dang_phuc_vu(client, menu_ids):

@@ -19,12 +19,12 @@ test_scripts/
 |---|---|---|
 | `tests/us01-emenu.spec.ts` | US-01: E-Menu & Order Draft | Nhàn |
 | `tests/us02-voice.spec.ts` | US-02: AI Voice Ordering | Ny |
-| `tests/us03-kds.spec.ts` | US-03: KDS Bếp | *(thành viên)* |
+| `tests/us03-kds.spec.ts`, `tests/us03-smoke.spec.ts` | US-03: KDS Bếp | Nhã |
 | `tests/us04-waiter.spec.ts` | US-04: Tablet Phục vụ | *(thành viên)* |
 | `tests/us05-splitbill.spec.ts` | US-05: Split Bill | *(thành viên)* |
 | `tests/us06-dashboard.spec.ts` | US-06: Dashboard Doanh thu | *(thành viên)* |
 | `tests/us07-cms.spec.ts` | US-07: CMS Quản lý Menu | *(thành viên)* |
-| `tests/us08-inventory.spec.ts` | US-08: Kiểm kê Tồn kho | *(thành viên)* |
+| `tests/us08-inventory.spec.ts` | US-08: Kiểm kê Tồn kho | Nhã |
 
 ## Cách chạy
 
@@ -49,3 +49,15 @@ npx playwright test --ui
 # Xem báo cáo HTML
 npx playwright show-report reports/html
 ```
+
+## US-03 / US-08 — chạy trên backend E2E riêng (Nhã)
+
+Test US-03/US-08 có thao tác GHI (gửi bếp, đổi trạng thái, trừ kho, chốt ca) nên **không chạy trên bản Vercel/Supabase**. Dùng cấu hình riêng, Playwright tự bật backend SQLite tạm (`backend/scripts/e2e_server.py`) và web tĩnh, dùng trình duyệt Edge có sẵn:
+
+```bash
+npx playwright test -c playwright.us03.config.ts                          # E2E local
+npx playwright test -c playwright.us03.config.ts --project=staging-smoke  # smoke chỉ đọc trên staging
+```
+
+Chạy bằng `playwright.config.ts` chung thì các test này tự `skip`. Test case: `testing/test_cases/test-cases-US03.md`, `US08.md`; kết quả: `testing/reports/US-03/`.
+

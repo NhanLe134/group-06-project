@@ -1,9 +1,16 @@
 import { type Page, type Locator } from '@playwright/test';
 
+const WAIT = 15000;
+
 /**
- * Page Object: CMS Quản lý Menu (index.html -> manager.html — Tab "Thực đơn (CMS)")
+ * Page Object: CMS Quản lý Menu (Vercel manager.html — Tab "Thực đơn (CMS)")
  * US-07 — Thêm / Sửa / Xóa món, lọc, tìm kiếm, phân quyền RBAC
  * Phụ trách: Ny
+ *
+ * Cập nhật giao diện form "Thêm món mới":
+ *  - Thêm "Cách tính tồn kho": Chế biến (trừ nguyên liệu) | Mua sẵn (đếm số lượng)
+ *  - Thêm "Loại món": Mặn | Chay
+ *  - Thêm upload hình ảnh minh họa (không bắt buộc)
  */
 export class CmsPage {
   readonly page: Page;
@@ -13,23 +20,15 @@ export class CmsPage {
   }
 
   // ── Navigation ──────────────────────────────────────────────
-  /**
-   * Truy cập từ https://smart-orderding.vercel.app/
-   * -> Click 'Quản lý Manager' -> Click tab 'Thực đơn (CMS)'
-   */
   async goto() {
-    // Vào trang index, bấm link "Quản lý Manager"
-    await this.page.goto('/');
-    await this.page.locator('a[href*="manager.html"]').click();
-    await this.page.waitForURL('**/manager.html');
+    await this.page.goto('/pages/manager.html');
 
-    // Click tab "Thực đơn (CMS)" trên sidebar
     const cmsTab = this.page.locator('[data-tab="tab-menu-cms"]');
-    await cmsTab.waitFor({ state: 'visible' });
+    await cmsTab.waitFor({ state: 'visible', timeout: WAIT });
     await cmsTab.click();
 
-    // Đợi bảng thực đơn render xong
-    await this.menuTable.waitFor({ state: 'visible', timeout: 15000 });
+    await this.menuTable.waitFor({ state: 'visible', timeout: WAIT });
+    await this.page.waitForSelector('#menu-table tbody tr', { state: 'visible', timeout: WAIT });
   }
 
   // ── Bảng danh sách món ──────────────────────────────────────
@@ -52,20 +51,17 @@ export class CmsPage {
 
   /** Badge trạng thái trong hàng ("Đang bán" / "Tạm ẩn") */
   menuRowStatus(name: string): Locator {
-    return this.menuRow(name).locator('.badge');
+    return this.menuRow(name).locator('.badge').first();
   }
 
-  /** Nút Xem chi tiết (icon eye) */
   viewButton(name: string): Locator {
     return this.menuRow(name).locator('button[title="Xem chi tiết"], button[aria-label="Xem chi tiết"]');
   }
 
-  /** Nút Sửa (icon pencil) */
   editButton(name: string): Locator {
     return this.menuRow(name).locator('button[title="Sửa món"], button[aria-label="Sửa món"]');
   }
 
-  /** Nút Xóa (icon trash) */
   deleteButton(name: string): Locator {
     return this.menuRow(name).locator('button[title="Xóa món"], button[aria-label="Xóa món"]');
   }
@@ -89,24 +85,18 @@ export class CmsPage {
   }
 
   async filterByStatus(status: 'all' | 'Đang bán' | 'Tạm ẩn') {
-    const summary = this.page.locator('summary[aria-label="Lọc trạng thái"]');
-    await summary.click();
-    const btn = this.page.locator(`.filter-menu button[data-filter="status"][data-value="${status}"]`);
-    await btn.click();
+    await this.page.locator('summary[aria-label="Lọc trạng thái"]').click();
+    await this.page.locator(`.filter-menu button[data-filter="status"][data-value="${status}"]`).click();
   }
 
   async filterByStock(stock: 'all' | 'out' | 'low' | 'available') {
-    const summary = this.page.locator('summary[aria-label="Lọc số lượng tồn"]');
-    await summary.click();
-    const btn = this.page.locator(`.filter-menu button[data-filter="stock"][data-value="${stock}"]`);
-    await btn.click();
+    await this.page.locator('summary[aria-label="Lọc số lượng tồn"]').click();
+    await this.page.locator(`.filter-menu button[data-filter="stock"][data-value="${stock}"]`).click();
   }
 
   async sortByPrice(sort: 'all' | 'high-low' | 'low-high') {
-    const summary = this.page.locator('summary[aria-label="Lọc giá bán"]');
-    await summary.click();
-    const btn = this.page.locator(`.filter-menu button[data-filter="price"][data-value="${sort}"]`);
-    await btn.click();
+    await this.page.locator('summary[aria-label="Lọc giá bán"]').click();
+    await this.page.locator(`.filter-menu button[data-filter="price"][data-value="${sort}"]`).click();
   }
 
   // ── Modal THÊM món ───────────────────────────────────────────
@@ -154,37 +144,63 @@ export class CmsPage {
     return this.page.locator('#add-menu-modal button.btn-outline', { hasText: 'Hủy bỏ' });
   }
 
+  /** Radio "Cách tính tồn kho" */
+  stockModeOption(mode: 'Chế biến' | 'Mua sẵn'): Locator {
+    return this.addModal.locator('label', { hasText: mode }).first();
+  }
+
+  /** Radio "Loại món" */
+  dietOption(diet: 'Mặn' | 'Chay'): Locator {
+    return this.addModal.locator('label', { hasText: new RegExp(`^\\s*${diet}\\s*$`) }).first();
+  }
+
   async openAddModal() {
     await this.addItemBtn.click();
-    await this.addModal.waitFor({ state: 'visible' });
+    await this.addModal.waitFor({ state: 'visible', timeout: WAIT });
   }
 
   async closeAddModal() {
     await this.addCancelBtn.click();
-    await this.addModal.waitFor({ state: 'hidden' });
+    await this.addModal.waitFor({ state: 'hidden', timeout: WAIT });
   }
 
   async fillAddForm(data: {
     name?: string;
     category?: string;
+    stockMode?: 'Chế biến' | 'Mua sẵn';
     price?: number | string;
     stock?: number | string;
     description?: string;
     ingredients?: string;
     spicy?: string;
+    diet?: 'Mặn' | 'Chay';
     allergens?: string;
   }) {
     if (data.name !== undefined) await this.addNameInput.fill(data.name);
     if (data.category !== undefined) await this.addCategorySelect.selectOption(data.category);
-    if (data.price !== undefined) await this.addPriceInput.fill(String(data.price));
+
+    // Cách tính tồn kho: nếu có nhập số lượng tồn thì tự chuyển sang "Mua sẵn"
+    const hasStock = data.stock !== undefined && data.stock !== '';
+    const mode = data.stockMode ?? (hasStock ? 'Mua sẵn' : undefined);
+    if (mode) await this.stockModeOption(mode).click();
+
     if (data.stock !== undefined) await this.addStockInput.fill(String(data.stock));
-    if (data.description !== undefined) await this.addDescriptionInput.fill(data.description);
-    if (data.ingredients !== undefined) await this.addIngredientsInput.fill(data.ingredients);
+    if (data.price !== undefined) await this.addPriceInput.fill(String(data.price));
+
+    const desc = data.description !== undefined ? data.description : 'Mô tả món ăn test';
+    const ing = data.ingredients !== undefined ? data.ingredients : 'Thành phần test';
+    const alg = data.allergens !== undefined ? data.allergens : 'Không có';
+
+    await this.addDescriptionInput.fill(desc);
+    await this.addIngredientsInput.fill(ing);
     if (data.spicy !== undefined) await this.addSpicySelect.selectOption(data.spicy);
-    if (data.allergens !== undefined) await this.addAllergensInput.fill(data.allergens);
+    if (data.diet !== undefined) await this.dietOption(data.diet).click();
+    await this.addAllergensInput.fill(alg);
   }
 
   async submitAdd() {
+    // Form dài, nút lưu nằm cuối modal -> cuộn tới trước khi bấm
+    await this.addSaveBtn.scrollIntoViewIfNeeded();
     await this.addSaveBtn.click();
   }
 
@@ -239,18 +255,23 @@ export class CmsPage {
 
   async openEditModal(name: string) {
     await this.editButton(name).click();
-    await this.editModal.waitFor({ state: 'visible' });
+    await this.editModal.waitFor({ state: 'visible', timeout: WAIT });
   }
 
   async closeEditModal() {
     await this.editCancelBtn.click();
-    await this.editModal.waitFor({ state: 'hidden' });
+    await this.editModal.waitFor({ state: 'hidden', timeout: WAIT });
+  }
+
+  async saveEdit() {
+    await this.editSaveBtn.scrollIntoViewIfNeeded();
+    await this.editSaveBtn.click();
   }
 
   async updatePrice(name: string, newPrice: number) {
     await this.openEditModal(name);
     await this.editPriceInput.fill(String(newPrice));
-    await this.editSaveBtn.click();
+    await this.saveEdit();
   }
 
   // ── Modal XEM chi tiết ───────────────────────────────────────
@@ -272,12 +293,12 @@ export class CmsPage {
 
   async openDetailModal(name: string) {
     await this.viewButton(name).click();
-    await this.detailModal.waitFor({ state: 'visible' });
+    await this.detailModal.waitFor({ state: 'visible', timeout: WAIT });
   }
 
   async closeDetailModal() {
     await this.detailCloseBtn.click();
-    await this.detailModal.waitFor({ state: 'hidden' });
+    await this.detailModal.waitFor({ state: 'hidden', timeout: WAIT });
   }
 
   // ── Toast thông báo ──────────────────────────────────────────
@@ -285,26 +306,29 @@ export class CmsPage {
     return this.page.locator('#toast-container');
   }
 
-  get toastSuccess(): Locator {
-    return this.page.locator('#toast-container .toast, .toast-success, .toast--success');
-  }
-
-  get toastDanger(): Locator {
+  get toasts(): Locator {
     return this.page.locator('#toast-container .toast');
   }
 
   // ── Action Xóa món với confirmation dialog ─────────────────────
   async deleteItem(name: string, accept: boolean = true): Promise<string> {
     let dialogMessage = '';
-    this.page.once('dialog', async dialog => {
-      dialogMessage = dialog.message();
-      if (accept) {
-        await dialog.accept();
-      } else {
-        await dialog.dismiss();
-      }
+    const dialogPromise = new Promise<string>(resolve => {
+      this.page.once('dialog', async dialog => {
+        dialogMessage = dialog.message();
+        if (accept) {
+          await dialog.accept();
+        } else {
+          await dialog.dismiss();
+        }
+        resolve(dialogMessage);
+      });
     });
-    await this.deleteButton(name).click();
+
+    const btn = this.deleteButton(name);
+    await btn.scrollIntoViewIfNeeded();
+    await btn.click();
+    await dialogPromise;
     return dialogMessage;
   }
 
@@ -315,4 +339,3 @@ export class CmsPage {
     await input.dispatchEvent('change');
   }
 }
-
