@@ -12,6 +12,7 @@ from urllib.parse import quote
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.errors import ApiError
 from app.models import Ban, ChiTietPhieu, HoaDon, PhieuBan, ThucDon
 from app.schemas.order import (
@@ -171,7 +172,7 @@ async def list_cashier_tables(db: AsyncSession) -> list[dict]:
 
 
 async def build_pay_qr(db: AsyncSession, ban_id: str) -> PayQrOut:
-    """US-05 — QR thanh toán tính từ các phiếu CHƯA tính tiền (không ghi DB)."""
+    """US-05 — QR thanh toán tính từ các phiếu CHƯA tính tiền (SePay VietQR, ADR-N15)."""
     ban = await db.get(Ban, ban_id)
     if ban is None:
         raise ApiError(404, "TABLE_NOT_FOUND", "Không tìm thấy bàn.")
@@ -180,17 +181,23 @@ async def build_pay_qr(db: AsyncSession, ban_id: str) -> PayQrOut:
         raise ApiError(409, "NO_OPEN_BILL", f"Bàn '{ban.tenban}' chưa có phiếu nào để thanh toán.")
     items = await _bill_items(db, phieu_list)
     amount = sum(i.thanhtien for i in items)
-    qr_data = f"SMARTORDER|PAY|{ban.tenban}|{amount}"
+
+    # Nội dung chuyển khoản SePay: DH_BAN06
+    des = f"DH_{ban.tenban.replace(' ', '')}"
+    bank = settings.sepay_bank_code or "MBBank"
+    acc = settings.sepay_account_no or "0123456789"
+
+    sepay_qr_url = (
+        f"https://qr.sepay.vn/img?bank={bank}&acc={acc}&amount={amount}&des={quote(des)}"
+    )
+
     return PayQrOut(
         ban_id=ban.ban_id,
         table_name=ban.tenban,
         amount=amount,
         so_phieuban=len(phieu_list),
-        qr_data=qr_data,
-        qr_url=(
-            "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data="
-            + quote(qr_data)
-        ),
+        qr_data=des,
+        qr_url=sepay_qr_url,
     )
 
 

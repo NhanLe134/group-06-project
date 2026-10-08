@@ -27,6 +27,12 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_secret_key: str = ""
 
+    # SePay VietQR + Webhook gạch nợ tự động (ADR-N15)
+    sepay_bank_code: str = "MBBank"
+    sepay_account_no: str = "0123456789"
+    sepay_account_name: str = "NHA HANG SMART ORDERING"
+    sepay_webhook_api_key: str = ""
+
     @property
     def async_database_url(self) -> str:
         if self.database_url.startswith("postgresql://"):

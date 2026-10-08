@@ -12,6 +12,7 @@ from fastapi import WebSocket
 
 KDS_CHANNEL = "kds:tickets"
 MENU_OOS_CHANNEL = "menu:oos"
+CASHIER_CHANNEL = "cashier:tables"
 
 
 class ConnectionManager:
