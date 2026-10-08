@@ -60,13 +60,15 @@ function renderTableList() {
   $('#occupied-count').textContent = occupied.length;
 
   $('#table-list').innerHTML = tables.length ? tables.map(t => `
-    <button class="table-item ${t.id === selectedId ? 'active' : ''} ${t.trangthai === '2' ? '' : 'empty'}"
+    <button class="table-item card ${t.id === selectedId ? 'active' : ''} ${t.trangthai === '3' ? 't3' : ''}"
       data-table="${t.id}">
       <span class="ti-name">${esc(t.tenban)}</span>
       <span class="ti-info">
         ${t.trangthai === '2'
           ? `<span class="status-pill st-occupied">Đang ăn</span>
              <b class="ti-total">${fmtVND(t.tongtien)}</b>`
+          : t.trangthai === '3'
+          ? '<span class="status-pill st-clean">Chờ dọn</span>'
           : '<span class="status-pill st-empty">Trống</span>'}
       </span>
       <i class="ph-bold ph-caret-right ti-arrow"></i>
