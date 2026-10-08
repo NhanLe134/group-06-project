@@ -84,7 +84,7 @@ const COPY = {
   /* ADR-001 — copy thông báo đúng nguyên văn từ vault/08-Decisions/decision-log.md */
   ADR001: name => `Dạ món ${name} vừa hết hàng, anh/chị vui lòng bỏ món khỏi danh sách để chốt đơn nhé!`,
   DONE_MSG: 'Dạ em kết thúc phiên gọi món. Anh/chị kiểm tra lại bản nháp đơn hàng trước khi gửi bếp nhé ạ.',
-  GREETING: 'Xin chào Anh Tuấn! Em là trợ lý gọi món của quán. Anh/chị chạm chọn món bên dưới, gõ vào ô tìm kiếm, hoặc bấm micro để gọi món bằng giọng nói ạ.',
+  GREETING: 'Xin chào! Em là trợ lý gọi món của quán. Anh/chị chạm chọn món bên dưới, gõ vào ô tìm kiếm, hoặc bấm micro để gọi món bằng giọng nói ạ.',
 };
 
 /* ---------- Trạng thái vòng đời đơn (FLOW D) ---------- */

@@ -24,6 +24,7 @@ const VS = {
   chat: [],
   interim: '',
   ambiguity: null,
+  pendingDraftRemoval: null,
   noisy: false,      /* AC4: true khi lỗi no-speech → hiện text fallback */
 };
 
@@ -74,6 +75,62 @@ function vVoiceToast(message) {
 /* ───────── Apply parse — copy logic từ prototype applyParse() ───────── */
 function vApplyParse(parsed) {
   VS.ui = 'idle';
+  VS.pendingDraftRemoval = parsed.pending_draft_removal || null;
+
+  if (parsed.remove_from_draft?.length) {
+    const removeIds = new Set(parsed.remove_from_draft);
+    draft = draft.filter(item => !removeIds.has(item.id));
+    VS.pendingDraftRemoval = null;
+    renderStickyBar();
+    renderMenu();
+    if (draftOpen) renderDraft();
+    vAiSay(parsed.message || 'Dạ, em đã cập nhật giỏ hàng cho anh/chị rồi ạ.');
+    vRender();
+    return;
+  }
+
+  if (parsed.draft_changes?.length) {
+    for (const change of parsed.draft_changes) {
+      const matching = draft.filter(item => item.id === change.item_id);
+      if (!matching.length) continue;
+      const total = matching.reduce((sum, item) => sum + item.qty, 0);
+      const target = Math.max(0, Number(change.quantity) || 0);
+      if (target < total) {
+        let remove = total - target;
+        for (let i = draft.length - 1; i >= 0 && remove > 0; i--) {
+          if (draft[i].id !== change.item_id) continue;
+          const removed = Math.min(draft[i].qty, remove);
+          draft[i].qty -= removed;
+          remove -= removed;
+          if (draft[i].qty <= 0) draft.splice(i, 1);
+        }
+      } else if (target > total) {
+        matching[0].qty += target - total;
+      }
+    }
+    renderStickyBar();
+    renderMenu();
+    if (draftOpen) renderDraft();
+    vAiSay(parsed.message || 'Dạ, em đã cập nhật số lượng trong giỏ hàng ạ.');
+    vRender();
+    return;
+  }
+
+  if (parsed.draft_note_updates?.length) {
+    for (const update of parsed.draft_note_updates) {
+      const matching = draft.filter(item => item.id === update.item_id);
+      if (!matching.length) continue;
+      const quantity = matching.reduce((sum, item) => sum + item.qty, 0);
+      draft = draft.filter(item => item.id !== update.item_id);
+      draft.push({ id: update.item_id, qty: quantity, note: update.note || '' });
+    }
+    renderStickyBar();
+    renderMenu();
+    if (draftOpen) renderDraft();
+    vAiSay(parsed.message || 'Dạ, em đã cập nhật ghi chú món trong giỏ hàng ạ.');
+    vRender();
+    return;
+  }
 
   if (parsed.done) {
     vCloseSheet();
@@ -163,17 +220,18 @@ async function vRunText(text) {
   VS.interim = text;
   VS.ui = 'processing';
   vRender();
-  const draftTotals = draft.reduce((totals, item) => {
-    totals[item.id] = (totals[item.id] || 0) + item.qty;
-    return totals;
-  }, {});
   try {
     const parsed = await apiFetch('/api/v1/ai/voice-parse', {
       method: 'POST',
       body: JSON.stringify({
         transcript: text,
         table_name: typeof tableName === 'string' ? tableName : null,
-        draft: Object.entries(draftTotals).map(([item_id, quantity]) => ({ item_id, quantity })),
+        draft: draft.map(item => ({
+          item_id: item.id,
+          quantity: item.qty,
+          note: item.note || '',
+        })),
+        pending_draft_removal: VS.pendingDraftRemoval,
       }),
     });
     recognitionFailures = 0;

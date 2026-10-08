@@ -146,10 +146,21 @@
     .pop .danger { color: var(--color-danger); }
 
     /* ---------- Tồn kho (REQ-09 / BR-03) ---------- */
-    .stock { margin-top: 24px; background: var(--color-neutral-card); border-radius: var(--radius-md); box-shadow: var(--shadow-card); overflow: hidden; }
-    .stock summary { min-height: 44px; padding: 14px 16px; font: var(--type-title); cursor: pointer; }
-    .stock summary span { font: var(--type-desc); color: var(--color-text-muted); }
-    .stock ul { list-style: none; border-top: 1px solid var(--color-line); }
+    /* Tồn kho: nút nổi góc dưới phải + ngăn kéo bên phải (không phải lướt xuống cuối trang — A-115) */
+    .board { padding-bottom: 88px; }   /* chừa chỗ để nút nổi không che nút Nấu/Xong cuối danh sách */
+    .stock-fab { position: fixed; right: 20px; bottom: 20px; z-index: 40; display: inline-flex; align-items: center; gap: 8px; min-height: 56px; padding: 0 18px; border: none; border-radius: 999px; background: var(--color-neutral-card); color: var(--color-text-main); font: var(--type-button); box-shadow: 0 8px 24px rgba(15, 23, 42, .18); cursor: pointer; }
+    .stock-fab i { font-size: 22px; color: var(--color-primary); }
+    .stock-fab .badge { min-width: 24px; height: 24px; padding: 0 7px; border-radius: 999px; background: #DC2626; color: #fff; font: var(--type-chip); line-height: 24px; text-align: center; }
+    .stock-fab:hover { opacity: .9; }
+    .stock-fab:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; }
+    .stock-backdrop { position: fixed; inset: 0; z-index: 44; background: rgba(15, 23, 42, .35); }
+    .stock { position: fixed; top: 0; right: 0; bottom: 0; z-index: 45; width: min(420px, 100vw); display: flex; flex-direction: column; background: var(--color-neutral-card); box-shadow: -12px 0 32px rgba(15, 23, 42, .18); }
+    .stock-head { display: flex; align-items: center; gap: 8px; min-height: 60px; padding: 8px 8px 8px 16px; border-bottom: 1px solid var(--color-line); }
+    .stock-head h3 { flex: 1; font: var(--type-title); }
+    .stock-head h3 span { font: var(--type-desc); color: var(--color-text-muted); }
+    .stock-head .icon-btn { width: 44px; height: 44px; border: none; border-radius: var(--radius-md); background: transparent; font-size: 20px; cursor: pointer; }
+    .stock-head .icon-btn:hover { background: var(--color-tint); }
+    .stock ul { list-style: none; overflow-y: auto; flex: 1; }
     .stock li { display: flex; align-items: center; gap: 12px; padding: 6px 16px; border-bottom: 1px solid var(--color-line); font: var(--type-body); }
     .stock li:last-child { border-bottom: none; }
     .stock .name { flex: 1; font-weight: 600; }
@@ -174,6 +185,10 @@
     .kds-overlay .modal .muted { font: var(--type-caption) !important; color: var(--color-text-muted); }
     .kds-overlay .btn-ghost, .kds-overlay .btn-primary { min-height: 48px; border-radius: var(--radius-md); font: var(--type-button); }
     .kds-overlay .btn-primary { background: var(--color-primary); font-weight: 800; }   /* modal xóa / hết hàng tự tô đỏ bằng style riêng */
+    /* Rê chuột: giữ nguyên màu, chỉ làm mờ nút. global.css đổi nền sang var(--primary-600) nhưng biến này
+       không được khai báo → nền trong suốt, chữ trắng "biến mất" (A-99). */
+    .btn-primary:hover:not(:disabled) { background: var(--color-primary); }
+    .btn-primary:hover:not(:disabled), .kds-overlay .btn-ghost:hover { opacity: .85; }
     /* Hộp chọn số suất khi nấu / xong từng phần */
     .stepper { display: flex; align-items: center; justify-content: center; gap: 20px; margin: 16px 0 8px; }
     .stepper button { width: 48px; height: 48px; border-radius: var(--radius-md); border: 1.5px solid var(--color-line); background: var(--color-neutral-card); font-size: 22px; color: var(--color-text-main); }
@@ -182,7 +197,7 @@
     .stepper output small { display: block; font: var(--type-caption); color: var(--color-text-muted); }
     .split-all { display: block; margin: 0 auto; min-height: 44px; padding: 0 12px; font: var(--type-desc); font-weight: 600; color: var(--color-primary-dark); text-decoration: underline; }
     .kc-part { display: inline-flex; margin-top: 6px; padding: 2px 10px; border-radius: var(--radius-full); background: var(--color-tint); color: var(--color-text-main); font: var(--type-badge); font-variant-numeric: tabular-nums; }
-    .toasts { position: fixed; right: 16px; bottom: 16px; z-index: 60; display: flex; flex-direction: column; gap: 8px; max-width: min(360px, calc(100vw - 32px)); }
+    .toasts { position: fixed; right: 16px; bottom: 92px; /* nằm trên nút nổi Tồn kho */ z-index: 60; display: flex; flex-direction: column; gap: 8px; max-width: min(360px, calc(100vw - 32px)); }
     .toast { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: var(--radius-md); background: var(--color-text-main); color: #fff; font: var(--type-desc); box-shadow: 0 12px 28px rgba(15, 23, 42, .2); }
     .toast i { font-size: 18px; flex: none; color: var(--color-primary); }
 
@@ -217,6 +232,7 @@
   <div class="toasts" id="toasts" aria-live="polite"></div>
 
   <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/kds-logic.js"></script>
   <script>
   'use strict';
   /* =====================================================================
@@ -235,7 +251,6 @@
   /* Giao diện dùng PENDING/COOKING/READY; DB/API dùng cho_nau/dang_nau/da_xong (dtb.md) */
   const STATUSES = ['PENDING', 'COOKING', 'READY'];
   const TO_API = { PENDING: 'cho_nau', COOKING: 'dang_nau', READY: 'da_xong' };
-  const FROM_API = { cho_nau: 'PENDING', dang_nau: 'COOKING', da_xong: 'READY' };
   const COLS = {
     PENDING: { label: 'Chờ nấu',  icon: 'ph-clock' },
     COOKING: { label: 'Đang nấu', icon: 'ph-cooking-pot' },
@@ -302,24 +317,11 @@
   }
 
   /* 1 dòng chitietmon → 1 thẻ trên Kanban */
-  function fromApi(x) {
-    return {
-      id: x.id,
-      hoadonId: x.hoadon_id,
-      orderCode: x.hoadon_id || '',                     /* mã hóa đơn, vd. HD-20261006-0001 (migration 007) */
-      table: x.ban || 'Không rõ bàn',
-      dishId: x.thucdon_id,
-      dishName: x.tenmon || 'Món đã xóa khỏi thực đơn',
-      qty: x.soluong,
-      note: x.ghichu || '',
-      status: FROM_API[x.trangthai],
-      placedTs: Date.parse(x.giogoimon),
-    };
-  }
+  /* fromApi(x): đổi 1 KdsItem của API sang thẻ KDS — nằm ở assets/js/kds-logic.js (có unit test). */
   /* Các dòng tách suất có chung hóa đơn + món + ghi chú + giờ gọi → tính lại "5/10 suất" */
   function markSplitParts(items) {
     const groups = {};
-    items.forEach(it => { (groups[[it.hoadonId, it.dishId, it.note, it.placedTs].join('|')] ||= []).push(it); });
+    items.forEach(it => { (groups[[it.phieuId, it.dishId, it.note, it.placedTs].join('|')] ||= []).push(it); });
     Object.values(groups).forEach(g => {
       const total = g.reduce((s, x) => s + x.qty, 0);
       g.forEach(it => { it.origQty = g.length > 1 ? total : undefined; });
@@ -351,26 +353,7 @@
     setTimeout(() => el.remove(), 4000);
   }
 
-  /* =====================================================================
-     REQ-08 — AI Batching
-     Stand-in cho AI Service Endpoint (dự kiến POST /api/ai/batching):
-     gom các món Chờ nấu cùng món đến từ ≥ 2 bàn khác nhau thành 1 mẻ.
-     ===================================================================== */
-  function aiBatching(items) {
-    const groups = {};
-    items.filter(it => it.status === 'PENDING' && !isBlocked(it.dishId)).forEach(it => {
-      (groups[it.dishId] = groups[it.dishId] || []).push(it);
-    });
-    return Object.entries(groups)
-      .filter(([, list]) => new Set(list.map(x => x.table)).size >= 2)
-      .map(([dishId, list]) => ({
-        dishId,
-        items: list.sort((a, b) => a.placedTs - b.placedTs),
-        totalQty: list.reduce((s, x) => s + x.qty, 0),
-        tables: [...new Set(list.map(x => x.table))],
-      }))
-      .sort((a, b) => b.totalQty - a.totalQty);
-  }
+  /* REQ-08 — AI Batching: aiBatching(items, isBlocked) nằm ở assets/js/kds-logic.js (có unit test). */
 
   /* ---------- Tải dữ liệu từ server ---------- */
   async function refresh() {
@@ -398,7 +381,7 @@
     setTimeout(() => { fresh.forEach(it => S.newIds.delete(it.id)); render(); }, 5000);
     ting();
     [...new Set(fresh.map(i => i.table))].forEach(t => toast(`Đơn mới — ${esc(t)}`, 'warn', 'ph-bell-ringing'));
-    const batched = new Set(aiBatching(S.items).flatMap(b => b.items.map(x => x.id)));
+    const batched = new Set(aiBatching(S.items, isBlocked).flatMap(b => b.items.map(x => x.id)));
     if (fresh.some(it => batched.has(it.id))) toast('Trợ lý AI vừa gom món thành mẻ <b>Gợi ý nấu chung</b>', 'ai', 'ph-sparkle');
   }
 
@@ -520,11 +503,10 @@
     if (!it) { closeModal(); return; }
     const name = esc(it.dishName);
     const verb = sp.to === 'COOKING' ? 'Nấu' : 'Xong';
-    const rest = it.qty - sp.n;
     $('#modal-root').innerHTML = `
       <div class="kds-overlay" data-action="close-modal">
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="sp-title" data-stop>
-          <h3 id="sp-title">${sp.to === 'COOKING' ? 'Nấu bao nhiêu suất?' : 'Đã nấu xong bao nhiêu suất?'}</h3>
+          <h3 id="sp-title">${sp.to === 'COOKING' ? 'Hãy chọn số suất cần nấu' : 'Hãy chọn số suất đã nấu xong'}</h3>
           <p>${esc(it.table)} · ${esc(it.orderCode)} · <b>${it.qty}× ${name}</b></p>
           <div class="stepper">
             <button data-action="split-dec" aria-label="Giảm 1 suất" ${sp.n <= 1 ? 'disabled' : ''}><i class="ph-bold ph-minus"></i></button>
@@ -532,9 +514,6 @@
             <button data-action="split-inc" aria-label="Tăng 1 suất" ${sp.n >= it.qty ? 'disabled' : ''}><i class="ph-bold ph-plus"></i></button>
           </div>
           ${sp.n < it.qty ? `<button class="split-all" data-action="split-all">Chọn tất cả ${it.qty} suất</button>` : ''}
-          <p class="muted">${rest > 0
-            ? `${rest} suất còn lại vẫn ở cột <b>${COLS[it.status].label}</b>${sp.to === 'READY' ? '. Phục vụ sẽ được báo mang ra trước ' + sp.n + ' suất.' : '.'}`
-            : `Chuyển cả ${it.qty} suất sang cột <b>${COLS[sp.to].label}</b>.`}</p>
           <div class="modal-actions">
             <button class="btn-ghost" data-action="close-modal">Hủy</button>
             <button class="btn-primary" data-action="split-ok">${verb} ${sp.n} suất</button>
@@ -545,7 +524,7 @@
   }
 
   function cookBatch(dishId) {
-    const batch = aiBatching(S.items).find(b => b.dishId === dishId);
+    const batch = aiBatching(S.items, isBlocked).find(b => b.dishId === dishId);
     if (!batch) return;
     batch.items.forEach(it => setStatus(it.id, 'COOKING'));
     toast(`Bắt đầu nấu chung mẻ <b>${batch.totalQty}× ${esc(menuName(dishId))}</b>`, 'ai', 'ph-sparkle');
@@ -736,7 +715,7 @@
       }, 1000);
       return;
     }
-    const batches = aiBatching(S.items);
+    const batches = aiBatching(S.items, isBlocked);
     const oosCount = S.menu.filter(d => isOos(d.id)).length;
 
     $('#app').innerHTML = `
@@ -752,23 +731,25 @@
 
     ${S.loaded ? `<div class="board">${STATUSES.map(s => renderColumn(s, batches)).join('')}</div>
 
-    <details class="stock" ${S.stockOpen ? 'open' : ''}>
-      <summary>Tồn kho <span>· ${oosCount ? `${oosCount} món hết hàng` : 'tất cả còn hàng'}</span></summary>
+    <button class="stock-fab" data-action="stock-open" aria-haspopup="dialog" aria-expanded="${S.stockOpen}"
+      aria-label="Mở Tồn kho${oosCount ? ` — ${oosCount} món hết hàng` : ''}">
+      <i class="ph-bold ph-package"></i> Tồn kho${oosCount ? ` <span class="badge">${oosCount}</span>` : ''}</button>
+    ${S.stockOpen ? `<div class="stock-backdrop" data-action="stock-close"></div>
+    <aside class="stock" role="dialog" aria-modal="false" aria-labelledby="stock-title">
+      <div class="stock-head">
+        <h3 id="stock-title">Tồn kho <span>· ${oosCount ? `${oosCount} món hết hàng` : 'tất cả còn hàng'}</span></h3>
+        <button class="icon-btn" data-action="stock-close" aria-label="Đóng Tồn kho"><i class="ph-bold ph-x"></i></button>
+      </div>
       <ul>
         ${S.menu.map(d => {
           const oos = isOos(d.id), stopped = d.listed === false;
-          /* Món mua sẵn (có stock): "Còn N" theo số lượng. Món chế biến: số phần còn làm được theo
-             nguyên liệu + công thức (story-spec-tru-kho-tu-dong.md Mục 3); chưa có công thức thì nhắc nhập. */
-          const muaSan = d.stock != null;
-          const state = stopped ? 'Hết hàng'
-            : oos ? (muaSan ? 'Hết hàng' : 'Hết nguyên liệu')
-            : d.portions != null ? `Còn ${d.portions}` : 'Chưa có công thức';
+          const state = stockLabel(d);   /* assets/js/kds-logic.js */
           return `<li class="${oos ? 'oos' : ''}">
             <span class="name">${esc(d.name)}</span><span class="state">${state}</span>
             <button data-action="${stopped ? 'restock' : 'ask-oos'}" data-dish="${d.id}">${stopped ? 'Mở bán lại' : 'Báo hết'}</button></li>`;
         }).join('')}
       </ul>
-    </details>` : renderLoadState()}`;
+    </aside>` : ''}` : renderLoadState()}`;
     updateConnUI();
   }
 
@@ -796,14 +777,17 @@
       case 'close-modal': S.split = null; closeModal(); break;
       case 'sound': S.soundOn = !S.soundOn; if (S.soundOn) ting(); render(); break;
       case 'retry': S.loadError = ''; render(); refresh(); break;
+      case 'stock-open': S.stockOpen = true; render(); $('.stock .icon-btn')?.focus(); break;
+      case 'stock-close': S.stockOpen = false; render(); $('.stock-fab')?.focus(); break;
     }
   });
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeModal(); if (S.menuFor) { S.menuFor = null; render(); } }
+    if (e.key !== 'Escape') return;
+    if ($('#modal-root').innerHTML.trim()) { closeModal(); return; }   /* đóng hộp thoại trước, ngăn kéo sau */
+    if (S.menuFor) { S.menuFor = null; render(); }
+    if (S.stockOpen) { S.stockOpen = false; render(); $('.stock-fab')?.focus(); }
   });
 
-  /* Giữ trạng thái mở/đóng của khung Tồn kho khi render lại */
-  document.addEventListener('toggle', e => { if (e.target.matches?.('details.stock')) S.stockOpen = e.target.open; }, true);
 
   /* Kéo thả giữa các cột (AC2) — kéo thẳng từ Chờ nấu sang Đã nấu vẫn được */
   document.addEventListener('dragstart', e => {

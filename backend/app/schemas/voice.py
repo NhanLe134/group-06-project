@@ -6,6 +6,28 @@ from pydantic import BaseModel, Field, field_validator
 class VoiceDraftLine(BaseModel):
     item_id: str
     quantity: int = Field(ge=1)
+    note: str = ""
+
+
+class VoicePendingDraftRemoval(BaseModel):
+    item_id: str
+    allergen: str
+
+
+class VoiceDraftChange(BaseModel):
+    item_id: str
+    quantity: int = Field(ge=0, description="Tổng số lượng mới trong giỏ nháp")
+
+
+class VoiceDraftNoteUpdate(BaseModel):
+    item_id: str
+    note: str
+
+
+class VoiceNeedsQuantity(BaseModel):
+    """Khi backend cần hỏi lại số lượng trước khi thêm món."""
+    item_id: str
+    item_name: str
 
 
 class VoiceInterpretIn(BaseModel):
@@ -16,6 +38,13 @@ class VoiceInterpretIn(BaseModel):
     )
     draft: list[VoiceDraftLine] = Field(
         default_factory=list, description="Số lượng món hiện có trong Order Draft"
+    )
+    pending_draft_removal: VoicePendingDraftRemoval | None = Field(
+        default=None, description="Xác nhận dị ứng đang chờ trả lời"
+    )
+    last_added_item_id: str | None = Field(
+        default=None,
+        description="ID của món vừa được thêm ở lượt trước — dùng để gán ghi chú bổ sung",
     )
     table_name: str | None = Field(
         default=None, max_length=80, description="Tên bàn để gắn phiên gọi món"
@@ -82,6 +111,14 @@ class VoiceInterpretOut(BaseModel):
     stock_limits: list[VoiceStockLimit] = Field(default_factory=list)
     not_found: list[str] = Field(default_factory=list)
     warnings: list[VoiceWarning] = Field(default_factory=list)
+    pending_draft_removal: VoicePendingDraftRemoval | None = None
+    needs_quantity_for: VoiceNeedsQuantity | None = Field(
+        default=None,
+        description="Khi set, AI hỏi lại số lượng cho món này trước khi thêm vào giỏ",
+    )
+    remove_from_draft: list[str] = Field(default_factory=list)
+    draft_changes: list[VoiceDraftChange] = Field(default_factory=list)
+    draft_note_updates: list[VoiceDraftNoteUpdate] = Field(default_factory=list)
     recommendations: list[VoiceRecommendation] = Field(default_factory=list)
     suggestions: list[VoiceRecommendation] = Field(default_factory=list)
     done: bool = False

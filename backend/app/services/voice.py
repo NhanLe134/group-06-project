@@ -12,9 +12,13 @@ from app.models.voice import LogGiongNoi
 from app.schemas.voice import (
     VoiceAdd,
     VoiceAmbiguity,
+    VoiceDraftChange,
+    VoiceDraftNoteUpdate,
     VoiceInterpretIn,
     VoiceInterpretOut,
+    VoiceNeedsQuantity,
     VoiceOos,
+    VoicePendingDraftRemoval,
     VoiceRecommendation,
     VoiceStockLimit,
     VoiceWarning,
@@ -41,8 +45,12 @@ ALLERGY_TRIGGERS = {
     "gluten": ("gluten", "lua mi"),
 }
 NOTE_PATTERN = re.compile(
-    r"không\s+(?:lấy\s+[\wÀ-ỹ]+|[\wÀ-ỹ]+)|"
-    r"bỏ\s+[\wÀ-ỹ]+|ít\s+[\wÀ-ỹ]+|nhiều\s+[\wÀ-ỹ]+|thêm\s+[\wÀ-ỹ]+",
+    r"chia\s+đôi\s+phần"
+    r"|không\s+(?:lấy\s+)?(?:hành|rau|đá|ớt|tiêu)"
+    r"|bỏ\s+(?:hành|rau|đá|ớt|tiêu)"
+    r"|ít\s+(?:cay|ngọt|đá|rau|hành)"
+    r"|nhiều\s+cay"
+    r"|thêm\s+(?:đá|nước|tương|ớt)",
     re.IGNORECASE,
 )
 SEGMENT_SPLIT = re.compile(r"[,;\n]+|\s+(?:và|với|rồi)\s+", re.IGNORECASE)
@@ -60,21 +68,22 @@ def normalize(text: str) -> str:
     return re.sub(r"đ", "d", value)
 
 
-def _quantity_and_text(segment: str) -> tuple[int, str]:
+def _quantity_and_text(segment: str) -> tuple[int, str, bool]:
+    """Return (quantity, remainder_text, qty_was_explicit)."""
     cleaned = re.sub(r"^\s*(?:cho|thêm|lấy|order)\s+", "", segment, flags=re.IGNORECASE)
     cleaned = re.sub(r"^\s*(?:tôi|mình|anh/chị|anh chị)\s+", "", cleaned, flags=re.IGNORECASE)
     match = re.match(r"^\s*(\d+|[\wÀ-ỹ]+)\b\s*", cleaned, flags=re.IGNORECASE)
     if not match:
-        return 1, cleaned
+        return 1, cleaned, False
     quantity_word = normalize(match.group(1))
     if not quantity_word.isdigit() and quantity_word not in QUANTITIES:
-        return 1, cleaned
+        return 1, cleaned, False
     quantity = int(quantity_word) if quantity_word.isdigit() else QUANTITIES[quantity_word]
     remainder = cleaned[match.end():]
     remainder = re.sub(
         r"^\s*(?:phần|suất|ly|chai|cốc|bát|đĩa)\s+", "", remainder, flags=re.IGNORECASE
     )
-    return max(quantity, 1), remainder
+    return max(quantity, 1), remainder, True
 
 
 def _segments(transcript: str, dishes: list[ThucDon]) -> list[str]:
@@ -181,9 +190,95 @@ def _dish_contains_allergen(dish: ThucDon, allergen: str) -> bool:
     return any(alias in content for alias in aliases)
 
 
+def _beverage_inquiry(text: str) -> bool:
+    normalized = normalize(text)
+    return any(term in normalized for term in (
+        "nuoc uong", "giai khat", "do uong", "uong gi", "nuoc gi",
+    ))
+
+
+def _soup_inquiry(text: str) -> bool:
+    normalized = normalize(text)
+    return any(term in normalized for term in (
+        "sup", "nuoc dung", "nuoc leo", "mon nao co nuoc", "mon co nuoc",
+        "mon gi co nuoc", "co mon nuoc",
+    ))
+
+
+def _affirmative(text: str) -> bool:
+    normalized = normalize(text)
+    return any(term in normalized for term in (
+        "xoa di", "bo di", "bo mon", "xoa mon", "xoa no", "duoc xoa",
+        "hay xoa", "dung xoa", "ok xoa", "uh xoa", "u xoa", "vang xoa",
+        "co xoa", "xoa giup",
+    )) or normalized.strip() in {"co", "vang", "duoc", "ok", "u", "uh", "roi"}
+
+
+def _negative(text: str) -> bool:
+    normalized = normalize(text)
+    return any(term in normalized for term in (
+        "khong xoa", "dung xoa", "giu lai", "de lai", "khong can",
+    ))
+
+
+def _recommendation(dish: ThucDon) -> VoiceRecommendation:
+    return VoiceRecommendation(id=dish.id, name=dish.tenmon, price=int(dish.giaban))
+
+
+def _draft_dish_mentions(text: str, draft_dishes: list[ThucDon]) -> list[ThucDon]:
+    normalized = normalize(text)
+    matches = [dish for dish in draft_dishes if normalize(dish.tenmon) in normalized]
+    if matches:
+        longest = max(len(normalize(dish.tenmon)) for dish in matches)
+        return [dish for dish in matches if len(normalize(dish.tenmon)) == longest]
+    if len(draft_dishes) == 1 and any(
+        phrase in normalized for phrase in ("mon nay", "mon do", "mon trong gio", "mon dang chon")
+    ):
+        return draft_dishes
+    return []
+
+
 def _note_for(segment: str) -> str:
-    notes = [note.strip().capitalize() for note in NOTE_PATTERN.findall(segment)]
-    return ", ".join(dict.fromkeys(notes))
+    canonical = {
+        "khong hanh": "Không hành", "khong lay hanh": "Không hành",
+        "bo hanh": "Không hành",
+        "khong rau": "Không rau", "khong lay rau": "Không rau",
+        "bo rau": "Không rau",
+        "it cay": "Ít cay", "nhieu cay": "Nhiều cay",
+        "khong da": "Không đá", "khong lay da": "Không đá",
+        "it da": "Ít đá",
+        "it ngot": "Ít ngọt",
+        "chia doi phan": "Chia đôi phần",
+        "khong ot": "Không ớt", "bo ot": "Không ớt",
+        "khong tieu": "Không tiêu", "bo tieu": "Không tiêu",
+        "them da": "Thêm đá", "them nuoc": "Thêm nước",
+        "them tuong": "Thêm tương", "them ot": "Thêm ớt",
+        "it hanh": "Ít hành", "it rau": "Ít rau",
+    }
+    notes = []
+    for raw_note in NOTE_PATTERN.findall(segment):
+        key = normalize(raw_note)
+        note = canonical.get(key, raw_note.strip().capitalize())
+        if note not in notes:
+            notes.append(note)
+    return ", ".join(notes)
+
+
+def _quantity_value(value: str) -> int | None:
+    normalized = normalize(value.strip())
+    return int(normalized) if normalized.isdigit() else QUANTITIES.get(normalized)
+
+
+def _is_modifier_only(transcript: str) -> bool:
+    """True khi transcript chỉ chứa modifier/note, không có tên món rõ ràng."""
+    stripped = NOTE_PATTERN.sub("", transcript).strip()
+    # Loại bỏ các từ đệm thường gặp
+    filler_re = re.compile(
+        r"\b(nữa|thôi|nhé|nhủa|nha|ạ|là|cho|món|cái|đó|này|vậy|được|ok)\b",
+        re.IGNORECASE,
+    )
+    stripped = filler_re.sub("", stripped).strip()
+    return len(stripped) < 4  # Chỉ còn từ rất ngắn/trống sau khi bỏ modifier
 
 
 def _friendly_candidates(dishes: list[ThucDon]) -> str:
@@ -195,7 +290,12 @@ def _friendly_candidates(dishes: list[ThucDon]) -> str:
     return names[0] if names else "món phù hợp"
 
 
-def _build_gemini_system_prompt(dishes: list[ThucDon], draft_quantities: dict[str, int]) -> str:
+def _build_gemini_system_prompt(
+    dishes: list[ThucDon],
+    draft_quantities: dict[str, int],
+    draft_lines: list | None = None,
+    last_added_item_id: str | None = None,
+) -> str:
     """Tạo system prompt cho Gemini dựa trên dữ liệu menu thực tế từ DB."""
     menu_lines: list[str] = []
     for d in dishes:
@@ -222,6 +322,29 @@ def _build_gemini_system_prompt(dishes: list[ThucDon], draft_quantities: dict[st
         menu_lines.append(f"- {d.tenmon}{oos_str} ({', '.join(parts_list)})")
 
     menu_block = "\n".join(menu_lines) if menu_lines else "(Không có món nào)"
+
+    # Build current draft block for context
+    if draft_lines:
+        draft_display = []
+        dish_map = {d.id: d for d in dishes}
+        for line in draft_lines:
+            dish = dish_map.get(line.item_id)
+            name = dish.tenmon if dish else line.item_id
+            note_str = f", ghi chú: {line.note}" if line.note else ""
+            draft_display.append(f"  - {name} (ID: {line.item_id}), SL: {line.quantity}{note_str}")
+        current_draft_block = "\n".join(draft_display) if draft_display else "(Giỏ nháp trống)"
+    else:
+        current_draft_block = "(Giỏ nháp trống)"
+
+    # Build last_added_item_id block
+    if last_added_item_id:
+        dish_map_tmp = {d.id: d for d in dishes}
+        last_dish = dish_map_tmp.get(last_added_item_id)
+        last_added_item_id_block = (
+            f"{last_dish.tenmon} (ID: {last_added_item_id})" if last_dish else last_added_item_id
+        )
+    else:
+        last_added_item_id_block = "(không có)"
 
     return f"""Bạn là Trợ lý AI Voice Ordering thông minh, chuyên phục vụ gọi món tại nhà hàng.
 Nhiệm vụ của bạn là phân tích văn bản đầu vào từ giọng nói của khách (transcript),
@@ -262,19 +385,76 @@ C. LÀM RÕ KHI MẬP MỜ (Ambiguity Handling):
 D. THÊM MÓN CHÍNH XÁC (Happy Path):
    - Nếu khách gọi tên món cụ thể, số lượng và ghi chú:
      + Trích xuất item_id, quantity, note.
+     + note phải chứa đúng chuỗi chuẩn: "Không hành", "Không rau", "Không đá",
+       "Ít cay", "Nhiều cay", "Ít ngọt", "Chia đôi phần", "Ít đá", "Thêm đá",
+       "Không ớt", "Không tiêu" — tùy vào câu nói của khách.
      + Kiểm tra tồn kho. Nếu đủ, trả về intent: "order" với adds.
+     + message xác nhận: "Dạ, em đã ghi chú [note] cho món [Tên món] ạ." (nếu có note)
+       hoặc "Dạ, em đã thêm [qty] [Tên món] vào giỏ hàng ạ." (nếu không có note)
 E. KẾT THÚC ĐẶT MÓN:
    - Nếu khách nói "xong rồi", "chọn món xong", "đặt xong":
      + Trả về intent: "finish", done: true
+F. GHI CHÚ TÙY CHỈNH CHO MÓN ĐÃ CÓ TRONG GIỎ (Note for existing draft item):
+   - Nếu khách đề cập tên món + ghi chú nhưng MÓN ĐÓ ĐÃ CÓ trong current_draft_items:
+     (VD: "bún chả không hành", "coca không đá")
+     + Đây là yêu cầu cập nhật ghi chú, KHÔNG phải thêm mới.
+     + Trả về intent: "order" với draft_note_updates: [{{"item_id": "...", "note": "..."}}]
+     + message: "Dạ, em đã ghi chú [note] cho món [Tên món] ạ."
+G. GIẢM SỐ LƯỢNG MÓN TRONG GIỎ (Decrease Quantity):
+   - Nếu khách yêu cầu giảm bớt số lượng một món đã có trong giỏ:
+     (VD: "bỏ bớt 1 coca", "chỉ giữ lại 2 coca", "trừ bớt 1 phần bò xào")
+     + Tính toán số lượng mới: nếu tuyệt đối ("chỉ giữ lại N") → new_qty = N;
+       nếu tương đối ("bỏ bớt N") → new_qty = current - N.
+     + Nếu new_qty > 0: trả về draft_changes: [{{"item_id": "...", "quantity": new_qty}}]
+       message: "Dạ, em đã giảm xuống còn [N] [Tên món] trong giỏ hàng ạ."
+     + Nếu new_qty <= 0: trả về remove_from_draft: ["item_id"]
+       message: "Dạ, em đã xóa [Tên món] khỏi giỏ hàng cho anh/chị ạ."
+H. XÓA MÓN KHỎI GIỎ (Hard Remove):
+   - Nếu khách yêu cầu xóa hẳn một món:
+     (VD: "hủy món này", "xóa coca giùm anh", "bỏ bún chả ra khỏi giỏ")
+     + Trả về remove_from_draft: ["item_id"]
+     + message: "Dạ, em đã xóa [Tên món] khỏi giỏ hàng cho anh/chị ạ."
+I. GHI CHÚ BỔ SUNG KHÔNG KÈM TÊN MÓN (Cross-turn Modifier Update):
+   - Nếu khách chỉ nói một ghi chú/modifier mà KHÔNG đề cập tên món cụ thể,
+     và last_added_item_id được cung cấp (món vừa thêm ở lượt trước):
+     (VD: "ít cay thôi", "không hành nha", "món bò đó không cay nha")
+     + TUYỆT ĐỐI KHÔNG THÊM MÓN MỚI hay tăng số lượng.
+     + Trả về draft_note_updates: [{{"item_id": last_added_item_id, "note": "..."}}]
+     + message: "Dạ, em đã cập nhật ghi chú [note] cho món [Tên món] ạ."
+J. HỎI LẠI KHI THIẾU SỐ LƯỢNG (Missing Quantity Clarification):
+   - Nếu khách gọi tên một món cụ thể nhưng KHÔNG nói số lượng:
+     (VD: "cho phần cơm chiên", "lấy bún chả", "bò xào cần")
+     + KHÔNG tự gán mặc định là 1. PHẢI hỏi lại.
+     + Trả về needs_quantity_for: {{"item_id": "...", "item_name": "..."}}
+     + message: "Dạ, anh/chị muốn gọi mấy phần [Tên món] ạ?"
+K. KIỂM TRA GIỎ HÀNG KHI KHAI BÁO DỊ ỨNG (Allergy Cart Check):
+   - Khi khách khai báo dị ứng:
+     + Kiểm tra current_draft_items. Nếu có món chứa thành phần dị ứng:
+       Trả về warnings + pending_draft_removal, hỏi xóa không.
+     + Nếu không có trong giỏ: Chỉ cảnh báo các món trong menu, KHÔNG hỏi xóa.
+L. CHUYỂN CHỦ ĐỀ HỘI THOẠI (Context Shift — No Repetition):
+   - Luôn trả lời trực tiếp vào yêu cầu MỚI NHẤT của khách.
+   - TUYỆT ĐỐI KHÔNG nhắc lại câu hỏi cũ hoặc vấn đề đã giải quyết.
+   - Nếu khách hỏi về điều khác sau khi vừa giải quyết xong (VD: hỏi về món, dị ứng, v.v.),
+     hãy đáp thẳng vào nội dung đó, không đề cập lại lịch sử.
 
 ---
-4. ĐỊNH DẠNG ĐẦU RA — CHỈ trả về JSON thuần túy, không thêm markdown hay giải thích:
+4. DỮ LIỆU GIỎ NHÁP HIỆN TẠI (CURRENT DRAFT — để xử lý F, G, H, I, J, K):
+current_draft_items: {current_draft_block}
+last_added_item_id: {last_added_item_id_block}
+
+---
+5. ĐỊNH DẠNG ĐẦU RA — CHỈ trả về JSON thuần túy, không thêm markdown hay giải thích:
 {{
   "intent": "order | suggestion | recommendation | finish | unknown",
   "done": false,
   "message": "Câu phản hồi tự nhiên tiếng Việt thân thiện cho khách",
   "adds": [{{"id": "string", "name": "string", "qty": int, "note": "string",
              "price": int}}],
+  "needs_quantity_for": {{"item_id": "string", "item_name": "string"}},
+  "draft_note_updates": [{{"item_id": "string", "note": "string"}}],
+  "draft_changes": [{{"item_id": "string", "quantity": int}}],
+  "remove_from_draft": ["item_id"],
   "ambiguities": [{{"qty": int, "candidates": ["id1","id2"],
                    "segment": "string"}}],
   "oos": [{{"id": "string", "qty": int, "suggestions": ["id1"]}}],
@@ -287,6 +467,7 @@ E. KẾT THÚC ĐẶT MÓN:
   "suggestions": [{{"id": "string", "name": "string", "price": int}}]
 }}
 Tất cả các mảng mặc định là [] nếu không có dữ liệu. "done" mặc định false.
+needs_quantity_for mặc định là null nếu không cần hỏi lại.
 """
 
 
@@ -294,6 +475,8 @@ async def _gemini_interpret(
     transcript: str,
     dishes: list[ThucDon],
     draft_quantities: dict[str, int],
+    draft_lines: list | None = None,
+    last_added_item_id: str | None = None,
 ) -> dict | None:
     """Gọi Gemini API để phân tích transcript. Trả None nếu không có key hoặc lỗi."""
     if not settings.ai_api_key:
@@ -303,7 +486,9 @@ async def _gemini_interpret(
 
         client = genai.Client(api_key=settings.ai_api_key)
         model = getattr(settings, "ai_model", None) or "gemini-2.0-flash"
-        system_prompt = _build_gemini_system_prompt(dishes, draft_quantities)
+        system_prompt = _build_gemini_system_prompt(
+            dishes, draft_quantities, draft_lines, last_added_item_id
+        )
         response = client.models.generate_content(
             model=model,
             contents=transcript,
@@ -330,6 +515,39 @@ def _gemini_result_to_out(
 ) -> VoiceInterpretOut:
     """Chuyển dict JSON từ Gemini sang VoiceInterpretOut, validate an toàn."""
     dish_map = {d.id: d for d in dishes}
+
+    # Draft management from Gemini: remove, decrease, note update
+    remove_from_draft: list[str] = [
+        str(item_id) for item_id in (data.get("remove_from_draft") or [])
+        if str(item_id) in dish_map
+    ]
+    draft_changes: list[VoiceDraftChange] = []
+    for item in data.get("draft_changes") or []:
+        iid = str(item.get("item_id", ""))
+        if iid in dish_map:
+            draft_changes.append(VoiceDraftChange(
+                item_id=iid,
+                quantity=max(int(item.get("quantity") or 0), 0),
+            ))
+    draft_note_updates: list[VoiceDraftNoteUpdate] = []
+    for item in data.get("draft_note_updates") or []:
+        iid = str(item.get("item_id", ""))
+        if iid in dish_map:
+            draft_note_updates.append(VoiceDraftNoteUpdate(
+                item_id=iid,
+                note=str(item.get("note") or ""),
+            ))
+
+    # needs_quantity_for from Gemini
+    nqf_raw = data.get("needs_quantity_for")
+    needs_quantity_for: VoiceNeedsQuantity | None = None
+    if nqf_raw and isinstance(nqf_raw, dict):
+        nqf_id = str(nqf_raw.get("item_id", ""))
+        if nqf_id in dish_map:
+            needs_quantity_for = VoiceNeedsQuantity(
+                item_id=nqf_id,
+                item_name=dish_map[nqf_id].tenmon,
+            )
 
     adds: list[VoiceAdd] = []
     for item in data.get("adds") or []:
@@ -412,15 +630,271 @@ def _gemini_result_to_out(
         suggestions=_to_recs(data.get("suggestions")),
         done=bool(data.get("done")),
         message=str(data.get("message") or "Dạ, anh/chị muốn dùng món nào ạ?"),
+        remove_from_draft=remove_from_draft,
+        draft_changes=draft_changes,
+        draft_note_updates=draft_note_updates,
+        needs_quantity_for=needs_quantity_for,
     )
 
 
 async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretOut:
     dishes = list((await db.execute(select(ThucDon).order_by(ThucDon.tenmon))).scalars().all())
-    draft_quantities = {line.item_id: line.quantity for line in body.draft}
+    draft_quantities: dict[str, int] = {}
+    for line in body.draft:
+        draft_quantities[line.item_id] = draft_quantities.get(line.item_id, 0) + line.quantity
+
+    # Resolve a pending allergy confirmation before interpreting another intent.
+    pending = body.pending_draft_removal
+    if pending:
+        dish = next((item for item in dishes if item.id == pending.item_id), None)
+        still_in_draft = pending.item_id in draft_quantities
+        if dish and still_in_draft and _affirmative(body.transcript) and not _negative(
+            body.transcript
+        ):
+            return VoiceInterpretOut(
+                transcript=body.transcript,
+                intent="order",
+                remove_from_draft=[dish.id],
+                message=f"Dạ, em đã xóa {dish.tenmon} khỏi giỏ hàng cho anh/chị rồi ạ.",
+            )
+        if _negative(body.transcript):
+            return VoiceInterpretOut(
+                transcript=body.transcript,
+                intent="unknown",
+                message=f"Dạ, em giữ món {dish.tenmon if dish else 'đã chọn'} trong giỏ hàng ạ.",
+            )
+        if dish and still_in_draft:
+            return VoiceInterpretOut(
+                transcript=body.transcript,
+                intent="unknown",
+                pending_draft_removal=pending,
+                message=(
+                    f"Dạ, món {dish.tenmon} trong giỏ hàng có chứa {pending.allergen} "
+                    "mà anh/chị vừa báo dị ứng. Anh/chị có muốn em xóa món này "
+                    "khỏi giỏ hàng không ạ?"
+                ),
+            )
+
+    reported_allergies = _allergies_in(body.transcript)
+    draft_dishes = [
+        dish for dish in dishes
+        if draft_quantities.get(dish.id, 0) > 0
+    ]
+
+    # ── Rule 1: Ghi chú bổ sung không kèm số lượng (Modifier-only next turn) ──
+    # Nếu khách nói modifier-only (không kèm tên món rõ ràng) và lượt trước vừa thêm món
+    requested_note_early = _note_for(body.transcript)
+    if (
+        requested_note_early
+        and body.last_added_item_id
+        and _is_modifier_only(body.transcript)
+    ):
+        last_dish = next((d for d in dishes if d.id == body.last_added_item_id), None)
+        if last_dish and draft_quantities.get(last_dish.id, 0) > 0:
+            existing_notes = [
+                part.strip()
+                for line in body.draft if line.item_id == last_dish.id
+                for part in line.note.split(",") if part.strip()
+            ]
+            combined_note = ", ".join(
+                dict.fromkeys(existing_notes + requested_note_early.split(", "))
+            )
+            return VoiceInterpretOut(
+                transcript=body.transcript,
+                intent="order",
+                draft_note_updates=[VoiceDraftNoteUpdate(item_id=last_dish.id, note=combined_note)],
+                message=f"Dạ, em đã cập nhật ghi chú {combined_note} cho món {last_dish.tenmon} ạ.",
+            )
+
+    for allergen in reported_allergies:
+        affected = next(
+            (dish for dish in draft_dishes if _dish_contains_allergen(dish, allergen)),
+            None,
+        )
+        if affected:
+            pending_removal = VoicePendingDraftRemoval(
+                item_id=affected.id,
+                allergen=allergen,
+            )
+            warning = VoiceWarning(
+                item_id=affected.id,
+                item_name=affected.tenmon,
+                allergen=allergen,
+                message=(
+                    f"Dạ, món {affected.tenmon} trong giỏ hàng có chứa {allergen} "
+                    "mà anh/chị vừa báo dị ứng. Anh/chị có muốn em xóa món này "
+                    "khỏi giỏ hàng không ạ?"
+                ),
+            )
+            return VoiceInterpretOut(
+                transcript=body.transcript,
+                intent="order",
+                warnings=[warning],
+                pending_draft_removal=pending_removal,
+                message=warning.message,
+            )
+
+    normalized_transcript = normalize(body.transcript)
+    draft_targets = _draft_dish_mentions(body.transcript, draft_dishes)
+    if len(draft_targets) > 1 and any(
+        phrase in normalized_transcript
+        for phrase in ("bo bot", "tru bot", "giam", "chi giu lai", "giu lai", "xoa", "huy mon")
+    ):
+        return VoiceInterpretOut(
+            transcript=body.transcript,
+            intent="unknown",
+            ambiguities=[VoiceAmbiguity(
+                qty=1,
+                candidates=[dish.id for dish in draft_targets],
+                segment=body.transcript,
+            )],
+            message="Dạ, anh/chị muốn điều chỉnh món nào trong giỏ hàng ạ?",
+        )
+
+    decrease_request = any(phrase in normalized_transcript for phrase in (
+        "bo bot", "tru bot", "giam bot", "giam xuong", "giam con",
+        "chi giu lai", "giu lai", "de lai", "chi de lai",
+        "chi con", "giam di",
+    ))
+    if draft_targets and decrease_request:
+        dish = draft_targets[0]
+        current_quantity = draft_quantities.get(dish.id, 0)
+        number_pattern = r"(\d+|mot|hai|ba|bon|tu|nam|sau|bay|tam|chin|muoi)"
+        absolute_match = re.search(
+            rf"(?:chi giu lai|giu lai|giam xuong con|giam con|chi con"
+            rf"|chi de lai|de lai)\s+{number_pattern}",
+            normalized_transcript,
+        )
+        decrement_match = re.search(
+            rf"(?:bo bot|tru bot|giam bot|giam di|giam)\s+{number_pattern}",
+            normalized_transcript,
+        )
+        if absolute_match:
+            new_quantity = _quantity_value(absolute_match.group(1)) or 0
+        else:
+            decrement = _quantity_value(decrement_match.group(1)) if decrement_match else 1
+            new_quantity = max(current_quantity - (decrement or 1), 0)
+        action = VoiceDraftChange(item_id=dish.id, quantity=new_quantity)
+        if new_quantity:
+            message = (
+                f"Dạ, em đã giảm xuống còn {new_quantity} {dish.tenmon} "
+                "trong giỏ hàng ạ."
+            )
+            return VoiceInterpretOut(
+                transcript=body.transcript,
+                intent="order",
+                draft_changes=[action],
+                message=message,
+            )
+        return VoiceInterpretOut(
+            transcript=body.transcript,
+            intent="order",
+            remove_from_draft=[dish.id],
+            message=f"Dạ, em đã xóa {dish.tenmon} khỏi giỏ hàng cho anh/chị ạ.",
+        )
+
+    if decrease_request and not draft_targets:
+        return VoiceInterpretOut(
+            transcript=body.transcript,
+            intent="order",
+            message="Dạ, em chưa tìm thấy món cần giảm trong giỏ hàng ạ.",
+        )
+
+    _remove_phrases = ("xoa", "huy mon", "huy", "bo mon", "bo di", "gium", "giup xoa", "xoa gium")
+    hard_remove_request = not decrease_request and (
+        any(phrase in normalized_transcript for phrase in _remove_phrases)
+        or bool(re.search(r"bo .+ (khoi gio|ra khoi gio)", normalized_transcript))
+        or bool(re.search(r"xoa .+ (gium|giup|cho|di)\b", normalized_transcript))
+        or bool(re.search(r"huy mon (nay|do|nua)", normalized_transcript))
+    )
+    if hard_remove_request:
+        if len(draft_targets) == 1:
+            dish = draft_targets[0]
+            return VoiceInterpretOut(
+                transcript=body.transcript,
+                intent="order",
+                remove_from_draft=[dish.id],
+                message=f"Dạ, em đã xóa {dish.tenmon} khỏi giỏ hàng cho anh/chị ạ.",
+            )
+        if not draft_targets:
+            return VoiceInterpretOut(
+                transcript=body.transcript,
+                intent="order",
+                message="Dạ, em chưa tìm thấy món đó trong giỏ hàng ạ.",
+            )
+
+    requested_note = _note_for(body.transcript)
+    if requested_note and len(draft_targets) == 1:
+        dish = draft_targets[0]
+        existing_notes = [
+            part.strip()
+            for line in body.draft if line.item_id == dish.id
+            for part in line.note.split(",") if part.strip()
+        ]
+        note = ", ".join(dict.fromkeys(existing_notes + requested_note.split(", ")))
+        return VoiceInterpretOut(
+            transcript=body.transcript,
+            intent="order",
+            draft_note_updates=[VoiceDraftNoteUpdate(item_id=dish.id, note=note)],
+            message=f"Dạ, em đã ghi chú {note} cho món {dish.tenmon} ạ.",
+        )
+
+    # These broad menu questions use deterministic catalog matching; Gemini must
+    # not conflate drinks with food that has soup, broth, or sauce.
+    beverage_inquiry = _beverage_inquiry(body.transcript) and not _soup_inquiry(body.transcript)
+    soup_inquiry = _soup_inquiry(body.transcript)
+    if beverage_inquiry or soup_inquiry:
+        if beverage_inquiry:
+            matches = [
+                dish for dish in dishes
+                if normalize(dish.phanloai or "") in {"do uong", "khai vi"}
+                and not dish.het_hang
+            ]
+            if matches:
+                names = _friendly_candidates(matches[:5])
+                message = (
+                    f"Dạ, quán có các món đồ uống giải khát như {names}. "
+                    "Anh/chị muốn dùng loại nào ạ?"
+                )
+            else:
+                message = "Dạ, hiện quán chưa có món đồ uống hoặc khai vị phù hợp ạ."
+        else:
+            soup_terms = ("sup", "nuoc", "bun", "pho", "canh", "sot", "lau", "mi nuoc")
+            matches = []
+            for dish in dishes:
+                category = normalize(dish.phanloai or "")
+                if category not in {"mon chinh", "khai vi"} or dish.het_hang:
+                    continue
+                searchable = normalize(" ".join(filter(None, (
+                    dish.tenmon, dish.mota, dish.thanhphan,
+                ))))
+                if any(term in searchable for term in soup_terms):
+                    matches.append(dish)
+            if matches:
+                name = matches[0].tenmon
+                message = (
+                    f"Dạ, quán có món {name} có nước dùng rất đậm đà. "
+                    "Anh/chị có muốn thử không ạ?"
+                )
+            else:
+                message = "Dạ, em chưa tìm thấy món súp hoặc món ăn có nước dùng trong thực đơn ạ."
+        recommendations = [_recommendation(dish) for dish in matches]
+        return VoiceInterpretOut(
+            transcript=body.transcript,
+            intent="recommendation",
+            recommendations=recommendations,
+            suggestions=recommendations,
+            message=message,
+        )
 
     # ── Thử Gemini trước, fallback sang rule-based nếu không có key hoặc lỗi ──
-    gemini_data = await _gemini_interpret(body.transcript, dishes, draft_quantities)
+    # Chỉ bỏ qua Gemini khi note đã được xử lý cho món TRONG giỏ bởi rule-based phía trên
+    _note_handled_by_rules = requested_note and len(draft_targets) == 1
+    gemini_data = None if _note_handled_by_rules else await _gemini_interpret(
+        body.transcript, dishes, draft_quantities,
+        draft_lines=body.draft,
+        last_added_item_id=body.last_added_item_id,
+    )
     if gemini_data is not None:
         result = _gemini_result_to_out(body.transcript, gemini_data, dishes)
         # Ghi log và trả về
@@ -469,7 +943,7 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
     reported_allergies = _allergies_in(body.transcript)
 
     for segment in _segments(analysis_text, dishes):
-        quantity, item_text = _quantity_and_text(segment)
+        quantity, item_text, qty_explicit = _quantity_and_text(segment)
         segment_normalized = normalize(item_text)
         if "di ung" in normalized_text and not _full_name_matches(item_text, dishes) and any(
             alias in segment_normalized
@@ -509,6 +983,16 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
                 VoiceRecommendation(id=dish.id, name=dish.tenmon, price=int(dish.giaban))
             )
         else:
+            # Rule 2: Hỏi lại số lượng nếu khách không nói rõ (chỉ apply khi có 1 món, không đa món)
+            if not qty_explicit and len(_segments(analysis_text, dishes)) == 1:
+                return VoiceInterpretOut(
+                    transcript=body.transcript,
+                    intent="unknown",
+                    needs_quantity_for=VoiceNeedsQuantity(
+                        item_id=dish.id, item_name=dish.tenmon
+                    ),
+                    message=f"Dạ, anh/chị muốn gọi mấy phần {dish.tenmon} ạ?",
+                )
             # Số phần còn: mua sẵn theo soluongton, chế biến theo nguyên liệu
             if dish.so_phan_con is not None:
                 available = max(dish.so_phan_con - draft_quantities.get(dish.id, 0), 0)
@@ -643,14 +1127,20 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
                 " Anh/chị muốn dùng món nào ạ?"
             )
     elif adds:
-        confirmed = ", ".join(
-            f"{item.qty} phần {item.name}"
-            + (f", ghi chú {item.note}" if item.note else "")
-            for item in adds
-        )
-        message_parts.append(
-            f"Dạ, em đã ghi nhận {confirmed}. Anh/chị có muốn gọi thêm món nào nữa không ạ?"
-        )
+        noted_adds = [item for item in adds if item.note]
+        if len(adds) == 1 and len(noted_adds) == 1:
+            message_parts.append(
+                f"Dạ, em đã ghi chú {noted_adds[0].note} cho món {noted_adds[0].name} ạ."
+            )
+        else:
+            confirmed = ", ".join(
+                f"{item.qty} phần {item.name}"
+                + (f", ghi chú {item.note}" if item.note else "")
+                for item in adds
+            )
+            message_parts.append(
+                f"Dạ, em đã ghi nhận {confirmed}. Anh/chị có muốn gọi thêm món nào nữa không ạ?"
+            )
     elif out_of_stock:
         message_parts.append(
             "Dạ, món anh/chị chọn hiện đã hết hàng."
