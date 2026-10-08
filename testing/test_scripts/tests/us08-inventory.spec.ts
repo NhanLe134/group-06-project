@@ -7,6 +7,7 @@
  *
  * Chạy: npx playwright test -c playwright.us03.config.ts   (backend E2E riêng, KHÔNG đụng Supabase)
  */
+import { E2E_PINS, KDS_DISHES as D } from '../data/kds';
 import { API, expect, test } from '../utils/localApi';
 
 test.skip(!process.env.E2E_API_URL, 'Chạy bằng playwright.us03.config.ts (backend E2E riêng)');
@@ -23,8 +24,8 @@ test.describe('US-08 — Kiểm kê tồn kho & Đóng ca', () => {
       // AC1: phiếu gồm các món mua sẵn, hiện A (đầu ca), B (đã bán), C (lý thuyết)
       const rows = page.locator('#inv-lines-table tbody tr[data-dish]');
       await expect(rows).toHaveCount(2);
-      const tra = rows.filter({ hasText: 'Trà đá' });
-      const coca = rows.filter({ hasText: 'Coca' });
+      const tra = rows.filter({ hasText: D.TRA_DA });
+      const coca = rows.filter({ hasText: D.COCA });
       const cTra = Number(await tra.getAttribute('data-c'));
       await coca.locator('.inv-input').fill(String(await coca.getAttribute('data-c')));
 
@@ -46,12 +47,12 @@ test.describe('US-08 — Kiểm kê tồn kho & Đóng ca', () => {
       await closeBtn.click();
       await expect(page.locator('#inv-pin-modal')).toBeVisible();
       await expect(page.locator('#inv-pin-modal')).toContainText('Cần quyền Quản lý');
-      await page.locator('#inv-pin-input').fill('9999');
+      await page.locator('#inv-pin-input').fill(E2E_PINS.CASHIER);
       await page.locator('#inv-pin-submit').click();
       await expect(page.locator('#inv-pin-error')).not.toBeEmpty();
 
       // AC3: PIN đúng → phiếu chốt, chỉ xem; tồn thực tế thành tồn đầu ca sau
-      await page.locator('#inv-pin-input').fill('1234');
+      await page.locator('#inv-pin-input').fill(E2E_PINS.MANAGER);
       await page.locator('#inv-pin-submit').click();
       await expect(page.locator('#inv-pin-modal')).toBeHidden();
       await expect(page.locator('#inv-lines-table .inv-input')).toHaveCount(0);
@@ -59,7 +60,7 @@ test.describe('US-08 — Kiểm kê tồn kho & Đóng ca', () => {
       const [shift] = await (await request.get(`${API}/inventory/shifts`)).json();
       expect([shift.trangthai, shift.nguoichot]).toEqual(['da_chot', 'Quản lý E2E']);
       const menu = await (await request.get(`${API}/menu`)).json();
-      expect(menu.find((m: { name: string }) => m.name === 'Trà đá').stock).toBe(cTra - 1);
+      expect(menu.find((m: { name: string }) => m.name === D.TRA_DA).stock).toBe(cTra - 1);
     });
 
   test('TC-MA-005: nhập tồn thực tế âm → báo lỗi, không cho chốt ca', async ({ page }) => {

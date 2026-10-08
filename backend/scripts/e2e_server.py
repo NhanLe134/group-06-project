@@ -25,8 +25,9 @@ from app.main import app  # noqa: E402
 from app.models import Ban, CongThuc, NguoiDung, ThucDon, TonKho  # noqa: E402
 
 # Bàn là dữ liệu master (ADR-N14): mỗi test E2E dùng 1 bàn riêng
+# (phải khớp testing/test_scripts/data/kds.ts)
 E2E_TABLES = ["Bàn E2E-01", "Bàn E2E-02A", "Bàn E2E-02B", "Bàn E2E-03", "Bàn E2E-04",
-              "Bàn E2E-05", "Bàn E2E-06"]
+              "Bàn E2E-05", "Bàn E2E-06", "Bàn E2E-07"]
 
 # Trên Supabase mã (MON001, HD-...) do DB sinh (migration 007); SQLite không có → giả lập ở đây
 _PREFIX = {
