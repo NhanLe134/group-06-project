@@ -4,7 +4,7 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.errors import ApiError
-from app.models import Ban, ChiTietPhieu, NguoiDung, PhieuBan, ThucDon
+from app.models import Ban, ChiTietPhieu, PhieuBan, ThucDon
 from app.schemas.waiter import WaiterItemOut, WaiterTableOut
 
 
