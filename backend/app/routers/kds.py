@@ -87,9 +87,7 @@ async def create_demo_orders(db: Db) -> list[KdsItemOut]:
         raise ApiError(409, "MENU_ITEM_MISSING", f"Chưa có món '{DEMO_DISH}' trong thực đơn.")
     created: list[ChiTietPhieu] = []
     for tenban, soluong, ghichu in DEMO_ORDERS:
-        ban = (
-            (await db.execute(select(Ban).where(Ban.tenban == tenban))).scalars().first()
-        )
+        ban = (await db.execute(select(Ban).where(Ban.tenban == tenban))).scalars().first()
         if ban is None:
             ban = Ban(tenban=tenban, trangthai=2)
             db.add(ban)

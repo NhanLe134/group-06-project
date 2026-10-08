@@ -45,9 +45,7 @@ async def get_open_phieuban_list(db: AsyncSession, ban_id: str) -> list[PhieuBan
     return list(rows.scalars().all())
 
 
-async def _bill_items(
-    db: AsyncSession, phieu_list: list[PhieuBan]
-) -> list[OrderItemOut]:
+async def _bill_items(db: AsyncSession, phieu_list: list[PhieuBan]) -> list[OrderItemOut]:
     """Món của các phiếu, gán `dot` theo thứ tự phiếu (phiếu cũ = đợt trước)."""
     phieu_ids = [p.phieuban_id for p in phieu_list]
     rows = await db.execute(
@@ -109,8 +107,7 @@ async def create_order(
     ids = [it.thucdon_id for it in data.items]
     menu_by_id = {
         mon.id: mon
-        for mon in (
-            await db.execute(select(ThucDon).where(ThucDon.id.in_(ids)))).scalars().all()
+        for mon in (await db.execute(select(ThucDon).where(ThucDon.id.in_(ids)))).scalars().all()
     }
     for it in data.items:
         mon = menu_by_id.get(it.thucdon_id)
@@ -128,12 +125,16 @@ async def create_order(
     await db.flush()
 
     for it in data.items:
+        mon = menu_by_id.get(it.thucdon_id)
+        is_drink = bool(mon and mon.phanloai and "uống" in mon.phanloai.lower())
+        
         db.add(
             ChiTietPhieu(
                 phieuban_id=phieu.phieuban_id,
                 mon_id=it.thucdon_id,
                 soluong=it.soluong,
                 ghichu=it.ghichu,
+                trangthai="da_xong" if is_drink else "cho_nau",
             )
         )
 
@@ -156,9 +157,7 @@ async def list_cashier_tables(db: AsyncSession) -> list[dict]:
                 "id": ban.ban_id,
                 "tenban": ban.tenban,
                 "trangthai": str(ban.trangthai or BAN_SAN_SANG),
-                "giobatdau": (
-                    phieu_list[0].giogoimon.isoformat() if phieu_list else None
-                ),
+                "giobatdau": (phieu_list[0].giogoimon.isoformat() if phieu_list else None),
                 "tongtien": sum(i.thanhtien for i in items),
                 "so_phieuban": len(phieu_list),
             }
@@ -183,16 +182,11 @@ async def build_pay_qr(db: AsyncSession, ban_id: str) -> PayQrOut:
         amount=amount,
         so_phieuban=len(phieu_list),
         qr_data=qr_data,
-        qr_url=(
-            "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data="
-            + quote(qr_data)
-        ),
+        qr_url=("https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + quote(qr_data)),
     )
 
 
-async def close_table(
-    db: AsyncSession, ban_id: str, nhanvien_id: str | None = None
-) -> dict:
+async def close_table(db: AsyncSession, ban_id: str, nhanvien_id: str | None = None) -> dict:
     """US-05 — Thanh toán & đóng bàn:
     INSERT hoadon (tổng các phiếu chưa tính) → gắn hoadon_id vào phiếu → bàn về chờ dọn (3)."""
     ban = await db.get(Ban, ban_id)
@@ -226,8 +220,7 @@ async def close_table(
         "tongtien": tongtien,
         "so_phieuban": len(phieu_list),
         "message": (
-            f"Đã thanh toán {ban.tenban}: {len(phieu_list)} phiếu, "
-            f"{tongtien}₫. Bàn chờ dọn."
+            f"Đã thanh toán {ban.tenban}: {len(phieu_list)} phiếu, {tongtien}₫. Bàn chờ dọn."
         ),
     }
 

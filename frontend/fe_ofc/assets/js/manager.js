@@ -522,6 +522,174 @@ async function renderIngredients() {
     }
     drawIngredients();
 }
+document.getElementById('ingredient-search')?.addEventListener('input', renderIngredients);
+
+// Preview Image cho Ingredient
+window.previewIngImage = function(event, prefix) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const preview = document.getElementById(`${prefix}-upload-preview`);
+        const icon = document.getElementById(`${prefix}-upload-icon`);
+        const label = document.getElementById(`${prefix}-upload-label`);
+        const uploadBox = document.getElementById(`${prefix}-upload-box`);
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+        icon.style.display = 'none';
+        label.textContent = file.name;
+        uploadBox.classList.add('has-image');
+    };
+    reader.readAsDataURL(file);
+}
+
+// 1. THÊM NGUYÊN LIỆU
+window.openAddIngredientModal = function() {
+    document.getElementById('add-ingredient-modal').style.display = 'flex';
+    document.getElementById('ing-name').value = '';
+    document.getElementById('ing-category').value = 'Thịt tươi sống';
+    document.getElementById('ing-unit').value = 'Kg';
+    document.getElementById('ing-stock').value = '';
+    document.getElementById('ing-threshold').value = '5';
+    document.getElementById('ing-notes').value = '';
+    
+    const preview = document.getElementById('ing-upload-preview');
+    const icon = document.getElementById('ing-upload-icon');
+    const label = document.getElementById('ing-upload-label');
+    const uploadBox = document.getElementById('ing-upload-box');
+    preview.style.display = 'none';
+    preview.src = '';
+    icon.style.display = 'block';
+    label.textContent = 'Click hoặc Kéo thả ảnh vào đây';
+    uploadBox.classList.remove('has-image');
+    document.getElementById('ing-image-input').value = '';
+}
+window.closeAddIngredientModal = function() { document.getElementById('add-ingredient-modal').style.display = 'none'; }
+window.submitAddIngredient = function() {
+    const name = document.getElementById('ing-name').value.trim();
+    const category = document.getElementById('ing-category').value;
+    const unit = document.getElementById('ing-unit').value;
+    const stock = document.getElementById('ing-stock').value;
+    const threshold = document.getElementById('ing-threshold').value;
+    const notes = document.getElementById('ing-notes').value.trim();
+    
+    if (!name) { showToast('Lỗi nhập liệu', 'Vui lòng nhập Tên nguyên liệu!', 'danger'); document.getElementById('ing-name').focus(); return; }
+    if (!stock) { showToast('Lỗi nhập liệu', 'Vui lòng nhập Tồn kho ban đầu!', 'danger'); document.getElementById('ing-stock').focus(); return; }
+    
+    const previewEl = document.getElementById('ing-upload-preview');
+    const imgSrc = (previewEl.src && previewEl.style.display !== 'none') ? previewEl.src : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200';
+    
+    const newId = 'NVL' + String(ingredientsData.length + 1).padStart(3, '0');
+    ingredientsData.push({
+        id: newId, name, category, unit, 
+        stock: parseInt(stock), threshold: parseInt(threshold), 
+        notes, img: imgSrc
+    });
+    renderIngredients();
+    closeAddIngredientModal();
+    showToast('Thành công', `Đã thêm nguyên liệu "${name}".`, 'success');
+}
+
+// 2. XEM CHI TIẾT
+window.showIngredientDetail = function(id) {
+    const item = ingredientsData.find(i => i.id === id);
+    if (!item) return;
+    
+    document.getElementById('ingredient-detail-body').innerHTML = `
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Mã / Tên nguyên liệu</label>
+                <input type="text" class="form-control" value="[${item.id}] ${item.name}" readonly>
+            </div>
+            <div class="form-group">
+                <label>Nhóm / Đơn vị tính</label>
+                <input type="text" class="form-control" value="${item.category} - ${item.unit}" readonly>
+            </div>
+            <div class="form-group">
+                <label>Tồn kho hiện tại</label>
+                <input type="text" class="form-control" value="${item.stock} ${item.unit} ${item.stock <= item.threshold ? '(Sắp hết!)' : ''}" readonly style="${item.stock <= item.threshold ? 'color: red; font-weight: bold;' : ''}">
+            </div>
+            <div class="form-group">
+                <label>Ngưỡng cảnh báo</label>
+                <input type="text" class="form-control" value="${item.threshold} ${item.unit}" readonly>
+            </div>
+            <div class="form-group">
+                <label>Ghi chú</label>
+                <textarea class="form-control" rows="2" readonly style="resize:none;">${item.notes || '—'}</textarea>
+            </div>
+            <div class="form-group">
+                <label>Hình ảnh Minh họa</label>
+                <div class="upload-box has-image" style="cursor:default;">
+                    <img src="${item.img}" alt="${item.name}" style="max-height:140px; max-width:100%; border-radius:8px;">
+                </div>
+            </div>
+        </div>
+    `;
+    document.getElementById('detail-edit-ing-btn').onclick = () => {
+        closeIngredientDetail();
+        openEditIngredientModal(id);
+    };
+    document.getElementById('ingredient-detail-modal').style.display = 'flex';
+}
+window.closeIngredientDetail = function() { document.getElementById('ingredient-detail-modal').style.display = 'none'; }
+
+// 3. SỬA NGUYÊN LIỆU
+window.openEditIngredientModal = function(id) {
+    const item = ingredientsData.find(i => i.id === id);
+    if (!item) return;
+    
+    document.getElementById('edit-ing-id').value = item.id;
+    document.getElementById('edit-ing-name').value = item.name;
+    document.getElementById('edit-ing-category').value = item.category;
+    document.getElementById('edit-ing-unit').value = item.unit;
+    document.getElementById('edit-ing-stock').value = item.stock;
+    document.getElementById('edit-ing-threshold').value = item.threshold;
+    document.getElementById('edit-ing-notes').value = item.notes || '';
+    
+    const preview = document.getElementById('edit-ing-upload-preview');
+    const icon = document.getElementById('edit-ing-upload-icon');
+    const label = document.getElementById('edit-ing-upload-label');
+    const box = document.getElementById('edit-ing-upload-box');
+    if (item.img) {
+        preview.src = item.img;
+        preview.style.display = 'block';
+        icon.style.display = 'none';
+        label.textContent = 'Ảnh hiện tại (click để thay)';
+        box.classList.add('has-image');
+    } else {
+        preview.src = '';
+        preview.style.display = 'none';
+        icon.style.display = 'block';
+        label.textContent = 'Click hoặc Kéo thả ảnh vào đây';
+        box.classList.remove('has-image');
+    }
+    document.getElementById('edit-ing-image-input').value = '';
+    
+    document.getElementById('edit-ingredient-modal').style.display = 'flex';
+}
+window.closeEditIngredientModal = function() { document.getElementById('edit-ingredient-modal').style.display = 'none'; }
+window.submitEditIngredient = function() {
+    const id = document.getElementById('edit-ing-id').value;
+    const item = ingredientsData.find(i => i.id === id);
+    if (!item) return;
+    
+    const name = document.getElementById('edit-ing-name').value.trim();
+    if (!name) { showToast('Lỗi nhập liệu', 'Vui lòng nhập Tên nguyên liệu!', 'danger'); document.getElementById('edit-ing-name').focus(); return; }
+    
+    item.name = name;
+    item.category = document.getElementById('edit-ing-category').value;
+    item.unit = document.getElementById('edit-ing-unit').value;
+    item.stock = parseInt(document.getElementById('edit-ing-stock').value || 0);
+    item.threshold = parseInt(document.getElementById('edit-ing-threshold').value || 0);
+    item.notes = document.getElementById('edit-ing-notes').value.trim();
+    
+    const previewEl = document.getElementById('edit-ing-upload-preview');
+    item.img = previewEl.src || item.img;
+    
+    renderIngredients();
+    closeEditIngredientModal();
+    showToast('Cập nhật thành công', `Đã lưu thay đổi cho "${name}".`, 'success');
+}
 
 function drawIngredients() {
     const tbody = document.querySelector('#ingredients-table tbody');

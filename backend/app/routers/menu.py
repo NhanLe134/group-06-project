@@ -46,7 +46,9 @@ async def api_list_menu(
 
 
 @api_router.get(
-    "/{item_id}", response_model=MenuRead, summary="Xem chi tiết món ăn",
+    "/{item_id}",
+    response_model=MenuRead,
+    summary="Xem chi tiết món ăn",
     description="Tìm một món theo mã ID. Trả về 404 nếu không tìm thấy.",
 )
 async def api_get_menu_item(item_id: str, db: Db) -> MenuRead:
@@ -57,7 +59,10 @@ async def api_get_menu_item(item_id: str, db: Db) -> MenuRead:
 
 
 @api_router.post(
-    "", response_model=MenuRead, status_code=201, summary="Thêm món ăn",
+    "",
+    response_model=MenuRead,
+    status_code=201,
+    summary="Thêm món ăn",
     description="Tạo món mới sau khi kiểm tra dữ liệu bằng Pydantic.",
 )
 async def api_create_menu_item(body: MenuCreate, db: Db) -> MenuRead:
@@ -81,7 +86,9 @@ async def api_create_menu_item(body: MenuCreate, db: Db) -> MenuRead:
 
 
 @api_router.put(
-    "/{item_id}", response_model=MenuRead, summary="Cập nhật món ăn",
+    "/{item_id}",
+    response_model=MenuRead,
+    summary="Cập nhật món ăn",
     description="Cập nhật các trường được gửi lên; trường bị bỏ qua được giữ nguyên.",
 )
 async def api_update_menu_item(item_id: str, body: MenuUpdate, db: Db) -> MenuRead:
@@ -128,7 +135,9 @@ async def api_update_stock(item_id: str, body: StockUpdateIn, db: Db) -> MenuRea
 
 
 @api_router.delete(
-    "/{item_id}", status_code=204, summary="Xóa món ăn",
+    "/{item_id}",
+    status_code=204,
+    summary="Xóa món ăn",
     description="Xóa món theo ID; trả về 404 nếu món không tồn tại.",
 )
 async def api_delete_menu_item(item_id: str, db: Db) -> None:

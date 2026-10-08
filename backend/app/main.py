@@ -13,7 +13,7 @@ from app.config import settings
 from app.db import Base, async_session_factory, engine, get_db
 from app.errors import register_error_handlers
 from app.models.menu import ThucDon
-from app.routers import ingredients, inventory, kds, menu, orders, voice
+from app.routers import ingredients, inventory, kds, menu, orders, voice, waiter
 from app.ws import router as ws_router
 
 SEED_MENU_ITEMS = [
@@ -57,6 +57,7 @@ app.include_router(ingredients.recipe_router)
 app.include_router(orders.router)
 app.include_router(voice.router)
 app.include_router(voice.ai_router)
+app.include_router(waiter.router)
 app.include_router(ws_router.router)
 
 
