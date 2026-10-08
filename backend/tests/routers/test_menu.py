@@ -2,6 +2,7 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.menu import ThucDon
+from app.ws.manager import MENU_OOS_CHANNEL, manager
 
 
 async def test_list_menu_items_empty(client: AsyncClient):
@@ -141,3 +142,180 @@ async def test_in_stock_rejected_when_count_is_zero(client: AsyncClient, db_sess
 async def test_update_stock_404(client: AsyncClient):
     resp = await client.patch("/menu/items/KHONG-TON-TAI/stock", json={"stock": 5})
     assert resp.status_code == 404
+
+
+async def test_api_list_menu_items_empty(client: AsyncClient):
+    """GET /api/menu returns an empty collection when the catalog has no items."""
+    resp = await client.get("/api/menu")
+
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+async def test_api_list_menu_items_filters_category_and_availability(
+    client: AsyncClient, db_session: AsyncSession
+):
+    """Category and availability query parameters are applied together."""
+    db_session.add_all(
+        [
+            ThucDon(tenmon="Bò xào", phanloai="Món chính", giaban=85000),
+            ThucDon(
+                tenmon="Bò sốt tiêu", phanloai="Món chính", giaban=120000,
+                trangthaiban=False,
+            ),
+            ThucDon(tenmon="Coca", phanloai="Đồ uống", giaban=15000),
+        ]
+    )
+    await db_session.commit()
+
+    available = await client.get(
+        "/api/menu", params={"category": "Món chính", "is_available": "true"}
+    )
+    unavailable = await client.get(
+        "/api/menu", params={"category": "Món chính", "is_available": "false"}
+    )
+
+    assert available.status_code == unavailable.status_code == 200
+    assert [item["name"] for item in available.json()] == ["Bò xào"]
+    assert [item["name"] for item in unavailable.json()] == ["Bò sốt tiêu"]
+
+
+async def test_api_get_menu_item_returns_not_found_error(client: AsyncClient):
+    resp = await client.get("/api/menu/UNKNOWN")
+
+    assert resp.status_code == 404
+    assert resp.json()["error_code"] == "MENU_ITEM_NOT_FOUND"
+
+
+async def test_api_create_menu_item_maps_all_fields(
+    client: AsyncClient, db_session: AsyncSession
+):
+    payload = {
+        "name": "Bún chả Hà Nội",
+        "description": "Bún chả nướng ăn kèm rau sống",
+        "price": 55000,
+        "category": "Món chính",
+        "image_url": "https://example.test/bun-cha.jpg",
+        "is_available": True,
+        "stock": None,
+        "ingredients": "Thịt heo, bún, rau sống",
+        "spicy": "Không cay",
+        "diet": "Mặn",
+        "allergens": "Đậu nành",
+    }
+
+    resp = await client.post("/api/menu", json=payload)
+
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["id"]
+    assert {key: body[key] for key in payload} == payload
+    saved = await db_session.get(ThucDon, body["id"])
+    assert saved is not None
+    assert saved.tenmon == payload["name"]
+    assert saved.thongtindiung == payload["allergens"]
+
+
+async def test_api_create_menu_item_rejects_invalid_required_fields(client: AsyncClient):
+    resp = await client.post(
+        "/api/menu",
+        json={"name": "", "price": 0, "category": ""},
+    )
+
+    assert resp.status_code == 422
+
+
+async def test_api_update_menu_item_changes_only_submitted_fields(
+    client: AsyncClient, db_session: AsyncSession
+):
+    mon = ThucDon(
+        tenmon="Coca",
+        phanloai="Đồ uống",
+        giaban=15000,
+        mota="Nước ngọt có gas",
+        thanhphan="Nước, đường",
+    )
+    db_session.add(mon)
+    await db_session.commit()
+
+    resp = await client.put(f"/api/menu/{mon.id}", json={"price": 18000})
+
+    assert resp.status_code == 200
+    assert resp.json()["price"] == 18000
+    assert resp.json()["name"] == "Coca"
+    assert resp.json()["description"] == "Nước ngọt có gas"
+    assert resp.json()["ingredients"] == "Nước, đường"
+    await db_session.refresh(mon)
+    assert (mon.tenmon, mon.giaban, mon.mota) == ("Coca", 18000, "Nước ngọt có gas")
+
+
+async def test_api_update_availability_broadcasts_status_change(
+    client: AsyncClient, db_session: AsyncSession, monkeypatch
+):
+    mon = ThucDon(tenmon="Khoai tây chiên", phanloai="Khai vị", giaban=40000)
+    db_session.add(mon)
+    await db_session.commit()
+    published = []
+
+    async def fake_publish(channel, event, payload):
+        published.append((channel, event, payload))
+
+    monkeypatch.setattr(manager, "publish", fake_publish)
+
+    resp = await client.put(f"/api/menu/{mon.id}", json={"is_available": False})
+
+    assert resp.status_code == 200
+    assert resp.json()["is_available"] is False
+    assert len(published) == 1
+    channel, event, payload = published[0]
+    assert (channel, event) == (MENU_OOS_CHANNEL, "ITEM_OOS_BROADCAST")
+    assert payload["menu_item_id"] == mon.id
+    assert payload["menu_item_name"] == "Khoai tây chiên"
+    assert payload["status"] == "out_of_stock"
+
+
+async def test_api_update_menu_item_not_found(client: AsyncClient):
+    resp = await client.put("/api/menu/UNKNOWN", json={"price": 10000})
+
+    assert resp.status_code == 404
+    assert resp.json()["error_code"] == "MENU_ITEM_NOT_FOUND"
+
+
+async def test_api_update_stock_validates_and_updates_availability(
+    client: AsyncClient, db_session: AsyncSession, monkeypatch
+):
+    mon = ThucDon(tenmon="Coca", phanloai="Đồ uống", giaban=15000, soluongton=3)
+    db_session.add(mon)
+    await db_session.commit()
+
+    async def fake_publish(channel, event, payload):
+        return None
+
+    monkeypatch.setattr(manager, "publish", fake_publish)
+
+    empty = await client.patch(f"/api/menu/items/{mon.id}/stock", json={"stock": 0})
+    assert empty.status_code == 200
+    assert (empty.json()["stock"], empty.json()["is_available"]) == (0, False)
+
+    restocked = await client.patch(f"/api/menu/items/{mon.id}/stock", json={"stock": 12})
+    assert restocked.status_code == 200
+    assert (restocked.json()["stock"], restocked.json()["is_available"]) == (12, True)
+
+    invalid = await client.patch(f"/api/menu/items/{mon.id}/stock", json={"stock": -1})
+    assert invalid.status_code == 422
+
+
+async def test_api_delete_menu_item_returns_no_content_and_404(
+    client: AsyncClient, db_session: AsyncSession
+):
+    mon = ThucDon(tenmon="Sữa chua", phanloai="Tráng miệng", giaban=25000)
+    db_session.add(mon)
+    await db_session.commit()
+
+    deleted = await client.delete(f"/api/menu/{mon.id}")
+    missing = await client.delete(f"/api/menu/{mon.id}")
+
+    assert deleted.status_code == 204
+    assert deleted.content == b""
+    assert missing.status_code == 404
+    assert missing.json()["error_code"] == "MENU_ITEM_NOT_FOUND"

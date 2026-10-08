@@ -38,14 +38,25 @@ export class KdsPage {
     return this.page.locator('#offline-banner');
   }
 
-  /** Dòng của 1 món trong khung "Tồn kho". */
+  /** Dòng của 1 món trong ngăn kéo "Tồn kho". */
   stockRow(dish: string): Locator {
-    return this.page.locator('details.stock li').filter({ hasText: dish });
+    return this.page.locator('aside.stock li').filter({ hasText: dish });
+  }
+
+  /** Nút nổi góc dưới phải — mở ngăn kéo Tồn kho (không phải lướt xuống cuối trang). */
+  get stockButton(): Locator {
+    return this.page.locator('.stock-fab');
   }
 
   async openStockPanel() {
-    const panel = this.page.locator('details.stock');
-    if (!(await panel.getAttribute('open'))) await panel.locator('summary').click();
+    if (!(await this.page.locator('aside.stock').isVisible())) await this.stockButton.click();
+    await this.page.locator('aside.stock').waitFor();
+  }
+
+  /** Đóng ngăn kéo Tồn kho bằng phím Esc (lớp nền mờ che bảng khi đang mở). */
+  async closeStockPanel() {
+    await this.page.keyboard.press('Escape');
+    await this.page.locator('aside.stock').waitFor({ state: 'hidden' });
   }
 
   /** Báo hết 1 món ở khung Tồn kho (có hộp xác nhận — REQ-09 tránh bấm nhầm). */
