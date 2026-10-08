@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tạo mã QR theo bàn — Smart Ordering</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <style>
+    /* Trang công cụ nội bộ (ADR-N12) — tạo QR dẫn tới customer.html?table=... */
+    * { box-sizing: border-box; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-neutral-bg);
+      color: var(--color-text-main);
+      margin: 0;
+      padding: 32px 20px 60px;
+    }
+    .wrap { max-width: 1000px; margin: 0 auto; }
+    h1 { font-size: 22px; display: flex; align-items: center; gap: 10px; margin: 0 0 6px; }
+    h1 i { color: var(--color-primary); }
+    .sub { color: var(--color-text-muted); font-size: 13.5px; line-height: 1.6; margin: 0 0 20px; }
+    .sub b { color: var(--color-primary); word-break: break-all; }
+    .controls {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+      background: var(--color-neutral-card); border: 1.5px solid #E2E8F0;
+      border-radius: 14px; padding: 16px; margin-bottom: 24px;
+    }
+    .controls label { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .controls input {
+      width: 90px; min-height: 42px; border: 1.5px solid #E2E8F0; border-radius: 8px;
+      text-align: center; font: inherit; font-weight: 700; outline: none;
+    }
+    .controls input:focus { border-color: var(--color-primary); }
+    button {
+      font: inherit; font-weight: 700; border: none; cursor: pointer;
+      border-radius: 10px; padding: 11px 18px;
+      display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s;
+    }
+    .btn-primary { background: var(--color-primary); color: #fff; }
+    .btn-primary:hover { background: #0A4A5E; }
+    .btn-ghost { background: #F1F5F9; color: var(--color-text-main); }
+    .btn-ghost:hover { background: #E2E8F0; }
+    .qr-grid {
+      display: grid; gap: 18px;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    }
+    .qr-card {
+      background: var(--color-neutral-card); border: 1.5px solid #E2E8F0;
+      border-radius: 16px; padding: 18px; text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+    }
+    .qr-card img { width: 200px; height: 200px; border: 1px solid #E2E8F0; border-radius: 10px; }
+    .qr-name { font-size: 17px; font-weight: 800; margin: 0; }
+    .qr-link { font-size: 10.5px; color: var(--color-text-muted); word-break: break-all; line-height: 1.5; margin: 0; }
+    .qr-hint { font-size: 11.5px; color: var(--color-text-muted); margin: 0; }
+    @media print {
+      .controls, .sub, h1 i ~ * , .no-print { display: none !important; }
+      body { padding: 0; background: #fff; }
+      .qr-grid { grid-template-columns: repeat(3, 1fr); }
+      .qr-card { break-inside: avoid; border-color: #ddd; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1><i class="ph-duotone ph-qr-code"></i> Tạo mã QR theo bàn</h1>
+    <p class="sub">
+      Mỗi mã QR dẫn tới trang gọi món <b id="origin-note"></b> kèm tham số
+      <b>?table=Bàn XX</b> — khách quét là vào đúng bàn, gọi món sẽ tạo hóa đơn cho bàn đó.
+      Dán mã này lên từng bàn (khuyên dùng trang đã deploy trên Vercel để QR chứa link public).
+    </p>
+    <div class="controls no-print">
+      <label>Số lượng bàn:
+        <input id="num-tables" type="number" value="12" min="1" max="99">
+      </label>
+      <button class="btn-primary" id="btn-generate">
+        <i class="ph-duotone ph-qr-code"></i> Tạo mã QR
+      </button>
+      <button class="btn-ghost no-print" id="btn-print">
+        <i class="ph-bold ph-printer"></i> In tất cả
+      </button>
+    </div>
+    <div class="qr-grid" id="qr-grid"></div>
+  </div>
+
+  <script>
+    'use strict';
+    /* URL trang khách = customer.html cùng thư mục với trang này,
+     * kèm ?table=<tên bàn> — tự đúng domain bất kể deploy ở đâu
+     * (Vercel production, localhost...). */
+    const customerUrl = table => {
+      const u = new URL('customer.html', window.location.href);
+      u.searchParams.set('table', table);
+      return u.toString();
+    };
+
+    const pad = n => String(n).padStart(2, '0');
+
+    function generate() {
+      const n = Number(document.getElementById('num-tables').value);
+      if (!Number.isInteger(n) || n < 1 || n > 99) {
+        alert('Số lượng bàn phải là số nguyên từ 1 đến 99.');
+        return;
+      }
+      const grid = document.getElementById('qr-grid');
+      grid.innerHTML = Array.from({ length: n }, (_, i) => {
+        const name = `Bàn ${pad(i + 1)}`;
+        const url = customerUrl(name);
+        const qrSrc =
+          'https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=' +
+          encodeURIComponent(url);
+        return `
+        <div class="qr-card">
+          <p class="qr-name"><i class="ph-duotone ph-map-pin"></i> ${name}</p>
+          <img src="${qrSrc}" alt="QR ${name}">
+          <a class="no-print" href="${qrSrc}&download=1" download="qr-${name}.png"
+             style="font-size:12.5px; color: var(--color-primary); font-weight: 700;">
+            <i class="ph-bold ph-download-simple"></i> Tải ảnh QR
+          </a>
+          <p class="qr-link">${url}</p>
+          <p class="qr-hint">Quét mã để gọi món tại ${name}</p>
+        </div>`;
+      }).join('');
+    }
+
+    document.getElementById('btn-generate').addEventListener('click', generate);
+    document.getElementById('btn-print').addEventListener('click', () => window.print());
+
+    /* Ghi rõ nguồn gốc link để người dùng kiểm chứng trước khi in */
+    document.getElementById('origin-note').textContent =
+      new URL('customer.html', window.location.href);
+
+    generate();   /* tạo sẵn 12 bàn mặc định */
+  </script>
+</body>
+</html>

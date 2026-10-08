@@ -44,16 +44,20 @@ API chạy tại `http://localhost:8000` (Swagger UI: `http://localhost:8000/doc
 
 ```bash
 cd backend
-uv run python -m scripts.migrate              # chạy backend/db/migrations/*.sql (chạy lại nhiều lần không lỗi)
+uv run python -m scripts.migrate              # chạy các file mới trong backend/db/migrations/ (đã chạy thì bỏ qua — ghi ở bảng schema_migrations)
 uv run python -m scripts.seed_demo            # thêm thực đơn mẫu (nếu trống) + 4 đơn demo cho KDS
 uv run python -m scripts.seed_demo --xoa-demo # xóa mọi bàn có hậu tố "(demo)"
 ```
 
-Schema gốc: `backend/db/schema.sql`. Thay đổi schema mới → thêm file `backend/db/migrations/NNN_ten.sql` và báo cả nhóm (database dùng chung).
+Schema gốc: `backend/db/schema.sql` (bản UUID ban đầu — từ migration 007, khóa chính là mã đọc được như `MON001`, `HD-20261007-0001`, xem ADR-ARCH-004). Thay đổi schema mới → thêm file `backend/db/migrations/NNN_ten.sql` và báo cả nhóm (database dùng chung).
 
 ### Màn hình Bếp KDS (US-03)
 
 Mở `frontend/fe_ofc/pages/kitchen.html` khi backend đang chạy. KDS gọi API theo `API_BASE_URL` trong `frontend/fe_ofc/assets/js/config.js` (mặc định `http://localhost:8000`). Nút demo "Đơn mới: Bàn 01 + Bàn 02" cần `DEMO_MODE=true` trong `backend/.env` (khởi động lại backend sau khi sửa). Spec: [`story-spec-us03-kds.md`](vault/06-Engineering/story-spec-us03-kds.md).
+
+### Quản lý: Phiếu Kiểm kê / Đóng ca (US-08)
+
+Trang `frontend/fe_ofc/pages/manager.html` → tab **Phiếu Kiểm kê** (cần backend chạy). Chỉ đối soát món có số lượng tồn (`thucdon.soluongton`). Chốt ca cần PIN của tài khoản `QUAN_LY` — dữ liệu demo tạo sẵn "Quản lý Demo (demo)" PIN `1234` (`uv run python -m scripts.seed_demo`). Spec: [`story-spec-us08-inventory.md`](vault/06-Engineering/story-spec-us08-inventory.md).
 
 ### Khóa Supabase nằm ở đâu?
 

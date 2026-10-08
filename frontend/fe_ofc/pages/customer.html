@@ -20,18 +20,17 @@
         <i class="ph-fill ph-storefront"></i>
         <span class="brand">Smart Ordering</span>
       </div>
-      <div class="cust-table-chip">
+      <div class="cust-table-chip" id="table-chip">
         <i class="ph-duotone ph-map-pin"></i>
         Bàn 06
       </div>
-      <a href="../index.html" class="btn-home"><i class="ph-bold ph-house"></i> Về Portal</a>
     </div>
   </header>
 
   <main class="cust-screen">
     <div class="cust-head">
       <div class="cust-head-row">
-        <h2><i class="ph-duotone ph-fork-knife"></i> E-Menu — Bàn 06</h2>
+        <h2><i class="ph-duotone ph-fork-knife"></i> E-Menu — <span id="table-name">Bàn 06</span></h2>
         <button class="btn-view-bill" id="btn-view-bill"><i class="ph-duotone ph-receipt"></i> Xem hóa đơn</button>
       </div>
     </div>
@@ -121,7 +120,7 @@
   <section class="bill-view" id="bill-view" hidden>
     <header class="bill-view-head">
       <button class="btn-x" id="btn-close-bill" aria-label="Quay lại E-Menu"><i class="ph-bold ph-arrow-left"></i></button>
-      <b><i class="ph-duotone ph-receipt"></i> Hóa đơn tạm tính — Bàn 06</b>
+      <b><i class="ph-duotone ph-receipt"></i> Hóa đơn tạm tính — <span id="bill-view-table">Bàn 06</span></b>
     </header>
     <div class="bill-view-body" id="bill-body"></div>
     <div class="bill-view-foot">
@@ -141,6 +140,10 @@
     </div>
   </div>
 
+  <!-- Menu/đơn hàng và phân tích transcript Voice đều dùng Backend FastAPI. -->
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/realtime.js"></script>
   <script src="../assets/js/mock-data.js"></script>
   <script src="../assets/js/utils.js"></script>
   <script src="../assets/js/customer.js"></script>

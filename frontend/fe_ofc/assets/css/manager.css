@@ -238,6 +238,9 @@ body.manager-app {
     #menu-table th, #menu-table td { padding: 12px 14px; }
 }
 .mock-img { width: 60px; height: 40px; border-radius: 8px; background-size: cover; background-position: center; }
+.mock-img-empty { display: flex; align-items: center; justify-content: center; background: #F1F5F9; color: #94A3B8; font-size: 18px; }
+.menu-no-image { min-height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: 1px dashed #CBD5E1; border-radius: 8px; background: #F8FAFC; color: #64748B; }
+.menu-no-image i { font-size: 28px; }
 .img-1 { background-image: url('https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=200'); }
 .img-2 { background-image: url('https://images.unsplash.com/photo-1547592180-85f173990554?w=200'); }
 .badge { padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 12px; }
@@ -251,6 +254,27 @@ body.manager-app {
 .diff-val.negative { color: var(--color-danger); }
 .diff-val.positive { color: var(--color-success); }
 .diff-val.zero { color: var(--color-text-muted); }
+
+/* US-08 — Bảng đối soát tồn kho & đóng ca */
+.inv-empty { text-align: center; color: var(--color-text-muted); padding: 32px 24px !important; }
+.inv-period { margin: 4px 0 0; font-size: 13px; color: var(--color-text-muted); font-weight: 500; }
+.inv-note-wrap { padding: 16px 24px 0; }
+.inv-note { margin-bottom: 8px; }
+.data-table th.num, .data-table td.num { text-align: center; }
+.inv-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; margin-left: 6px; vertical-align: middle; }
+.inv-badge--closed { background: #BBF7D0; color: #166534; }
+.inv-badge--draft { background: #FEF3C7; color: #B45309; }
+.data-table tr.inv-row-loss, .data-table tr.inv-row-loss:hover { background: #FEF2F2; }
+.data-table tr.inv-row-loss td:first-child { box-shadow: inset 4px 0 0 var(--color-danger); }
+.data-table tr.inv-row-surplus, .data-table tr.inv-row-surplus:hover { background: #FFFBEB; }
+.inv-reason { min-width: 200px; padding: 8px 12px; }
+.inv-input.is-invalid, .form-control.is-invalid { border-color: var(--color-danger); background: #FEF2F2; }
+.inv-field-error { display: block; margin-top: 4px; font-size: 12px; font-weight: 600; color: var(--color-danger); }
+.inv-field-error:empty { display: none; }
+.inv-pin-text { margin: 0; font-size: 14px; font-weight: 600; color: var(--color-text-main); }
+.inv-pin-warn { margin: 0; font-size: 13px; color: #B45309; display: flex; gap: 6px; align-items: flex-start; }
+#inv-detail-actions:empty { display: none; }
+#inv-lines-table td:first-child, #inv-lines-table .diff-val { white-space: nowrap; }
 
 /* Alerts & Toasts */
 .alert { padding: 16px 20px; border-radius: 12px; margin-bottom: 24px; display: flex; gap: 12px; align-items: flex-start; font-size: 14px; font-weight: 500;}
@@ -307,3 +331,18 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .toast-title { font-size: 15px; font-weight: 800; margin: 0; color: var(--color-text-main); }
 .toast-body { font-size: 14px; margin: 0; color: var(--color-text-muted); }
 @keyframes slideInRight { from { transform: translateX(50px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* Tab Thực phẩm + Công thức món — trừ kho tự động (story-spec-tru-kho-tu-dong.md) */
+.ing-hint { padding: 0 24px 12px; }
+.recipe-portions { margin-left: auto; font-weight: 600; color: #9A3412; }
+.recipe-lines { display: flex; flex-direction: column; gap: 10px; }
+.recipe-line { display: grid; grid-template-columns: minmax(0, 1fr) 110px 44px 40px; align-items: center; gap: 8px; }
+.recipe-line .form-control { padding: 10px 12px; }
+.recipe-unit { font-size: 13px; font-weight: 600; color: var(--color-text-muted); }
+.recipe-add { align-self: flex-start; }
+.recipe-section[hidden] { display: none; }
+.recipe-hint { margin: 0; font-size: 12px; color: var(--color-text-muted); }
+@media (max-width: 480px) {
+    .recipe-line { grid-template-columns: minmax(0, 1fr) 84px 40px; }
+    .recipe-unit { display: none; }
+}

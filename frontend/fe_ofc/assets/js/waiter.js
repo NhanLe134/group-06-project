@@ -654,5 +654,41 @@ notifList.prepend = function(node) {
     }
 };
 
+// REALTIME: BẾP BÁO MÓN XONG (US-03 AC2)
+// KDS bấm "Xong" → backend publish ITEM_READY {chitietmon_id, ban, tenmon, soluong}
+// lên kênh kds:tickets → hiện thông báo + toast + tiếng "ting".
+// ==========================================
+const escHtml = s => String(s ?? '').replace(/[&<>"']/g, c => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+));
+
+function pushReadyNotif({ ban, tenmon, soluong }) {
+    const emptyState = notifList.querySelector('.empty-state');
+    if (emptyState) emptyState.style.display = 'none';
+
+    const table = tables.find(t => t.name === ban);   // sơ đồ bàn hiện còn là dữ liệu mẫu
+    const time = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    const card = document.createElement('div');
+    card.className = 'notif-card';
+    card.innerHTML = `
+        <div class="notif-header"><span class="notif-table">Bếp Gọi: ${escHtml(ban)}</span><span class="notif-time">${time}</span></div>
+        <div class="notif-desc">
+            <p style="margin:0;"><i class="ph-bold ph-cooking-pot"></i> <b>${escHtml(tenmon)}</b> × ${Number(soluong) || 1}</p>
+        </div>
+        ${table ? `<button class="btn-serve" onclick="openTableDrawer('${table.id}')"><i class="ph-bold ph-eye"></i> Mở xem ${escHtml(ban)}</button>` : ''}
+    `;
+    notifList.prepend(card);
+    notifCount++; notifCountBadge.innerText = notifCount;
+
+    showToast('KDS Alert', `${escHtml(ban)}: <b>${escHtml(tenmon)}</b> × ${Number(soluong) || 1} vừa nấu xong. Mời bưng món!`, 'success');
+    if (typeof playTing === 'function') playTing();
+}
+
+if (typeof subscribeChannel === 'function') {
+    subscribeChannel('kds:tickets', msg => {
+        if (msg.event === 'ITEM_READY') pushReadyNotif(msg.payload || {});
+    });
+}
+
 // Khởi chạy
 renderTables();

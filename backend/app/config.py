@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     def async_database_url(self) -> str:
         if self.database_url.startswith("postgresql://"):
             return self.database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        # SQLite local (aiosqlite) — dùng khi không có Docker/PostgreSQL
+        if self.database_url.startswith("sqlite://"):
+            return self.database_url  # đã đúng format sqlite+aiosqlite://
         return self.database_url
 
 

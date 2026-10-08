@@ -35,6 +35,11 @@ Hệ thống Single Source of Truth cho con người và AI Agents (Claude Code 
    - AI chỉ được phép đọc các tài liệu nguồn cho phép (`requirements.md`, `glossary.md`, `source-priority.md`...) để tự sinh câu trả lời tự nhiên dựa trên Vault context.
 9.  **Tuân thủ đúng Output Schema của Giảng viên**: Mỗi phản hồi phải xuất ra đúng mẫu cấu trúc, liệt kê rõ mã ID (`REQ-RO-xx`, `BR-RO-xx`) và file nguồn trích dẫn.
 
+10. **Quy tắc Giới hạn Phạm vi Chỉnh sửa Code (Scope Discipline Rule - BẮT BUỘC, ban hành bởi Lê Thị Thanh Nhàn 2026-10-06)**:
+   * Khi được yêu cầu chỉnh sửa code/giao diện, AI **CHỈ ĐƯỢC THAY ĐỔI ĐÚNG NHỮNG NỘI DUNG / ELEMENT / FILE mà người dùng nêu trong yêu cầu**.
+   * Mọi phần khác (markup, style, logic, copy, file lân cận) **PHẢI GIỮ NGUYÊN TUYỆT ĐỐI** — không "tiện tay" refactor, không đổi命名, không dọn dẹp phần không liên quan.
+   * Nếu thấy vấn đề nằm ngoài phạm vi yêu cầu: chỉ **LIỆT KÊ** để người dùng quyết, KHÔNG tự sửa.
+
 ### 2. Các giới hạn nghiêm ngặt – AI KHÔNG được tự quyết định:
 1. **Yêu cầu kinh doanh hoặc thay đổi scope** khi chưa có sự xác nhận từ con người.
 2. **Dữ liệu nghiệp vụ quan trọng** (Giá, tồn kho, tổng tiền, quyền truy cập, trạng thái đơn hàng): AI không được phép override nguồn dữ liệu chuẩn (source-of-truth) của hệ thống.

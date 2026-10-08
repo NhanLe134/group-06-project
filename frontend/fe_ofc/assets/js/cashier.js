@@ -1,183 +1,174 @@
 /* =====================================================================
-   cashier.js — Màn hình Thu ngân (US-05: Thanh toán toàn bộ qua QR)
+   cashier.js — Màn hình Thu ngân (US-05) — kết nối Backend FastAPI
    ---------------------------------------------------------------------
-   Nghiệp vụ theo US-05 (đã cập nhật theo ADR-N08 — bỏ chia bill):
-   - AC1: Tạo mã thanh toán → 1 mã QR tương ứng tổng hóa đơn (REQ-04).
-   - AC2 (cũ AC4): Xác nhận đã nhận tiền → trạng thái paid + thông báo
-     thành công (mock thay webhook cổng thanh toán).
-   - AC3 (cũ AC5): Cổng thanh toán lỗi → toast vàng "Không thể khởi tạo
-     mã QR thanh toán. Vui lòng kiểm tra lại mạng hoặc thử lại", giữ
-     nguyên hóa đơn (mô phỏng bằng công tắc).
-   - Nút "Đóng bàn" chỉ hiển thị khi toàn bộ đã thanh toán (ADR-N08).
-   Chia bill (REQ-03) đã cắt khỏi phạm vi — xem ADR-N08 trong
-   vault/08-Decisions/decision_log_Nhan.md.
-   QR hiện tại là mock (qrserver.com) — khi có backend sẽ thay bằng QR
-   động MoMo/VNPAY Sandbox theo REQ-04/BR-RO-06.
+   API (theo yêu cầu nối FE ↔ Backend/Supabase):
+   - GET  /cashier/tables            → danh sách bàn + hóa đơn đang mở
+   - GET  /orders/current?table_name → chi tiết món đợt 1, đợt 2 của bàn
+   - POST /tables/{ban_id}/pay-qr → tạo QR cho các phiếu chưa tính tiền
+   - POST /tables/{ban_id}/close → tạo hoadon + bàn về chờ dọn
+   - POST /tables/{phienban_id}/close → hoadon 'da_thanh_toan', bàn về 'trong'
+   QR trả về từ backend (mock qrserver.com; sau này thay bằng MoMo/VNPAY).
+   Công tắc "Mô phỏng lỗi cổng thanh toán" giữ lại cho AC5.
    ===================================================================== */
 
 'use strict';
 
 const $ = (sel, el = document) => el.querySelector(sel);
+const esc = s => String(s).replace(/[&<>"']/g,
+  c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-/* Gán textContent an toàn — phần tử tùy chọn bị xóa khỏi HTML thì bỏ qua */
-const setText = (sel, value) => { const el = $(sel); if (el) el.textContent = value; };
+/* ----- State ----- */
+let tables = [];          /* TableOut[] từ GET /cashier/tables */
+let selectedId = null;    /* phienban id đang mở chi tiết */
+let bill = null;          /* OrderCurrentOut của bàn đang chọn */
+let qr = null;            /* PayQrOut sau khi tạo QR */
 
-/* ----- Dữ liệu mock bàn + hóa đơn (khi có backend: GET /orders?tableId=...) ----- */
-const TABLES = [
-  { id: 'B02', name: 'Bàn 02', status: 'empty', guests: '' },
-  { id: 'B03', name: 'Bàn 03', status: 'occupied', guests: 'Chị Hồng + bạn',
-    order: { code: '#B03-002', items: [{ id: 'M06', qty: 1 }, { id: 'M05', qty: 2 }], paid: false } },
-  { id: 'B05', name: 'Bàn 05', status: 'empty', guests: '' },
-  { id: 'B06', name: 'Bàn 06', status: 'occupied', guests: 'Anh Tuấn + gia đình 4 người',
-    order: { code: '#B06-001', items: [{ id: 'M01', qty: 2 }, { id: 'M03', qty: 1 }, { id: 'M05', qty: 4 }], paid: false } },
-];
-
-let selectedTable = 'B06';   /* bàn đang mở chi tiết */
-let payers = [];             /* [{ label, amount, paid }] — người chia + trạng thái */
-let qrCreated = false;       /* đã tạo mã QR cho lần hiện tại chưa */
-
-const dishById = id => CATALOG.find(d => d.id === id);
-const orderTotal = o => o.items.reduce((n, it) => n + it.qty * dishById(it.id).price, 0);
+const TRANGTHAI_LABEL = {
+  cho_nau: 'Chờ nấu',
+  dang_nau: 'Đang nấu',
+  da_xong: 'Đã xong — chờ phục vụ',
+  da_phuc_vu: 'Đã phục vụ',
+};
 
 /* ===================== TOAST (AC4/AC5) ===================== */
 function toast(title, body, warn = false) {
   const box = document.createElement('div');
-  box.className = 'toast' + (warn ? ' toast-warn' : ' toast-ok');
+  box.className = 'toast ' + (warn ? 'toast-warn' : 'toast-ok');
   box.innerHTML = `
-    <p class="toast-title"><i class="ph-fill ${warn ? 'ph-warning-circle' : 'ph-check-circle'}"></i> ${title}</p>
-    <p class="toast-body">${body}</p>`;
+    <p class="toast-title"><i class="ph-fill ${warn ? 'ph-warning-circle' : 'ph-check-circle'}"></i> ${esc(title)}</p>
+    <p class="toast-body">${esc(body)}</p>`;
   $('#toast-container').appendChild(box);
   setTimeout(() => box.remove(), 4500);
 }
 
-/* ===================== DANH SÁCH BÀN ===================== */
-function renderTableList() {
-  const occupied = TABLES.filter(t => t.status === 'occupied').length;
-  setText('#occupied-count', occupied);
+async function run(fn) {
+  try {
+    await fn();
+  } catch (e) {
+    toast('Có lỗi xảy ra', e.message || 'Vui lòng thử lại.', true);
+  }
+}
 
-  $('#table-list').innerHTML = TABLES.map(t => {
-    const total = t.order ? orderTotal(t.order) : 0;
-    return `
-    <button class="table-item ${t.id === selectedTable ? 'active' : ''} ${t.status}"
+/* ===================== DANH SÁCH BÀN ===================== */
+async function loadTables() {
+  tables = await apiFetch('/cashier/tables');
+  renderTableList();
+}
+
+function renderTableList() {
+  const occupied = tables.filter(t => t.trangthai === '2');
+  $('#occupied-count').textContent = occupied.length;
+
+  $('#table-list').innerHTML = tables.length ? tables.map(t => `
+    <button class="table-item ${t.id === selectedId ? 'active' : ''} ${t.trangthai === '2' ? '' : 'empty'}"
       data-table="${t.id}">
-      <span class="ti-name">${t.name}</span>
+      <span class="ti-name">${esc(t.tenban)}</span>
       <span class="ti-info">
-        ${t.status === 'occupied'
+        ${t.trangthai === '2'
           ? `<span class="status-pill st-occupied">Đang ăn</span>
-             <b class="ti-total">${fmtVND(total)}</b>`
+             <b class="ti-total">${fmtVND(t.tongtien)}</b>`
           : '<span class="status-pill st-empty">Trống</span>'}
       </span>
       <i class="ph-bold ph-caret-right ti-arrow"></i>
-    </button>`;
-  }).join('');
+    </button>`).join('')
+    : '<div class="table-empty">Chưa có phiên bàn nào.<br>Hãy để khách gọi món trước.</div>';
 }
 
 /* ===================== CHI TIẾT HÓA ĐƠN + THANH TOÁN ===================== */
-function renderDetail() {
+async function openTable(id) {
+  selectedId = id;
+  qr = null;
+  bill = null;
+  renderTableList();
   const panel = $('#detail-panel');
-  const t = TABLES.find(x => x.id === selectedTable);
-
-  /* Bàn trống */
-  if (!t || t.status !== 'occupied' || !t.order) {
+  const t = tables.find(x => x.id === id);
+  if (!t) {
     panel.innerHTML = `
       <div class="detail-empty">
         <i class="ph-duotone ph-armchair"></i>
-        <p>${t ? `${t.name} đang trống. Chọn bàn đang ăn để xem hóa đơn.` : 'Chọn một bàn để xem chi tiết.'}</p>
+        <p>Chọn một bàn để xem chi tiết hóa đơn.</p>
       </div>`;
     return;
   }
 
-  const total = orderTotal(t.order);
-  const allPaid = payers.length > 0 && payers.every(p => p.paid);
-  const canClose = allPaid;
-
   panel.innerHTML = `
     <div class="detail-head">
       <div>
-        <h2>${t.name} <span class="status-pill st-occupied">Đang ăn</span></h2>
-        <p>${t.guests} · Đơn <b>${t.order.code}</b></p>
+        <h2>${esc(t.tenban)} <span class="status-pill ${t.trangthai === '2' ? 'st-occupied' : 'st-empty'}">
+          ${t.trangthai === '2' ? 'Đang ăn' : 'Trống'}</span></h2>
+      </div>
+    </div>
+    <div class="draft-empty"><i class="ph-duotone ph-spinner"></i><p>Đang tải hóa đơn...</p></div>`;
+
+  /* Chi tiết món đợt 1, đợt 2 từ GET /orders/current */
+  try {
+    bill = await apiFetch(
+      `/orders/current?table_name=${encodeURIComponent(t.tenban)}`,
+    );
+  } catch (e) {
+    bill = null;
+    panel.insertAdjacentHTML('beforeend', `
+      <div class="detail-empty">
+        <i class="ph-duotone ph-armchair"></i>
+        <p>${e.status === 404 ? `${esc(t.tenban)} đang trống hoặc chưa gọi món.` : esc(e.message)}</p>
+      </div>`);
+    return;
+  }
+
+  const allServed = bill.all_served;
+  panel.innerHTML = `
+    <div class="detail-head">
+      <div>
+        <h2>${esc(bill.table_name)} <span class="status-pill st-occupied">Đang ăn</span></h2>
+        <p>Hóa đơn <b>${bill.hoadon_id.slice(0, 8)}</b>…</p>
       </div>
     </div>
 
     <div class="bill">
       <table class="bill-table">
-        <thead><tr><th>Món</th><th class="num">SL</th><th class="num">Thành tiền</th></tr></thead>
+        <thead><tr><th>Món</th><th class="num">SL</th><th class="num">Thành tiền</th><th>Trạng thái</th></tr></thead>
         <tbody>
-          ${t.order.items.map(it => {
-            const d = dishById(it.id);
-            return `<tr>
-              <td>${d.name}</td>
-              <td class="num">${it.qty}</td>
-              <td class="num">${fmtVND(d.price * it.qty)}</td>
-            </tr>`;
-          }).join('')}
+          ${bill.items.map(it => `
+          <tr>
+            <td>${esc(it.tenmon || '')}${it.ghichu ? `<small>${esc(it.ghichu)}</small>` : ''}</td>
+            <td class="num">${it.soluong}</td>
+            <td class="num">${fmtVND(it.thanhtien)}</td>
+            <td><span class="status-pill ${it.trangthai === 'da_phuc_vu' ? 'st-served' : 'st-pending'}">
+              ${TRANGTHAI_LABEL[it.trangthai] || it.trangthai}</span></td>
+          </tr>`).join('')}
         </tbody>
       </table>
       <div class="bill-foot">
-        <span>Tổng số món: <b>${t.order.items.reduce((n, it) => n + it.qty, 0)}</b></span>
-        <span>Tổng thành tiền: <b class="bill-total">${fmtVND(total)}</b></span>
+        <span>Tổng số món: <b>${bill.items.reduce((n, it) => n + it.soluong, 0)}</b></span>
+        <span>Tổng thành tiền: <b class="bill-total">${fmtVND(bill.tongtien)}</b></span>
       </div>
     </div>
 
-    ${t.order.paid ? `
-    <div class="paid-banner">
-      <i class="ph-fill ph-check-circle"></i>
-      <div>
-        <b>Đã thanh toán — hoàn tất</b>
-        <p>Bàn đã đóng an toàn. Cảm ơn quý khách!</p>
-      </div>
-    </div>` : `
     <div class="pay-box">
       <h4><i class="ph-duotone ph-credit-card"></i> Thanh toán (US-05)</h4>
-      <p class="pay-hint">${qrCreated ? 'Mã thanh toán đã được tạo — quét QR để thanh toán.' : 'Thanh toán toàn bộ hóa đơn qua mã QR.'}</p>
-      ${!qrCreated ? `
+      <p class="pay-hint">Thanh toán toàn bộ hóa đơn qua mã QR.</p>
+      ${qr ? `
+      <div class="payer-card">
+        <div class="payer-head">
+          <b><i class="ph-bold ph-user"></i> ${esc(bill.table_name)}</b>
+          <span class="payer-amount">${fmtVND(qr.amount)}</span>
+        </div>
+        <div class="payer-body">
+          <img class="qr-img" alt="Mã QR thanh toán" src="${esc(qr.qr_url)}">
+        </div>
+      </div>
+      <button class="btn-confirm-pay" id="btn-confirm-pay" style="margin-top:14px; width:100%;">
+        <i class="ph-bold ph-hand-coins"></i> Xác nhận đã nhận tiền &amp; Đóng bàn
+      </button>` : `
       <button class="btn-primary btn-create" id="btn-create-qr">
         <i class="ph-duotone ph-qr-code"></i> Tạo mã thanh toán
-      </button>` : ''}
-
-      <div id="qr-area">${qrCreated ? renderPayers() : ''}</div>
-
-      ${canClose ? `
-      <button class="btn-close-table" id="btn-close-table">
-        <i class="ph-duotone ph-broom"></i> Đóng bàn (Close)
-      </button>` : ''}
-    </div>`}
-  `;
-}
-
-/* Danh sách người thanh toán + QR (AC2: làm tròn dư tự động) */
-function renderPayers() {
-  return `<div class="payer-list">${payers.map((p, i) => `
-    <div class="payer-card ${p.paid ? 'paid' : ''}">
-      <div class="payer-head">
-        <b><i class="ph-bold ph-user"></i> ${p.label}</b>
-        <span class="payer-amount">${fmtVND(p.amount)}</span>
-        <span class="status-pill ${p.paid ? 'st-ready' : 'st-pending'}">${p.paid ? 'Đã thanh toán' : 'Chưa thanh toán'}</span>
-      </div>
-      <div class="payer-body">
-        <img class="qr-img" alt="Mã QR ${p.label}"
-          src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent('SMARTORDER|PAY|' + selectedTable + '|' + p.amount)}"
-          onerror="this.outerHTML='<div class=\\'qr-fallback\\'><i class=\\'ph-duotone ph-qr-code\\'></i><span>Không tải được QR</span></div>'">
-        ${p.paid
-          ? '<div class="pay-done"><i class="ph-fill ph-check-circle"></i> Đã xác nhận thanh toán</div>'
-          : `<button class="btn-confirm-pay" data-pay="${i}">
-               <i class="ph-bold ph-hand-coins"></i> Xác nhận đã nhận tiền
-             </button>`}
-      </div>
-    </div>`).join('')}</div>
-    ${payers.every(p => p.paid) ? `
-    <div class="paid-banner">
-      <i class="ph-fill ph-check-circle"></i>
-      <div><b>Thanh toán thành công! Cảm ơn quý khách</b>
-      <p>Toàn bộ hóa đơn đã được thanh toán — có thể đóng bàn.</p></div>
-    </div>` : ''}`;
+      </button>`}
+    </div>`;
 }
 
 /* ===================== HÀNH VI ===================== */
 function createQR() {
-  const t = TABLES.find(x => x.id === selectedTable);
-  const total = orderTotal(t.order);
-  payers = [{ label: 'Toàn bộ hóa đơn', amount: total, paid: false }];
+  if (!bill) return;
 
   /* AC5 — mô phỏng cổng thanh toán lỗi: toast vàng + giữ nguyên hóa đơn */
   if ($('#err-sim').checked) {
@@ -185,62 +176,38 @@ function createQR() {
       'Vui lòng kiểm tra lại mạng hoặc thử lại. Hóa đơn của bạn vẫn được giữ nguyên.', true);
     return;
   }
-
-  qrCreated = true;
-  renderDetail();
-  toast('Đã tạo mã thanh toán', `Quét QR để thanh toán ${fmtVND(total)}.`);
+  run(async () => {
+    qr = await apiFetch(`/tables/${selectedId}/pay-qr`, { method: 'POST' });
+    await openTable(selectedId);   /* render lại với QR + nút xác nhận */
+  });
 }
 
-function confirmPay(idx) {
-  if (!payers[idx] || payers[idx].paid) return;
-  payers[idx].paid = true;
-  renderDetail();
-  const done = payers.every(p => p.paid);
-  toast(done ? 'Thanh toán thành công! Cảm ơn quý khách'
-             : 'Đã xác nhận thanh toán.',
-    done ? `Có thể đóng bàn ${selectedTable}.`
-         : 'Cổng thanh toán xác nhận (mock webhook).');
-}
-
-function closeTable() {
-  const t = TABLES.find(x => x.id === selectedTable);
-  if (!t || !t.order || !payers.every(p => p.paid)) return;   /* chỉ đóng khi đã đủ tiền */
-  t.status = 'empty';
-  t.guests = '';
-  t.order = null;
-  payers = [];
-  qrCreated = false;
-  renderTableList();
-  renderDetail();
-  toast('Đã đóng bàn ' + t.name, 'Bàn trở về trạng thái trống, sẵn sàng đón khách mới.');
+/* Xác nhận đã nhận tiền & Đóng bàn: hoadon 'da_thanh_toan', phienban về 'trong' */
+function confirmAndClose() {
+  if (!bill) return;
+  run(async () => {
+    const result = await apiFetch(`/tables/${selectedId}/close`, { method: 'POST' });
+    toast('Thanh toán thành công! Cảm ơn quý khách',
+      `${result.message} Tổng tiền: ${fmtVND(result.tongtien)}.`);
+    qr = null;
+    bill = null;
+    selectedId = null;
+    await loadTables();
+    await openTable(tables[0]?.id ?? null);
+  });
 }
 
 /* ===================== SỰ KIỆN ===================== */
 $('#table-list').addEventListener('click', e => {
   const btn = e.target.closest('[data-table]');
   if (!btn) return;
-  selectedTable = btn.dataset.table;
-  payers = [];
-  qrCreated = false;
-  renderTableList();
-  renderDetail();
+  run(() => openTable(btn.dataset.table));
 });
 
 $('#detail-panel').addEventListener('click', e => {
   if (e.target.closest('#btn-create-qr')) createQR();
-  else if (e.target.closest('[data-pay]')) confirmPay(Number(e.target.closest('[data-pay]').dataset.pay));
-  else if (e.target.closest('#btn-close-table')) closeTable();
-});
-
-/* Đổi chế độ thanh toán → bật/tắt ô số người, xóa QR cũ */
-$('#detail-panel').addEventListener('change', e => {
-  if (e.target.name === 'pay-mode') {
-    payers = [];
-    qrCreated = false;
-    renderDetail();
-  }
+  else if (e.target.closest('#btn-confirm-pay')) confirmAndClose();
 });
 
 /* ===================== KHỞI TẠO ===================== */
-renderTableList();
-renderDetail();
+run(loadTables);

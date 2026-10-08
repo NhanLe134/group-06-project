@@ -1,4 +1,3 @@
-import uuid
 from datetime import UTC, datetime
 from typing import Literal
 
@@ -11,10 +10,10 @@ KdsStatus = Literal["cho_nau", "dang_nau", "da_xong"]
 class KdsItemOut(BaseModel):
     """1 thẻ món trên KDS = 1 dòng chitietmon kèm tên bàn, tên món."""
 
-    id: uuid.UUID
-    hoadon_id: uuid.UUID | None
+    id: str
+    phieuban_id: str | None
     ban: str | None
-    thucdon_id: uuid.UUID | None
+    mon_id: str | None
     tenmon: str | None
     soluong: int
     ghichu: str | None

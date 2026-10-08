@@ -250,6 +250,28 @@ app = FastAPI(lifespan=lifespan)
 - **Kiểm chứng:** `GET /health/db` trả `{"database": "ok"}` khi kết nối được; đối chiếu tự động 9 model với OpenAPI của Supabase khớp 100% tên cột và ràng buộc NOT NULL (AI Usage Log A-47).
 - **Trạng thái:** Proposed (chờ cả nhóm xác nhận).
 
+### ADR-ARCH-004: Khóa chính dạng mã đọc được (VARCHAR) thay cho UUID
+
+- **Ngày quyết định:** 2026-10-07
+- **Người quyết định:** Engineering (Nhã); cần cả nhóm xác nhận.
+- **Bối cảnh:**
+  - Khi mở Supabase Table Editor, mọi `id` và khóa ngoại là UUID dài (`a5d45251-9743-…`), không đọc được dữ liệu thuộc bàn/món/hóa đơn nào.
+  - Lý do dùng UUID ghi ở `data-model.md` ("tránh lộ số thứ tự đơn hàng qua QR/URL") là ghi chú thiết kế do AI soạn, không có trong requirements, PRD hay decision log (AI Usage Log A-66).
+- **Quyết định:** Đổi khóa chính của 11 bảng sang `VARCHAR(30)` dạng mã do database tự sinh (sequence + hàm `sinh_ma_danh_muc` / `sinh_ma_giao_dich`, migration `007_id_varchar.sql`):
+  - Danh mục: `NV001` (nguoidung), `MON001` (thucdon), `NL001` (tonkho), `CT001` (congthuc).
+  - Giao dịch: `PB-`, `HD-`, `CTM-`, `HM-`, `GN-`, `PKK-`, `CTKK-` + `YYYYMMDD` (giờ VN) + số 4 chữ số chạy liên tục.
+  - Khóa ngoại đổi theo, giữ nguyên quy tắc xóa; dữ liệu cũ được cấp mã mới, quan hệ giữ nguyên.
+- **Phương án bị loại:**
+  - Giữ UUID + thêm cột mã: không đổi khóa ngoại nên vẫn khó đọc; Dev không muốn thêm cột.
+  - Chỉ tạo view: không đổi dữ liệu gốc, phải mở view riêng để đọc.
+- **Hệ quả:**
+  - (+) Đọc dữ liệu trực tiếp trên Supabase, giao diện (KDS hiện `HD-20261007-0001`) và khi vấn đáp.
+  - (+) Mã do DB sinh nên không trùng khi tạo đồng thời, kể cả thêm tay trên Supabase.
+  - (−) ID tuần tự dễ đoán: khi làm QR/URL cho khách phải dùng token phiên riêng, không dùng thẳng `id` hóa đơn/phiên bàn.
+  - (−) `id` trong API là chuỗi (đã cập nhật `api-contract.md`); code nào lưu UUID cũ sẽ không khớp.
+- **Kiểm chứng:** chạy thử trong transaction rồi rollback trước; sau khi chạy thật: không còn cột UUID, 11 khóa ngoại, RLS bật đủ, dữ liệu và quan hệ so với bản chụp trước migration giống hệt (AI Usage Log A-68).
+- **Trạng thái:** Proposed (chờ cả nhóm xác nhận).
+
 > **Đánh số ADR:** Các ADR kiến trúc ở trên dùng tiền tố riêng `ADR-ARCH-*` để không trùng mã với `vault/08-Decisions/decision-log.md` (nơi giữ các ADR nghiệp vụ, ví dụ `ADR-001` — xử lý món Out of Stock trong Order Draft). Hai dãy số độc lập theo phạm vi tài liệu: `ADR-ARCH-*` cho quyết định kiến trúc/kỹ thuật (`architecture.md`), `ADR-*` cho quyết định nghiệp vụ (`decision-log.md`).
 
 ## 7. Đồng bộ với cấu hình thực tế trong repo
