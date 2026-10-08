@@ -1,14 +1,14 @@
 # Screen Flow Architecture - Group 06 (Restaurant Operations & Smart Ordering)
 
-> **Tài liệu**: Sơ đồ Kiến trúc Luồng Màn hình & Trạng thái UI cho prototype  
-> **Phiên bản**: 1.0 (Giai đoạn 3 - Prototype Design)  
+> **Tài liệu**: Sơ đồ Kiến trúc Luồng Màn hình & Trạng thái UI cho ứng dụng  
+> **Phiên bản**: 2.0 (Cập nhật chuẩn theo các màn hình `frontend/fe_ofc/` - E-Menu, Order Draft, KDS, Waiter & Cashier)  
 > **Tác giả**: Lê Thị Thanh Nhàn (Role UX/UI Designer & AI/Vault Master)  
 
 ---
 
 ## 1. SƠ ĐỒ LUỒNG CHUYỂN MÀN HÌNH TỔNG THỂ (END-TO-END SCREEN FLOW)
 
-Sơ đồ Mermaid dưới đây thể hiện trọn vẹn luồng di chuyển từ Khách gọi món trên điện thoại $\rightarrow$ Bếp KDS xử lý 3 trạng thái $\rightarrow$ Phục vụ dọn món tại bàn.
+Sơ đồ Mermaid dưới đây thể hiện trọn vẹn luồng di chuyển từ Khách gọi món trên điện thoại $\rightarrow$ Bếp KDS xử lý 3 trạng thái $\rightarrow$ Phục vụ dọn món $\rightarrow$ Khách xem hóa đơn & Thu ngân thanh toán đóng bàn.
 
 ```mermaid
 flowchart TD
@@ -20,6 +20,8 @@ flowchart TD
         A4 --> A5["Chế độ Listening (Ghi âm)"]
         A5 --> A6["Transcript (Hiển thị văn bản)"]
         A6 --> A7["Processing (AI trích xuất món/ghi chú)"]
+        A3 -- "Bấm Ghi chú món" --> A3_NOTE["State: NoteModal (#note-modal)\n(Chọn chip ít cay, không hành...)"]
+        A3_NOTE --> A8
     end
 
     %% MẦM XỬ LÝ ĐẶC BIỆT (CLARIFICATION & OUT OF STOCK)
@@ -49,15 +51,26 @@ flowchart TD
     subgraph S4["🛎️ Màn hình 4: Waiter Tablet (Phục vụ)"]
         C3 -- "Thông báo đẩy đến Tablet" --> D1["Hiện Alert: Món Bàn 06 đã sẵn sàng"]
         D1 --> D2["Phục vụ bê món đến Bàn 06"]
-        D2 --> D3["Phục vụ bấm 'ĐÃ PHỤC VỤ' (Served)\nHoàn tất vòng đời đơn hàng"]
+        D2 --> D3["Phục vụ bấm 'ĐÃ PHỤC VỤ' (Served)\nCập nhật món hoàn tất"]
+    end
+
+    %% MÀN HÌNH 5: THANH TOÁN & THU NGÂN (CASHIER)
+    subgraph S5["💳 Màn hình 5: Xem Hóa đơn & Thu ngân (Cashier)"]
+        D3 --> E1["Khách bấm 'Xem hóa đơn'\nState: BillView (#bill-view)"]
+        E1 --> E2["Khách bấm 'Yêu cầu thanh toán'\nState: PayModal (#pay-modal)"]
+        E2 -- "Đẩy tín hiệu Real-time" --> E3["Màn Thu ngân Cashier (SCR-CASH-01)\nBàn 06 chuyển màu VÀNG (Yêu cầu trả tiền)"]
+        E3 --> E4["Thu ngân chọn PTTT\n(Tiền mặt / Mã QR MoMo)"]
+        E4 --> E5{"Mô phỏng lỗi #err-sim (AC5)"}
+        E5 -- "Có lỗi" --> E6["Hiện Toast báo lỗi cổng thanh toán"]
+        E5 -- "Thành công" --> E7["In hóa đơn & Bấm 'Đóng bàn'\nBàn 06 chuyển lại màu XANH (Bàn trống)"]
     end
 ```
 
 ---
 
-## 3. CÁC ĐIỂM GỌI API GIẢ LẬP (SIMULATED API ENDPOINTS)
+## 2. CÁC ĐIỂM GỌI API & SỰ KIỆN REAL-TIME (SIMULATED API ENDPOINTS)
 
-Dưới đây là các điểm dữ liệu trao đổi giữa các màn hình di động, Bếp KDS và Phục vụ được giả lập trong ứng dụng Web Prototype:
+Dưới đây là chuỗi tương tác API và sự kiện real-time đầy đủ giữa Khách hàng, Bếp KDS, Phục vụ và Thu ngân:
 
 ```mermaid
 sequenceDiagram
@@ -65,8 +78,9 @@ sequenceDiagram
     actor Customer as 📱 Khách hàng (Bàn 06)
     actor Kitchen as 👨‍🍳 Bếp KDS (Kitchen)
     actor Waiter as 🛎️ Phục vụ (Waiter)
+    actor Cashier as 💳 Thu ngân (Cashier)
 
-    Customer->>Customer: 1. Chạm chọn món "Phở bò"
+    Customer->>Customer: 1. Chạm chọn món hoặc nhập ghi chú (#note-modal)
     Customer->>Customer: 2. POST /api/voice/parse -> Cập nhật Order Draft
     Customer->>Customer: 3. POST /api/orders/confirm -> Bấm "Xác nhận gửi Bếp"
     Customer-->>Kitchen: 4. Event: OrderConfirmed (Dữ liệu đơn #B06-001)
@@ -78,4 +92,10 @@ sequenceDiagram
     Kitchen-->>Waiter: 7. Event: ItemReadyAlert (Món Bàn 06 đã hoàn tất)
     Waiter->>Waiter: 8. Phục vụ bưng món đến Bàn 06
     Waiter->>Customer: 9. PATCH /api/waiter/served -> Bấm "ĐÃ PHỤC VỤ" (Served)
+
+    Customer->>Customer: 10. GET /api/orders/bill -> Khách xem Hóa đơn tạm tính (#bill-view)
+    Customer->>Cashier: 11. POST /api/orders/request-payment -> Khách bấm "Yêu cầu thanh toán"
+    Note over Cashier: Bàn 06 trên màn Cashier đổi sang màu VÀNG
+    Cashier->>Cashier: 12. POST /api/cashier/pay -> Chọn Tiền mặt/MoMo & in bill
+    Cashier->>Customer: 13. Event: TableClosed -> Thu ngân bấm "Đóng bàn", Bàn 06 về màu XANH (Trống)
 ```
