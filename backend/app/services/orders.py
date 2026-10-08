@@ -125,12 +125,16 @@ async def create_order(
     await db.flush()
 
     for it in data.items:
+        mon = menu_by_id.get(it.thucdon_id)
+        is_drink = bool(mon and mon.phanloai and "uống" in mon.phanloai.lower())
+        
         db.add(
             ChiTietPhieu(
                 phieuban_id=phieu.phieuban_id,
                 mon_id=it.thucdon_id,
                 soluong=it.soluong,
                 ghichu=it.ghichu,
+                trangthai="da_xong" if is_drink else "cho_nau",
             )
         )
 

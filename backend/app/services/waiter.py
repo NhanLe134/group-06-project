@@ -92,7 +92,8 @@ async def get_all_tables(db: AsyncSession) -> list[WaiterTableOut]:
                     items_out.append(
                         WaiterItemOut(
                             id=ct.chitietphieu_id,
-                            name=f"{mon.tenmon}" + (f" x{ct.soluong}" if ct.soluong > 1 else ""),
+                            name=mon.tenmon,
+                            qty=ct.soluong,
                             status=fe_status,
                             statusText=status_text,
                             price=format_price(mon.giaban * ct.soluong),
@@ -162,7 +163,7 @@ async def void_item(db: AsyncSession, item_id: str, new_quantity: int = 0) -> No
         raise ApiError(400, "INVALID_STATE", "Tuyệt đối không được sửa món đã phục vụ")
 
     if new_quantity <= 0:
-        ct.trangthai = "da_huy"
+        await db.delete(ct)
     else:
         ct.soluong = new_quantity
 

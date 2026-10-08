@@ -42,6 +42,7 @@ def _item_query() -> Select:
         .outerjoin(ThucDon, ChiTietPhieu.mon_id == ThucDon.id)
         .outerjoin(PhieuBan, ChiTietPhieu.phieuban_id == PhieuBan.phieuban_id)
         .outerjoin(Ban, PhieuBan.ban_id == Ban.ban_id)
+        .where(~ThucDon.phanloai.ilike("%uống%"))
     )
 
 

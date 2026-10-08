@@ -85,15 +85,7 @@
                 </div>
             </div>
         </div>
-        <div class="panel-footer">
-            <p class="mock-title">Bảng điều khiển Giả lập (Simulator)</p>
-            <div class="mock-actions">
-                <button class="btn btn-mock" id="btn-mock-kds"><i class="ph-bold ph-cooking-pot"></i> 1. Bếp xong món (Batching)</button>
-                <button class="btn btn-mock" id="btn-mock-payment"><i class="ph-bold ph-receipt"></i> 2. Thu ngân tính tiền</button>
-                <button class="btn btn-mock" id="btn-mock-drink" style="border-color: var(--color-primary); color: var(--color-primary);"><i class="ph-bold ph-coffee"></i> 3. Khách gọi Nước (Routing)</button>
-                <button class="btn btn-mock" id="btn-mock-upsell"><i class="ph-bold ph-sparkle"></i> 4. AI Gợi ý</button>
-            </div>
-        </div>
+
     </aside>
   </div>
 
@@ -127,18 +119,25 @@
       </div>
   </div>
 
-  <!-- Component: Manager Auth Dialog -->
-  <div class="modal-overlay" id="auth-modal" style="display: none;" role="dialog" aria-modal="true">
-      <div class="modal-content glass-modal">
-          <div class="modal-icon"><i class="ph-duotone ph-shield-check"></i></div>
-          <h3 class="modal-title">Xác nhận Hủy món</h3>
-          <p class="modal-desc" id="auth-desc">Nhập mã PIN của Quản lý (1234) để phê duyệt.</p>
-          <input type="password" id="pin-input" class="modal-input numeric" placeholder="••••" maxlength="4">
-          <div id="auth-error" class="error-msg" style="display:none;"><i class="ph-fill ph-warning-circle"></i> Mã PIN không hợp lệ!</div>
-          <div class="modal-actions">
-              <button class="btn btn-ghost" id="btn-cancel-auth">Hủy bỏ</button>
-              <button class="btn btn-primary" id="btn-confirm-auth">Phê duyệt (Void)</button>
+  <!-- Component: Custom Void/Adjust Dialog -->
+  <div class="modal-overlay" id="void-modal" style="display: none; z-index: 9999;" role="dialog" aria-modal="true">
+      <div class="modal-content glass-modal" style="border-radius: 20px; padding: 24px 20px;">
+          <div class="modal-icon" style="background: #E8F4F2; color: var(--color-primary); font-size: 28px; width: 56px; height: 56px; margin-bottom: 12px;"><i class="ph-duotone ph-pencil-simple"></i></div>
+          <h3 class="modal-title" id="void-modal-title" style="font-size: 18px; font-weight: 800; color: #1E293B; margin-bottom: 8px;">Điều chỉnh số lượng</h3>
+          <p class="modal-desc" id="void-modal-desc" style="color: #64748B; font-weight: 500; font-size: 14px; line-height: 1.4; margin-bottom: 20px; margin-top: 0;">Mô tả thông tin món</p>
+          
+          <div id="void-qty-container" style="display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom: 20px; width: 100%;">
+              <button id="btn-void-minus" style="width: 40px; height: 40px; border-radius: 10px; border: 1px solid #E2E8F0; background: #F8FAFC; font-size: 20px; font-weight: bold; color: #1E293B; cursor: pointer; display: flex; align-items: center; justify-content: center; outline:none;">-</button>
+              <input type="number" id="void-qty-input" class="modal-input numeric" style="text-align:center; font-size: 24px; font-weight: 800; padding: 0; width: 56px; border: none; background: transparent; outline:none;" min="0" readonly>
+              <button id="btn-void-plus" style="width: 40px; height: 40px; border-radius: 10px; border: 1px solid #E2E8F0; background: #F8FAFC; font-size: 20px; font-weight: bold; color: #1E293B; cursor: pointer; display: flex; align-items: center; justify-content: center; outline:none;">+</button>
           </div>
+
+          <div id="void-error" class="error-msg" style="display:none; color: var(--color-danger); font-size: 13px; font-weight: 600; margin-bottom: 12px; width: 100%; text-align: left;"><i class="ph-fill ph-warning-circle"></i> <span id="void-error-text">Số lượng không hợp lệ!</span></div>
+          <div class="modal-actions" style="display: flex; gap: 8px; width: 100%; margin-top: 0;">
+              <button class="btn btn-ghost" id="btn-cancel-void" style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid #E2E8F0; background: #fff; color: #1E293B; font-weight: 700; font-size: 14px; cursor: pointer;">Đóng</button>
+              <button class="btn btn-primary" id="btn-confirm-void" style="flex: 1; padding: 10px; border-radius: 10px; border: none; background: var(--color-primary); color: #fff; font-weight: 700; font-size: 14px; cursor: pointer;">Cập nhật</button>
+          </div>
+          <button id="btn-full-void" style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #FECDD3; background: #FFF1F2; color: #E11D48; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 10px;"><i class="ph-bold ph-trash"></i> Hủy toàn bộ món này</button>
       </div>
   </div>
 

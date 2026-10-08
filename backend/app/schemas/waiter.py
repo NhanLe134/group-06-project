@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict
 class WaiterItemOut(BaseModel):
     id: str
     name: str
+    qty: int
     status: str
     statusText: str
     price: str

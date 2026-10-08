@@ -6,6 +6,13 @@ async function loadTables() {
         if (!res.ok) throw new Error('Lỗi tải sơ đồ bàn');
         tables = await res.json();
         renderTables();
+        
+        // Sync URL with Drawer on initial load
+        const urlParams = new URLSearchParams(window.location.search);
+        const tableIdParam = urlParams.get('table');
+        if (tableIdParam && !document.getElementById('table-drawer').classList.contains('active')) {
+            openTableDrawer(tableIdParam, true);
+        }
     } catch (err) {
         console.error(err);
         showToast('Lỗi kết nối', 'Không thể tải Sơ đồ bàn từ Server', 'danger');
@@ -13,9 +20,9 @@ async function loadTables() {
 }
 
 const tableGrid = document.getElementById('table-grid');
-const authModal = document.getElementById('auth-modal');
-const pinInput = document.getElementById('pin-input');
-const authError = document.getElementById('auth-error');
+const voidModal = document.getElementById('void-modal');
+const voidQtyInput = document.getElementById('void-qty-input');
+const voidError = document.getElementById('void-error');
 
 // Drawer DOM
 const drawerOverlay = document.getElementById('drawer-overlay');
@@ -119,7 +126,7 @@ function renderTables() {
 }
 
 // 2. MỞ CHI TIẾT BÀN (DRAWER UI)
-function openTableDrawer(tableId) {
+function openTableDrawer(tableId, skipPushState = false) {
     const table = tables.find(t => t.id === tableId);
     if (!table) return;
 
@@ -144,7 +151,7 @@ function openTableDrawer(tableId) {
     if (table.status === 'empty') {
         drawerEmptyState.style.display = 'block';
         drawerOrderSection.style.display = 'none';
-        drawerFooter.innerHTML = `<button class="btn-primary-lg"><i class="ph-bold ph-plus"></i> Mở Bàn & Gọi món</button>`;
+        drawerFooter.innerHTML = '';
     } else if (table.status === 'cleaning') {
         drawerEmptyState.style.display = 'none';
         drawerOrderSection.style.display = 'none';
@@ -153,20 +160,37 @@ function openTableDrawer(tableId) {
         drawerEmptyState.style.display = 'none';
         drawerOrderSection.style.display = 'block';
         renderOrderItems(table);
-        drawerFooter.innerHTML = `<button class="btn-primary-lg"><i class="ph-bold ph-plus"></i> Gọi thêm món</button>`;
+        drawerFooter.innerHTML = '';
     }
 
     drawerOverlay.classList.add('active');
     tableDrawer.classList.add('active');
+
+    if (!skipPushState) {
+        window.history.pushState({table: tableId}, '', `?table=${tableId}`);
+    }
 }
 
 function closeTableDrawer() {
     drawerOverlay.classList.remove('active');
     tableDrawer.classList.remove('active');
+    window.history.pushState({}, '', window.location.pathname);
 }
 
 document.getElementById('btn-close-drawer').addEventListener('click', closeTableDrawer);
 drawerOverlay.addEventListener('click', closeTableDrawer);
+
+// Handle browser Back/Forward buttons for URL syncing
+window.addEventListener('popstate', (e) => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tableIdParam = urlParams.get('table');
+    if (tableIdParam) {
+        openTableDrawer(tableIdParam, true);
+    } else {
+        drawerOverlay.classList.remove('active');
+        tableDrawer.classList.remove('active');
+    }
+});
 
 // Render danh sách món trong Drawer (chia theo trạng thái cho dễ nhìn)
 function renderOrderItems(table) {
@@ -189,19 +213,26 @@ function renderOrderItems(table) {
         
         let cancelBtn = '';
         if (item.status === 'pending' || item.status === 'cooking' || item.status === 'ready') {
-            cancelBtn = `<button class="btn-void-item" title="Điều chỉnh/Hủy món" onclick="requestVoid('${table.id}', '${item.id}', '${item.name}', '${item.status}')"><i class="ph-bold ph-trash"></i></button>`;
+            if (item.status === 'cooking' && item.qty <= 1) {
+                cancelBtn = `<button class="btn-void-item" title="Không thể hủy món đang nấu có số lượng 1" disabled style="opacity: 0.3; cursor: not-allowed;"><i class="ph-bold ph-trash"></i></button>`;
+            } else {
+                cancelBtn = `<button class="btn-void-item" title="Điều chỉnh/Hủy món" onclick="requestVoid('${table.id}', '${item.id}', '${item.name}', '${item.status}', ${item.qty})"><i class="ph-bold ph-trash"></i></button>`;
+            }
         } else {
             cancelBtn = `<div style="width: 36px"></div>`; 
         }
 
-        // Tạo UI màu sắc theo yêu cầu: Đã phục vụ -> Xám, Còn lại (chưa phục vụ) -> Đỏ nổi bật
         let rowStyle = item.status === 'served' ? 'opacity: 0.5; filter: grayscale(1);' : '';
-        let statusColor = item.status === 'served' ? '#64748B' : 'var(--color-danger)';
+        let statusColor = '#64748B'; // Default
+        if (item.status === 'pending') statusColor = 'var(--color-warning)';
+        if (item.status === 'cooking') statusColor = 'var(--color-primary)';
+        if (item.status === 'ready') statusColor = 'var(--color-danger)';
+        
         let statusWeight = item.status === 'served' ? '500' : '800';
 
         row.innerHTML = `
             <div class="item-info" style="${rowStyle}">
-                <span class="item-name">${item.name}</span>
+                <span class="item-name">${item.name} <span style="color: var(--color-primary); font-weight: 800;">x${item.qty}</span></span>
                 <div class="item-meta">
                     <span style="color: ${statusColor}; font-weight: ${statusWeight};">${item.statusText}</span>
                     <span style="color: #94A3B8; font-weight: 500;">${item.price}</span>
@@ -247,22 +278,28 @@ window.markTableClean = async function(tableId) {
 }
 
 // 5. ĐIỀU CHỈNH SỐ LƯỢNG & HỦY MÓN
-window.requestVoid = function(tableId, itemId, itemName, itemStatus) {
+window.requestVoid = function(tableId, itemId, itemName, itemStatus, itemQty) {
     if (itemStatus === 'served') {
         showToast('Lỗi', 'Không thể sửa món đã phục vụ', 'danger');
         return;
     }
     
-    const qtyStr = prompt(`Nhập số lượng bạn muốn giữ lại cho món [${itemName}].\n(Nhập 0 để HỦY hoàn toàn món này):`, "0");
-    if (qtyStr === null) return; // User cancelled
-    
-    const qty = parseInt(qtyStr, 10);
-    if (isNaN(qty) || qty < 0) {
-        alert("Số lượng không hợp lệ!");
-        return;
+    const modalDesc = document.getElementById('void-modal-desc');
+    if(modalDesc) {
+        modalDesc.innerHTML = `<span style="color: var(--color-text-main); font-size: 18px; font-weight: 800;">${itemName}</span><br>Đang có <b>${itemQty}</b> phần`;
     }
     
-    currentActionCb = async () => {
+    voidQtyInput.value = itemQty; window.currentMaxVoidQty = itemQty;
+    voidError.style.display = 'none';
+    
+    currentActionCb = async (qtyToKeep) => {
+        const qty = qtyToKeep !== undefined ? qtyToKeep : parseInt(voidQtyInput.value, 10);
+        if (isNaN(qty) || qty < 0 || qty > itemQty) {
+            voidError.innerHTML = `<i class="ph-fill ph-warning-circle"></i> Số lượng không hợp lệ (0 đến ${itemQty})!`;
+            voidError.style.display = 'block';
+            return;
+        }
+        
         try {
             const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/waiter/items/${itemId}/void`, {
                 method: 'POST',
@@ -273,6 +310,7 @@ window.requestVoid = function(tableId, itemId, itemName, itemStatus) {
                 throw new Error('Không thể cập nhật món');
             }
             
+            voidModal.style.display = 'none';
             await loadTables();
             
             if (document.getElementById('table-drawer').classList.contains('active')) {
@@ -285,17 +323,34 @@ window.requestVoid = function(tableId, itemId, itemName, itemStatus) {
         }
     };
     
-    currentActionCb();
+    voidModal.style.display = 'flex';
 };
 
-document.getElementById('btn-cancel-auth').addEventListener('click', () => { authModal.style.display = 'none'; });
-document.getElementById('btn-confirm-auth').addEventListener('click', () => {
-    if (pinInput.value) { 
-        if (currentActionCb) currentActionCb();
-    } else { authError.style.display = 'block'; }
+document.getElementById('btn-cancel-void').addEventListener('click', () => { voidModal.style.display = 'none'; });
+document.getElementById('btn-full-void').addEventListener('click', () => {
+    if (currentActionCb) currentActionCb(0);
 });
-pinInput.addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') document.getElementById('btn-confirm-auth').click();
+document.getElementById('btn-confirm-void').addEventListener('click', () => {
+    if (voidQtyInput.value !== "") { 
+        if (currentActionCb) currentActionCb();
+    } else { voidError.style.display = 'block'; }
+});
+voidQtyInput.addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') document.getElementById('btn-confirm-void').click();
+});
+
+document.getElementById('btn-void-minus').addEventListener('click', () => {
+    let current = parseInt(voidQtyInput.value, 10);
+    if (!isNaN(current) && current > 0) {
+        voidQtyInput.value = current - 1;
+    }
+});
+
+document.getElementById('btn-void-plus').addEventListener('click', () => {
+    let current = parseInt(voidQtyInput.value, 10);
+    if (!isNaN(current) && current < window.currentMaxVoidQty) {
+        voidQtyInput.value = current + 1;
+    }
 });
 
 // ==========================================
@@ -305,141 +360,6 @@ pinInput.addEventListener('keypress', function (e) {
 const notifList = document.getElementById('notif-list');
 const notifCountBadge = document.getElementById('notif-count');
 let notifCount = 0;
-
-// [SIMULATOR] Bếp báo món xong với TÊN MÓN CỤ THỂ
-document.getElementById('btn-mock-kds').addEventListener('click', () => {
-    const t01 = tables.find(x => x.id === 'T01');
-    if (t01 && t01.items) {
-        // Đổi trạng thái 2 món chưa bưng của Bàn 01 thành Ready
-        const item1 = t01.items.find(i => i.id === 'i4');
-        const item2 = t01.items.find(i => i.id === 'i5');
-        
-        if (item1) { item1.status = 'ready'; item1.statusText = 'Đã nấu'; }
-        if (item2) { item2.status = 'ready'; item2.statusText = 'Đã nấu'; }
-        
-        renderTables();
-        
-        // Cập nhật Drawer nếu đang mở Bàn 01
-        if (tableDrawer.classList.contains('active') && drawerTitle.innerText === 'Bàn 01') {
-            renderOrderItems(t01);
-        }
-        
-        // Push Notification
-        const emptyState = notifList.querySelector('.empty-state');
-        if (emptyState) emptyState.style.display = 'none';
-        
-        const card = document.createElement('div');
-        card.className = 'notif-card';
-        card.innerHTML = `
-            <div class="notif-header"><span class="notif-table">Bếp Gọi: Bàn 01</span><span class="notif-time">Vừa xong</span></div>
-            <div class="notif-desc">
-                <p style="margin:0 0 4px 0;"><i class="ph-bold ph-cooking-pot"></i> <b>Salad cá ngừ</b></p>
-                <p style="margin:0;"><i class="ph-bold ph-cooking-pot"></i> <b>Cơm chiên hải sản</b></p>
-            </div>
-            <button class="btn-serve" onclick="openTableDrawer('T01')"><i class="ph-bold ph-eye"></i> Mở xem Bàn 01</button>
-        `;
-        notifList.prepend(card);
-        notifCount++; notifCountBadge.innerText = notifCount;
-        
-        showToast('KDS Alert', 'Bàn 01 có 2 món vừa nấu xong. Xem ngay!', 'primary');
-    }
-});
-
-// [SIMULATOR] Khách gọi món nước (Routing Không qua Bếp)
-document.getElementById('btn-mock-drink').addEventListener('click', () => {
-    // Thêm 1 món nước vào Bàn 02 (mô phỏng bàn đang trống có khách mới vào gọi nước)
-    const t02 = tables.find(x => x.id === 'T02');
-    if (t02) {
-        if (t02.status === 'empty') {
-            t02.status = 'occupied';
-            t02.pax = 2;
-            t02.time = 'Vừa xong';
-        }
-        
-        t02.items.push({ 
-            id: 'i_drink_' + Date.now(), 
-            name: 'Coca Cola x2', 
-            status: 'ready', 
-            statusText: 'Chưa phục vụ', 
-            price: '40.000đ',
-            isDrink: true 
-        });
-        
-        renderTables();
-        
-        // Nếu Drawer đang mở đúng bàn 02 thì update lại
-        if (tableDrawer.classList.contains('active') && drawerTitle.innerText.includes('Bàn 02')) {
-            renderOrderItems(t02);
-        }
-        
-        // Push Notification ảo báo đích danh "Khu Vực A"
-        const emptyState = notifList.querySelector('.empty-state');
-        if (emptyState) emptyState.style.display = 'none';
-        
-        const card = document.createElement('div');
-        card.className = 'notif-card';
-        card.innerHTML = `
-            <div class="notif-header"><span class="notif-table" style="color: var(--color-primary)"><i class="ph-bold ph-map-pin"></i> Khu Vực A: Bàn 02</span><span class="notif-time">Vừa xong</span></div>
-            <div class="notif-desc">
-                <p style="margin:0;"><i class="ph-bold ph-coffee"></i> <b>Coca Cola x2</b></p>
-                <p style="margin:4px 0 0 0; font-size:12px; color: #64748B;">Lấy tại Tủ Mát (Quầy Pha chế)</p>
-            </div>
-            <button class="btn-serve" onclick="openTableDrawer('T02')"><i class="ph-bold ph-eye"></i> Mở xem Bàn 02</button>
-        `;
-        notifList.prepend(card);
-        notifCount++; notifCountBadge.innerText = notifCount;
-        
-        showToast('Đơn nước mới', 'Bàn 02 vừa gọi Đồ uống. Vui lòng lấy tại Quầy và phục vụ!', 'primary');
-    }
-});
-
-// [SIMULATOR] Thu ngân vừa tính tiền
-document.getElementById('btn-mock-payment').addEventListener('click', () => {
-    const t05 = tables.find(x => x.id === 'T05'); // Lấy bàn 05 đã đủ món
-    if (t05 && t05.status === 'occupied') {
-        t05.status = 'cleaning';
-        renderTables();
-        
-        // Push Notification
-        const emptyState = notifList.querySelector('.empty-state');
-        if (emptyState) emptyState.style.display = 'none';
-        
-        const card = document.createElement('div');
-        card.className = 'notif-card';
-        card.innerHTML = `
-            <div class="notif-header"><span class="notif-table" style="color: var(--color-warning)"><i class="ph-bold ph-broom"></i> Bàn 05 Trống</span><span class="notif-time">Vừa xong</span></div>
-            <div class="notif-desc">
-                <p style="margin:0;"><i class="ph-bold ph-receipt"></i> Khách đã thanh toán.</p>
-                <p style="margin:4px 0 0 0; font-size:12px; color: #64748B;">Vui lòng dọn dẹp bàn để đón khách mới!</p>
-            </div>
-            <button class="btn-serve" style="background:#FFFBEB; color:#B45309; border-color:#FDE68A;" onclick="openTableDrawer('T05')"><i class="ph-bold ph-check"></i> Xác nhận đã dọn</button>
-        `;
-        notifList.prepend(card);
-        // Lưu ý: Việc tăng notifCount được xử lý ở originalNotifListPrepend bên dưới
-        
-        showToast('Thu ngân', 'Bàn 05 vừa thanh toán thành công. Vui lòng dọn dẹp!', 'warning');
-    }
-});
-
-// [SIMULATOR] AI Upsell
-document.getElementById('btn-mock-upsell').addEventListener('click', () => {
-    const emptyState = notifList.querySelector('.empty-state');
-    if (emptyState) emptyState.style.display = 'none';
-    
-    const card = document.createElement('div');
-    card.className = 'notif-card';
-    card.innerHTML = `
-        <div class="notif-header"><span class="notif-table" style="color: #8B5CF6"><i class="ph-bold ph-sparkle"></i> AI Gợi Ý</span><span class="notif-time">Vừa xong</span></div>
-        <div class="notif-desc">
-            <p style="margin:0;"><b>Bàn 01</b> đang ăn món mặn.</p>
-            <p style="margin:4px 0 0 0; font-size:12px; color: #64748B;">Tỷ lệ Upsell 85%: Mời khách dùng thêm Nước ép hoặc Rượu Vang.</p>
-        </div>
-        <button class="btn-serve" style="background:#F5F3FF; color:#7C3AED; border-color:#DDD6FE;" onclick="openTableDrawer('T01')"><i class="ph-bold ph-wine"></i> Lại bàn tư vấn</button>
-    `;
-    notifList.prepend(card);
-    
-    showToast('AI Gợi ý bán chéo', 'Khách <b>Bàn 01</b> đang ăn món mặn. Đề xuất mời thêm <b>Nước ép / Rượu vang</b>.', 'primary');
-});
 
 // Hàm hiển thị Toast chung
 function showToast(title, msg, type = 'primary') {
@@ -748,3 +668,21 @@ if (typeof subscribeChannel === 'function') {
 
 // Khởi chạy
 loadTables();
+
+// TÍNH NĂNG MỞ IFRAME KHÁCH HÀNG & MOBILE NAV
+window.openCustomerIframe = function(tableName) {
+    const iframe = document.getElementById('customer-iframe');
+    const modal = document.getElementById('iframe-modal');
+    if (iframe && modal) {
+        iframe.src = '../customer/customer.html?table=' + encodeURIComponent(tableName);
+        modal.style.display = 'flex';
+    }
+}
+const btnCloseIframe = document.getElementById('btn-close-iframe');
+if (btnCloseIframe) {
+    btnCloseIframe.addEventListener('click', () => {
+        document.getElementById('iframe-modal').style.display = 'none';
+        document.getElementById('customer-iframe').src = '';
+        loadTables();
+    });
+}
