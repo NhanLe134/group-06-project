@@ -80,17 +80,7 @@ function renderTableList() {
       </div>
       ${t.trangthai === '2' ? `
       <div class="tc-chips">
-        <span class="tc-chip"><i class="ph-fill ph-users"></i> ${t.so_phieuban} phiếu</span>
-        <span class="tc-chip"><i class="ph-bold ph-clock"></i> ${gio}</span>
-      </div>
-      <div class="tc-progress">
-        <div class="tc-progress-label">
-          <span>Tiến độ lên món</span>
-          <b class="${t.mon_phuc_vu === t.tong_mon ? 'done' : ''}">${t.mon_phuc_vu}/${t.tong_mon} Món</b>
-        </div>
-        <div class="tc-progress-bar">
-          <div class="tc-progress-fill ${t.mon_phuc_vu === t.tong_mon ? 'done' : ''}" style="width:${t.tong_mon ? Math.round(t.mon_phuc_vu / t.tong_mon * 100) : 0}%"></div>
-        </div>
+        <span class="tc-chip"><i class="ph-bold ph-clock"></i> Vào lúc ${gio}</span>
       </div>` : ''}
     </button>`;
   }).join('')
