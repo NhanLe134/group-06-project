@@ -5,6 +5,17 @@ import pytest
 pytestmark = pytest.mark.asyncio
 
 
+@pytest.fixture(autouse=True)
+def _clear_sepay_webhook_key(monkeypatch):
+    """Tách test khỏi backend/.env của máy chạy (SEPAY_WEBHOOK_API_KEY thật).
+
+    Không clear thì webhook test bị chặn 401 khi máy đã cấu hình key thật.
+    """
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "sepay_webhook_api_key", "")
+
+
 @pytest.fixture
 async def setup_order(db_session, client):
     """Tạo bàn 06 + 1 đơn chưa thanh toán."""

@@ -3,7 +3,8 @@
 Cấu hình SePay Webhook:
 - URL Webhook: https://your-backend-domain.com/sepay/webhook
 - Phương thức: POST (application/json)
-- SePay trả payload biến động số dư ngân hàng -> Backend tự động gạch nợ và phát WebSocket PAYMENT_SUCCESS.
+- SePay trả payload biến động số dư ngân hàng
+  -> Backend tự động gạch nợ và phát WebSocket PAYMENT_SUCCESS.
 """
 
 from typing import Annotated, Any
@@ -88,7 +89,10 @@ async def sepay_webhook(
     if ban is None:
         return {
             "success": True,
-            "message": f"Không tìm thấy bàn khớp với nội dung '{data.content}' hoặc số tiền {data.transferAmount}đ",
+            "message": (
+                f"Không tìm thấy bàn khớp với nội dung '{data.content}' "
+                f"hoặc số tiền {data.transferAmount}đ"
+            ),
         }
 
     # Đóng bàn tự động & sinh hóa đơn
