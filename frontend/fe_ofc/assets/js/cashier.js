@@ -60,20 +60,14 @@ function renderTableList() {
   $('#occupied-count').textContent = occupied.length;
 
   $('#table-list').innerHTML = tables.length ? tables.map(t => {
+    /* Chỉ 3 trạng thái bàn (ADR-N14): đang phục vụ / sẵn sàng / chờ dọn */
     let pill, pillCls, cardCls;
     if (t.trangthai === '3') {
-      pill = 'Cần dọn dẹp'; pillCls = 'pill-amber'; cardCls = 'tc-amber';
+      pill = 'Chờ dọn'; pillCls = 'pill-amber'; cardCls = 'tc-amber';
     } else if (t.trangthai === '2') {
-      cardCls = 'tc-red';
-      if (t.mon_phuc_vu === t.tong_mon && t.tong_mon > 0) {
-        pill = 'Đã đủ món'; pillCls = 'pill-green';
-      } else if (t.mon_da_xong > 0) {
-        pill = 'CẦN BUNG'; pillCls = 'pill-red-solid';
-      } else {
-        pill = 'Chờ lên món'; pillCls = 'pill-red-line';
-      }
+      pill = 'Đang phục vụ'; pillCls = 'pill-red-line'; cardCls = 'tc-red';
     } else {
-      pill = 'Trống'; pillCls = 'pill-green'; cardCls = 'tc-green';
+      pill = 'Sẵn sàng'; pillCls = 'pill-green'; cardCls = 'tc-green';
     }
     const gio = t.gio_vao
       ? new Date(t.gio_vao).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
