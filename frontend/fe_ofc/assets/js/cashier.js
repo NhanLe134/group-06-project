@@ -80,7 +80,8 @@ function renderTableList() {
       </div>
       ${t.trangthai === '2' ? `
       <div class="tc-chips">
-        <span class="tc-chip"><i class="ph-bold ph-clock"></i> Vào lúc ${gio}</span>
+        <span class="tc-chip"><i class="ph-bold ph-clock"></i> ${gio}</span>
+        <span class="tc-chip"><i class="ph-fill ph-money"></i> ${fmtVND(t.tongtien)}</span>
       </div>` : ''}
     </button>`;
   }).join('')
