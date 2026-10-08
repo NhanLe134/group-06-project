@@ -60,7 +60,7 @@ function renderTableList() {
   $('#occupied-count').textContent = occupied.length;
 
   $('#table-list').innerHTML = tables.length ? tables.map(t => `
-    <button class="table-item card ${t.id === selectedId ? 'active' : ''} ${t.trangthai === '3' ? 't3' : ''}"
+    <button class="table-item card ${t.id === selectedId ? 'active' : ''} st${t.trangthai || '1'}"
       data-table="${t.id}">
       <span class="ti-name">${esc(t.tenban)}</span>
       <span class="ti-info">

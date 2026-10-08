@@ -89,7 +89,9 @@
   font: inherit; color: inherit;
 }
 /* viền màu theo trạng thái bàn */
-.table-item.t3 { border-color: #FDE68A; background: #FFFBEB; }   /* chờ dọn — vàng nhạt */
+.table-item.st1 { border-style: dashed; }                          /* trống — đứt nét */
+.table-item.st2 { border-color: #FECACA; background: #FEF2F2; }    /* đang phục vụ — đỏ nhạt */
+.table-item.st3 { border-color: #FDE68A; background: #FFFBEB; }    /* chờ dọn — vàng nhạt */
 .table-item:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08); }
 .table-item.active {
   border-color: var(--color-primary); background: var(--primary-soft);
