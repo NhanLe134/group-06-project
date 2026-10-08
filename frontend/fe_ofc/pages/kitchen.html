@@ -174,6 +174,10 @@
     .kds-overlay .modal .muted { font: var(--type-caption) !important; color: var(--color-text-muted); }
     .kds-overlay .btn-ghost, .kds-overlay .btn-primary { min-height: 48px; border-radius: var(--radius-md); font: var(--type-button); }
     .kds-overlay .btn-primary { background: var(--color-primary); font-weight: 800; }   /* modal xóa / hết hàng tự tô đỏ bằng style riêng */
+    /* Rê chuột: giữ nguyên màu, chỉ làm mờ nút. global.css đổi nền sang var(--primary-600) nhưng biến này
+       không được khai báo → nền trong suốt, chữ trắng "biến mất" (A-99). */
+    .btn-primary:hover:not(:disabled) { background: var(--color-primary); }
+    .btn-primary:hover:not(:disabled), .kds-overlay .btn-ghost:hover { opacity: .85; }
     /* Hộp chọn số suất khi nấu / xong từng phần */
     .stepper { display: flex; align-items: center; justify-content: center; gap: 20px; margin: 16px 0 8px; }
     .stepper button { width: 48px; height: 48px; border-radius: var(--radius-md); border: 1.5px solid var(--color-line); background: var(--color-neutral-card); font-size: 22px; color: var(--color-text-main); }
@@ -217,6 +221,7 @@
   <div class="toasts" id="toasts" aria-live="polite"></div>
 
   <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/kds-logic.js"></script>
   <script>
   'use strict';
   /* =====================================================================
@@ -235,7 +240,6 @@
   /* Giao diện dùng PENDING/COOKING/READY; DB/API dùng cho_nau/dang_nau/da_xong (dtb.md) */
   const STATUSES = ['PENDING', 'COOKING', 'READY'];
   const TO_API = { PENDING: 'cho_nau', COOKING: 'dang_nau', READY: 'da_xong' };
-  const FROM_API = { cho_nau: 'PENDING', dang_nau: 'COOKING', da_xong: 'READY' };
   const COLS = {
     PENDING: { label: 'Chờ nấu',  icon: 'ph-clock' },
     COOKING: { label: 'Đang nấu', icon: 'ph-cooking-pot' },
@@ -302,24 +306,11 @@
   }
 
   /* 1 dòng chitietmon → 1 thẻ trên Kanban */
-  function fromApi(x) {
-    return {
-      id: x.id,
-      hoadonId: x.hoadon_id,
-      orderCode: x.hoadon_id || '',                     /* mã hóa đơn, vd. HD-20261006-0001 (migration 007) */
-      table: x.ban || 'Không rõ bàn',
-      dishId: x.thucdon_id,
-      dishName: x.tenmon || 'Món đã xóa khỏi thực đơn',
-      qty: x.soluong,
-      note: x.ghichu || '',
-      status: FROM_API[x.trangthai],
-      placedTs: Date.parse(x.giogoimon),
-    };
-  }
+  /* fromApi(x): đổi 1 KdsItem của API sang thẻ KDS — nằm ở assets/js/kds-logic.js (có unit test). */
   /* Các dòng tách suất có chung hóa đơn + món + ghi chú + giờ gọi → tính lại "5/10 suất" */
   function markSplitParts(items) {
     const groups = {};
-    items.forEach(it => { (groups[[it.hoadonId, it.dishId, it.note, it.placedTs].join('|')] ||= []).push(it); });
+    items.forEach(it => { (groups[[it.phieuId, it.dishId, it.note, it.placedTs].join('|')] ||= []).push(it); });
     Object.values(groups).forEach(g => {
       const total = g.reduce((s, x) => s + x.qty, 0);
       g.forEach(it => { it.origQty = g.length > 1 ? total : undefined; });
@@ -351,26 +342,7 @@
     setTimeout(() => el.remove(), 4000);
   }
 
-  /* =====================================================================
-     REQ-08 — AI Batching
-     Stand-in cho AI Service Endpoint (dự kiến POST /api/ai/batching):
-     gom các món Chờ nấu cùng món đến từ ≥ 2 bàn khác nhau thành 1 mẻ.
-     ===================================================================== */
-  function aiBatching(items) {
-    const groups = {};
-    items.filter(it => it.status === 'PENDING' && !isBlocked(it.dishId)).forEach(it => {
-      (groups[it.dishId] = groups[it.dishId] || []).push(it);
-    });
-    return Object.entries(groups)
-      .filter(([, list]) => new Set(list.map(x => x.table)).size >= 2)
-      .map(([dishId, list]) => ({
-        dishId,
-        items: list.sort((a, b) => a.placedTs - b.placedTs),
-        totalQty: list.reduce((s, x) => s + x.qty, 0),
-        tables: [...new Set(list.map(x => x.table))],
-      }))
-      .sort((a, b) => b.totalQty - a.totalQty);
-  }
+  /* REQ-08 — AI Batching: aiBatching(items, isBlocked) nằm ở assets/js/kds-logic.js (có unit test). */
 
   /* ---------- Tải dữ liệu từ server ---------- */
   async function refresh() {
@@ -398,7 +370,7 @@
     setTimeout(() => { fresh.forEach(it => S.newIds.delete(it.id)); render(); }, 5000);
     ting();
     [...new Set(fresh.map(i => i.table))].forEach(t => toast(`Đơn mới — ${esc(t)}`, 'warn', 'ph-bell-ringing'));
-    const batched = new Set(aiBatching(S.items).flatMap(b => b.items.map(x => x.id)));
+    const batched = new Set(aiBatching(S.items, isBlocked).flatMap(b => b.items.map(x => x.id)));
     if (fresh.some(it => batched.has(it.id))) toast('Trợ lý AI vừa gom món thành mẻ <b>Gợi ý nấu chung</b>', 'ai', 'ph-sparkle');
   }
 
@@ -520,11 +492,10 @@
     if (!it) { closeModal(); return; }
     const name = esc(it.dishName);
     const verb = sp.to === 'COOKING' ? 'Nấu' : 'Xong';
-    const rest = it.qty - sp.n;
     $('#modal-root').innerHTML = `
       <div class="kds-overlay" data-action="close-modal">
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="sp-title" data-stop>
-          <h3 id="sp-title">${sp.to === 'COOKING' ? 'Nấu bao nhiêu suất?' : 'Đã nấu xong bao nhiêu suất?'}</h3>
+          <h3 id="sp-title">${sp.to === 'COOKING' ? 'Hãy chọn số suất cần nấu' : 'Hãy chọn số suất đã nấu xong'}</h3>
           <p>${esc(it.table)} · ${esc(it.orderCode)} · <b>${it.qty}× ${name}</b></p>
           <div class="stepper">
             <button data-action="split-dec" aria-label="Giảm 1 suất" ${sp.n <= 1 ? 'disabled' : ''}><i class="ph-bold ph-minus"></i></button>
@@ -532,9 +503,6 @@
             <button data-action="split-inc" aria-label="Tăng 1 suất" ${sp.n >= it.qty ? 'disabled' : ''}><i class="ph-bold ph-plus"></i></button>
           </div>
           ${sp.n < it.qty ? `<button class="split-all" data-action="split-all">Chọn tất cả ${it.qty} suất</button>` : ''}
-          <p class="muted">${rest > 0
-            ? `${rest} suất còn lại vẫn ở cột <b>${COLS[it.status].label}</b>${sp.to === 'READY' ? '. Phục vụ sẽ được báo mang ra trước ' + sp.n + ' suất.' : '.'}`
-            : `Chuyển cả ${it.qty} suất sang cột <b>${COLS[sp.to].label}</b>.`}</p>
           <div class="modal-actions">
             <button class="btn-ghost" data-action="close-modal">Hủy</button>
             <button class="btn-primary" data-action="split-ok">${verb} ${sp.n} suất</button>
@@ -545,7 +513,7 @@
   }
 
   function cookBatch(dishId) {
-    const batch = aiBatching(S.items).find(b => b.dishId === dishId);
+    const batch = aiBatching(S.items, isBlocked).find(b => b.dishId === dishId);
     if (!batch) return;
     batch.items.forEach(it => setStatus(it.id, 'COOKING'));
     toast(`Bắt đầu nấu chung mẻ <b>${batch.totalQty}× ${esc(menuName(dishId))}</b>`, 'ai', 'ph-sparkle');
@@ -736,7 +704,7 @@
       }, 1000);
       return;
     }
-    const batches = aiBatching(S.items);
+    const batches = aiBatching(S.items, isBlocked);
     const oosCount = S.menu.filter(d => isOos(d.id)).length;
 
     $('#app').innerHTML = `
@@ -757,12 +725,7 @@
       <ul>
         ${S.menu.map(d => {
           const oos = isOos(d.id), stopped = d.listed === false;
-          /* Món mua sẵn (có stock): "Còn N" theo số lượng. Món chế biến: số phần còn làm được theo
-             nguyên liệu + công thức (story-spec-tru-kho-tu-dong.md Mục 3); chưa có công thức thì nhắc nhập. */
-          const muaSan = d.stock != null;
-          const state = stopped ? 'Hết hàng'
-            : oos ? (muaSan ? 'Hết hàng' : 'Hết nguyên liệu')
-            : d.portions != null ? `Còn ${d.portions}` : 'Chưa có công thức';
+          const state = stockLabel(d);   /* assets/js/kds-logic.js */
           return `<li class="${oos ? 'oos' : ''}">
             <span class="name">${esc(d.name)}</span><span class="state">${state}</span>
             <button data-action="${stopped ? 'restock' : 'ask-oos'}" data-dish="${d.id}">${stopped ? 'Mở bán lại' : 'Báo hết'}</button></li>`;

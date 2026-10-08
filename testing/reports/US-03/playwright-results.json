@@ -1,0 +1,555 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "D:\\MIS3032\\group-06-project\\testing\\test_scripts\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "-c",
+      "playwright.us03.config.ts",
+      "--project=local-e2e"
+    ],
+    "configFile": "D:\\MIS3032\\group-06-project\\testing\\test_scripts\\playwright.us03.config.ts",
+    "rootDir": "D:/MIS3032/group-06-project/testing/test_scripts/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/MIS3032/group-06-project/testing/test_scripts/reports/us03/results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "local-e2e",
+        "name": "local-e2e",
+        "testDir": "D:/MIS3032/group-06-project/testing/test_scripts/tests",
+        "testIgnore": [
+          "/smoke/"
+        ],
+        "testMatch": [
+          "/us0[38]-.*\\.spec\\.ts/"
+        ],
+        "timeout": 45000
+      },
+      {
+        "outputDir": "D:/MIS3032/group-06-project/testing/test_scripts/reports/us03/results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "staging-smoke",
+        "name": "staging-smoke",
+        "testDir": "D:/MIS3032/group-06-project/testing/test_scripts/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "/us03-smoke\\.spec\\.ts/"
+        ],
+        "timeout": 45000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "./reports/us03/results.json"
+        }
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "./reports/us03/html",
+          "open": "never"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "us03-kds.spec.ts",
+      "file": "us03-kds.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "US-03 — KDS Bếp",
+          "file": "us03-kds.spec.ts",
+          "line": 18,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-OP-001 + TC-OP-KDS-013 (AC1): đơn mới hiện ngay trên KDS, không F5, có báo \"Đơn mới\"",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [
+                    {
+                      "type": "latency_ms samples (NFR-RO-01 < 500 ms)",
+                      "description": "311, 208, 215, 230, 217"
+                    },
+                    {
+                      "type": "latency_ms median",
+                      "description": "217"
+                    },
+                    {
+                      "type": "latency_ms max",
+                      "description": "311"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "local-e2e",
+                  "projectName": "local-e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3859,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-08T06:54:23.921Z",
+                      "annotations": [
+                        {
+                          "type": "latency_ms samples (NFR-RO-01 < 500 ms)",
+                          "description": "311, 208, 215, 230, 217"
+                        },
+                        {
+                          "type": "latency_ms median",
+                          "description": "217"
+                        },
+                        {
+                          "type": "latency_ms max",
+                          "description": "311"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "abdf3079eb1e965fda17-7b7ba72c170d48b30256",
+              "file": "us03-kds.spec.ts",
+              "line": 27,
+              "column": 7
+            },
+            {
+              "title": "TC-OP-KDS-001 (AC1): 2 bàn cùng gọi Phở → mẻ \"3× Phở bò\" nhãn \"Gợi ý nấu chung\", đứng đầu cột",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "local-e2e",
+                  "projectName": "local-e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1833,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-08T06:54:28.133Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "abdf3079eb1e965fda17-853e2249f218d42d5626",
+              "file": "us03-kds.spec.ts",
+              "line": 51,
+              "column": 7
+            },
+            {
+              "title": "TC-OP-KDS-004 (AC2): bấm \"Xong\" → DB đổi da_xong, màn Phục vụ nhận thông báo món xong",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "local-e2e",
+                  "projectName": "local-e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3964,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-08T06:54:29.986Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "abdf3079eb1e965fda17-3e6b87f4f37a0ce411c4",
+              "file": "us03-kds.spec.ts",
+              "line": 65,
+              "column": 7
+            },
+            {
+              "title": "TC-OP-003 (AC3): Bếp báo hết \"Salad cá ngừ\" → E-Menu của khách gỡ món < 1 s, không F5",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [
+                    {
+                      "type": "oos_sync_ms (REQ-09 < 1 s)",
+                      "description": "52"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "local-e2e",
+                  "projectName": "local-e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3786,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-08T06:54:33.964Z",
+                      "annotations": [
+                        {
+                          "type": "oos_sync_ms (REQ-09 < 1 s)",
+                          "description": "52"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "abdf3079eb1e965fda17-85b0b0880fc8a50b5400",
+              "file": "us03-kds.spec.ts",
+              "line": 82,
+              "column": 7
+            },
+            {
+              "title": "TC-OP-KDS-010 (AC3 tự động): hết nguyên liệu → E-Menu xám \"Hết hàng\", món đã gửi vẫn nấu được",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "local-e2e",
+                  "projectName": "local-e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3721,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-08T06:54:37.765Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "abdf3079eb1e965fda17-222bc707fe8f3a94bbea",
+              "file": "us03-kds.spec.ts",
+              "line": 103,
+              "column": 7
+            },
+            {
+              "title": "TC-OP-004 (AC5): mất mạng → \"Offline: Đang lưu cục bộ\", có mạng lại tự đồng bộ + nhận bù đơn bị nhỡ",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "local-e2e",
+                  "projectName": "local-e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4287,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-08T06:54:41.503Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "abdf3079eb1e965fda17-30afe2a32f7ae253cc6a",
+              "file": "us03-kds.spec.ts",
+              "line": 126,
+              "column": 7
+            },
+            {
+              "title": "TC-OP-KDS-011 (AC4): tài khoản Phục vụ vào KDS bị chặn 403",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Chờ story Auth/JWT (AI_USAGE_LOG A-84) — chưa có đăng nhập để kiểm tra",
+                      "location": {
+                        "file": "D:\\MIS3032\\group-06-project\\testing\\test_scripts\\tests\\us03-kds.spec.ts",
+                        "line": 154,
+                        "column": 10
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "local-e2e",
+                  "projectName": "local-e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 1812,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-08T06:54:45.812Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "Chờ story Auth/JWT (AI_USAGE_LOG A-84) — chưa có đăng nhập để kiểm tra",
+                          "location": {
+                            "file": "D:\\MIS3032\\group-06-project\\testing\\test_scripts\\tests\\us03-kds.spec.ts",
+                            "line": 154,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "abdf3079eb1e965fda17-beb13cd45ea0cce65d3a",
+              "file": "us03-kds.spec.ts",
+              "line": 153,
+              "column": 7
+            },
+            {
+              "title": "TC-OP-002: thẻ quá 15 phút chớp đỏ & đẩy lên đầu",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Chưa làm: REQ-08 có nhưng không nằm trong 5 AC của US-03 — chờ PO quyết",
+                      "location": {
+                        "file": "D:\\MIS3032\\group-06-project\\testing\\test_scripts\\tests\\us03-kds.spec.ts",
+                        "line": 158,
+                        "column": 10
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "local-e2e",
+                  "projectName": "local-e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 1871,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-08T06:54:47.659Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "Chưa làm: REQ-08 có nhưng không nằm trong 5 AC của US-03 — chờ PO quyết",
+                          "location": {
+                            "file": "D:\\MIS3032\\group-06-project\\testing\\test_scripts\\tests\\us03-kds.spec.ts",
+                            "line": 158,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "abdf3079eb1e965fda17-e61367eec9257e48d3ad",
+              "file": "us03-kds.spec.ts",
+              "line": 157,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "us08-inventory.spec.ts",
+      "file": "us08-inventory.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "US-08 — Kiểm kê tồn kho & Đóng ca",
+          "file": "us08-inventory.spec.ts",
+          "line": 17,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-MA-004 + TC-MA-INV-002/003: hao hụt bắt buộc lý do, PIN Quản lý, chốt ca khóa phiếu",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "local-e2e",
+                  "projectName": "local-e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 12073,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-08T06:54:49.557Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b15c0934f9453bae0c62-bb9d9f4ebbf1ba28d586",
+              "file": "us08-inventory.spec.ts",
+              "line": 18,
+              "column": 7
+            },
+            {
+              "title": "TC-MA-005: nhập tồn thực tế âm → báo lỗi, không cho chốt ca",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "local-e2e",
+                  "projectName": "local-e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6657,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-08T06:55:01.647Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b15c0934f9453bae0c62-d23da433e9a40eab641e",
+              "file": "us08-inventory.spec.ts",
+              "line": 66,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-08T06:54:21.129Z",
+    "duration": 48436.770000000004,
+    "expected": 8,
+    "skipped": 2,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
