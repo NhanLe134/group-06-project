@@ -113,13 +113,20 @@ async def reserve(db: AsyncSession, lines: Iterable[tuple[str, int]]) -> Watch:
         for thucdon_id, soluong in qty.items()
         if (mon := dishes.get(thucdon_id)) is not None
         and (
-            (mon.mua_san and mon.soluongton < soluong)
+            # Kiểm tra lại DƯỚI KHÓA DÒNG: bếp có thể vừa "Báo hết" trong lúc đơn chờ khóa
+            # (BUG-US03-005 — TC-OP-005)
+            mon.trangthaiban is False
+            or (mon.mua_san and mon.soluongton < soluong)
             or any(ct.tonkho_id in thieu_nl for ct in _cong_thuc(mon))
         )
     ]
     if thieu:
         details = [
-            {"thucdon_id": mon.id, "tenmon": mon.tenmon, "con_lai": mon.so_phan_con or 0}
+            {
+                "thucdon_id": mon.id,
+                "tenmon": mon.tenmon,
+                "con_lai": 0 if mon.trangthaiban is False else (mon.so_phan_con or 0),
+            }
             for mon in thieu
         ]
         ten = ", ".join(f"'{d['tenmon']}' (còn {d['con_lai']} phần)" for d in details)

@@ -102,7 +102,7 @@
         {
           "title": "US-03 — KDS Bếp",
           "file": "us03-kds.spec.ts",
-          "line": 17,
+          "line": 18,
           "column": 6,
           "specs": [
             {
@@ -114,8 +114,16 @@
                   "timeout": 45000,
                   "annotations": [
                     {
-                      "type": "latency_ms (NFR-RO-01 < 500 ms)",
-                      "description": "710"
+                      "type": "latency_ms samples (NFR-RO-01 < 500 ms)",
+                      "description": "311, 208, 215, 230, 217"
+                    },
+                    {
+                      "type": "latency_ms median",
+                      "description": "217"
+                    },
+                    {
+                      "type": "latency_ms max",
+                      "description": "311"
                     }
                   ],
                   "expectedStatus": "passed",
@@ -126,16 +134,24 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5201,
+                      "duration": 3859,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-08T03:58:22.493Z",
+                      "startTime": "2026-10-08T06:54:23.921Z",
                       "annotations": [
                         {
-                          "type": "latency_ms (NFR-RO-01 < 500 ms)",
-                          "description": "710"
+                          "type": "latency_ms samples (NFR-RO-01 < 500 ms)",
+                          "description": "311, 208, 215, 230, 217"
+                        },
+                        {
+                          "type": "latency_ms median",
+                          "description": "217"
+                        },
+                        {
+                          "type": "latency_ms max",
+                          "description": "311"
                         }
                       ],
                       "attachments": []
@@ -146,7 +162,7 @@
               ],
               "id": "abdf3079eb1e965fda17-7b7ba72c170d48b30256",
               "file": "us03-kds.spec.ts",
-              "line": 26,
+              "line": 27,
               "column": 7
             },
             {
@@ -165,12 +181,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3080,
+                      "duration": 1833,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-08T03:58:28.344Z",
+                      "startTime": "2026-10-08T06:54:28.133Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -180,7 +196,7 @@
               ],
               "id": "abdf3079eb1e965fda17-853e2249f218d42d5626",
               "file": "us03-kds.spec.ts",
-              "line": 38,
+              "line": 51,
               "column": 7
             },
             {
@@ -199,12 +215,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 16413,
+                      "duration": 3964,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-08T03:58:31.497Z",
+                      "startTime": "2026-10-08T06:54:29.986Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -214,7 +230,7 @@
               ],
               "id": "abdf3079eb1e965fda17-3e6b87f4f37a0ce411c4",
               "file": "us03-kds.spec.ts",
-              "line": 52,
+              "line": 65,
               "column": 7
             },
             {
@@ -227,7 +243,7 @@
                   "annotations": [
                     {
                       "type": "oos_sync_ms (REQ-09 < 1 s)",
-                      "description": "117"
+                      "description": "52"
                     }
                   ],
                   "expectedStatus": "passed",
@@ -238,16 +254,16 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5238,
+                      "duration": 3786,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-08T03:58:47.968Z",
+                      "startTime": "2026-10-08T06:54:33.964Z",
                       "annotations": [
                         {
                           "type": "oos_sync_ms (REQ-09 < 1 s)",
-                          "description": "117"
+                          "description": "52"
                         }
                       ],
                       "attachments": []
@@ -258,7 +274,7 @@
               ],
               "id": "abdf3079eb1e965fda17-85b0b0880fc8a50b5400",
               "file": "us03-kds.spec.ts",
-              "line": 69,
+              "line": 82,
               "column": 7
             },
             {
@@ -277,12 +293,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4397,
+                      "duration": 3721,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-08T03:58:53.252Z",
+                      "startTime": "2026-10-08T06:54:37.765Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -292,11 +308,11 @@
               ],
               "id": "abdf3079eb1e965fda17-222bc707fe8f3a94bbea",
               "file": "us03-kds.spec.ts",
-              "line": 90,
+              "line": 103,
               "column": 7
             },
             {
-              "title": "TC-OP-004 (AC5): mất mạng → \"Offline: Đang lưu cục bộ\", có mạng lại tự đồng bộ lên server",
+              "title": "TC-OP-004 (AC5): mất mạng → \"Offline: Đang lưu cục bộ\", có mạng lại tự đồng bộ + nhận bù đơn bị nhỡ",
               "ok": true,
               "tags": [],
               "tests": [
@@ -311,12 +327,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3508,
+                      "duration": 4287,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-08T03:58:57.688Z",
+                      "startTime": "2026-10-08T06:54:41.503Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -324,9 +340,9 @@
                   "status": "expected"
                 }
               ],
-              "id": "abdf3079eb1e965fda17-6f1c0c7fd9feddeccc97",
+              "id": "abdf3079eb1e965fda17-30afe2a32f7ae253cc6a",
               "file": "us03-kds.spec.ts",
-              "line": 113,
+              "line": 126,
               "column": 7
             },
             {
@@ -342,7 +358,7 @@
                       "description": "Chờ story Auth/JWT (AI_USAGE_LOG A-84) — chưa có đăng nhập để kiểm tra",
                       "location": {
                         "file": "D:\\MIS3032\\group-06-project\\testing\\test_scripts\\tests\\us03-kds.spec.ts",
-                        "line": 135,
+                        "line": 154,
                         "column": 10
                       }
                     }
@@ -355,19 +371,19 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "skipped",
-                      "duration": 1485,
+                      "duration": 1812,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-08T03:59:01.231Z",
+                      "startTime": "2026-10-08T06:54:45.812Z",
                       "annotations": [
                         {
                           "type": "skip",
                           "description": "Chờ story Auth/JWT (AI_USAGE_LOG A-84) — chưa có đăng nhập để kiểm tra",
                           "location": {
                             "file": "D:\\MIS3032\\group-06-project\\testing\\test_scripts\\tests\\us03-kds.spec.ts",
-                            "line": 135,
+                            "line": 154,
                             "column": 10
                           }
                         }
@@ -380,7 +396,7 @@
               ],
               "id": "abdf3079eb1e965fda17-beb13cd45ea0cce65d3a",
               "file": "us03-kds.spec.ts",
-              "line": 134,
+              "line": 153,
               "column": 7
             },
             {
@@ -396,7 +412,7 @@
                       "description": "Chưa làm: REQ-08 có nhưng không nằm trong 5 AC của US-03 — chờ PO quyết",
                       "location": {
                         "file": "D:\\MIS3032\\group-06-project\\testing\\test_scripts\\tests\\us03-kds.spec.ts",
-                        "line": 139,
+                        "line": 158,
                         "column": 10
                       }
                     }
@@ -409,19 +425,19 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "skipped",
-                      "duration": 1692,
+                      "duration": 1871,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-08T03:59:02.742Z",
+                      "startTime": "2026-10-08T06:54:47.659Z",
                       "annotations": [
                         {
                           "type": "skip",
                           "description": "Chưa làm: REQ-08 có nhưng không nằm trong 5 AC của US-03 — chờ PO quyết",
                           "location": {
                             "file": "D:\\MIS3032\\group-06-project\\testing\\test_scripts\\tests\\us03-kds.spec.ts",
-                            "line": 139,
+                            "line": 158,
                             "column": 10
                           }
                         }
@@ -434,7 +450,7 @@
               ],
               "id": "abdf3079eb1e965fda17-e61367eec9257e48d3ad",
               "file": "us03-kds.spec.ts",
-              "line": 138,
+              "line": 157,
               "column": 7
             }
           ]
@@ -451,7 +467,7 @@
         {
           "title": "US-08 — Kiểm kê tồn kho & Đóng ca",
           "file": "us08-inventory.spec.ts",
-          "line": 16,
+          "line": 17,
           "column": 6,
           "specs": [
             {
@@ -470,12 +486,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 13705,
+                      "duration": 12073,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-08T03:59:04.485Z",
+                      "startTime": "2026-10-08T06:54:49.557Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -485,7 +501,7 @@
               ],
               "id": "b15c0934f9453bae0c62-bb9d9f4ebbf1ba28d586",
               "file": "us08-inventory.spec.ts",
-              "line": 17,
+              "line": 18,
               "column": 7
             },
             {
@@ -504,12 +520,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6626,
+                      "duration": 6657,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-08T03:59:18.220Z",
+                      "startTime": "2026-10-08T06:55:01.647Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -519,7 +535,7 @@
               ],
               "id": "b15c0934f9453bae0c62-d23da433e9a40eab641e",
               "file": "us08-inventory.spec.ts",
-              "line": 65,
+              "line": 66,
               "column": 7
             }
           ]
@@ -529,8 +545,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-08T03:58:17.039Z",
-    "duration": 69311.561,
+    "startTime": "2026-10-08T06:54:21.129Z",
+    "duration": 48436.770000000004,
     "expected": 8,
     "skipped": 2,
     "unexpected": 0,

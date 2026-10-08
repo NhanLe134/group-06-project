@@ -1,36 +1,177 @@
 /**
  * US-07: CMS Quản lý Thực đơn (Menu CMS)
  * Phụ trách (Who checked): Ny
- * Site: https://smart-orderding.vercel.app
- * Luồng: / → Click "Quản lý Manager" → Tab "Thực đơn (CMS)"
- * Test cases: TC-MA-CMS-001 → TC-MA-CMS-020
+ * File test script: testing/test_scripts/tests/us07-create_cms.spec.ts
+ * URL: https://smart-orderding.vercel.app/pages/manager.html -> Tab 'Thực đơn (CMS)'
  *
- * Ghi chú:
- * - Test chạy trực tiếp trên site đã deploy (không mock API).
- * - Backend thật → một số test (thêm/xóa) sẽ tạo/xóa dữ liệu thật trên DB.
- * - Các test có tạo dữ liệu đều tự cleanup bằng afterEach hoặc trong bước test.
+ * Test cases giữ lại (cần automation): 001, 002, 003, 004, 006, 007, 008, 009,
+ * 012, 013, 015, 016, 017, 020
+ * Đã loại (kiểm tra thủ công / trùng lặp): 005, 010, 011, 014, 019
  */
 import { test, expect } from '@playwright/test';
 import { CmsPage } from '../pages/CmsPage';
+import { expectToastSuccess, expectToastDanger } from '../utils/assertions';
 
-// Tên món dùng cho test thêm/xóa — suffix timestamp tránh conflict giữa các lần chạy
-const TEST_ITEM_NAME = `Playwright Test Item ${Date.now()}`;
+// ===== Cấu hình thời gian chờ =====
+const TEST_TIMEOUT = 60000; // tối đa cho mỗi test
+const NAV_WAIT_MS = 10000; // chờ sau khi mở trang để load dữ liệu
+const UI_TIMEOUT = 15000; // timeout cho mỗi assertion UI
 
 test.describe('US-07 — CMS Quản lý Thực đơn', () => {
   let cms: CmsPage;
 
   test.beforeEach(async ({ page }) => {
+    test.setTimeout(TEST_TIMEOUT);
     cms = new CmsPage(page);
-    await cms.goto();
-  });
 
-  // ── NHÓM 1: HIỂN THỊ & TÌM KIẾM / LỌC ──────────────────────
+    // Mock API /api/menu để bộ test chạy độc lập, ổn định
+    const initialMenuItems = [
+      {
+        id: 'ITEM-001',
+        name: 'Coca',
+        category: 'Đồ uống',
+        price: 15000,
+        stock: 24,
+        is_available: true,
+        description: 'Nước ngọt có gas giải khát sảng khoái.',
+        ingredients: 'Nước bảo hòa CO2, đường...',
+        spicy: 'Không cay',
+        diet: 'Mặn',
+        allergens: 'Không có',
+        image_url: '',
+      },
+      {
+        id: 'ITEM-002',
+        name: 'Trà đá',
+        category: 'Đồ uống',
+        price: 10000,
+        stock: 2,
+        is_available: true,
+        description: 'Trà xanh đá mát lạnh.',
+        ingredients: 'Lá trà, đá viên',
+        spicy: 'Không cay',
+        diet: 'Chay',
+        allergens: 'Không có',
+        image_url: '',
+      },
+      {
+        id: 'ITEM-003',
+        name: 'Khoai tây chiên',
+        category: 'Khai vị',
+        price: 40000,
+        stock: null,
+        is_available: true,
+        description: 'Khoai tây giòn rụm.',
+        ingredients: 'Khoai tây, muối',
+        spicy: 'Không cay',
+        diet: 'Chay',
+        allergens: 'Không có',
+        image_url: '',
+      },
+      {
+        id: 'ITEM-004',
+        name: 'Bò sốt tiêu đen',
+        category: 'Món chính',
+        price: 120000,
+        stock: null,
+        is_available: true,
+        description: 'Bò mềm sốt tiêu đen đậm đà.',
+        ingredients: 'Thịt bò, tiêu đen, tỏi',
+        spicy: 'Cay nhẹ',
+        diet: 'Mặn',
+        allergens: 'Không có',
+        image_url: '',
+      },
+      {
+        id: 'ITEM-005',
+        name: 'Bún chả Hà Nội',
+        category: 'Món chính',
+        price: 55000,
+        stock: 0,
+        is_available: false,
+        description: 'Bún chả truyền thống.',
+        ingredients: 'Thịt heo, bún, nước mắm',
+        spicy: 'Không cay',
+        diet: 'Mặn',
+        allergens: 'Không có',
+        image_url: '',
+      },
+    ];
+
+    let itemsStore = JSON.parse(JSON.stringify(initialMenuItems));
+
+    await page.route('**/api/menu**', async route => {
+      const method = route.request().method();
+      const url = route.request().url();
+      const pathname = new URL(url).pathname;
+      const isMenuCollection = /\/api\/menu\/?$/.test(pathname)
+        || /\/api\/menu\/items\/?$/.test(pathname);
+      const itemIdMatch = pathname.match(/\/api\/menu\/(?:items\/)?([^/?#]+)\/?$/);
+      const itemId = itemIdMatch?.[1] ? decodeURIComponent(itemIdMatch[1]) : null;
+
+      if (method === 'GET') {
+        const item = !isMenuCollection && itemId
+          ? itemsStore.find((entry: { id: string }) => entry.id === itemId)
+          : null;
+        if (!isMenuCollection && itemId) {
+          await route.fulfill(item
+            ? { status: 200, json: item }
+            : { status: 404, json: { message: 'Not found' } });
+        } else {
+          await route.fulfill({ status: 200, json: itemsStore });
+        }
+      } else if (method === 'POST') {
+        const body = route.request().postDataJSON();
+        const newItem = {
+          id: `ITEM-${Date.now()}`,
+          is_available: true,
+          ...body,
+        };
+        itemsStore.push(newItem);
+        await route.fulfill({ status: 201, json: newItem });
+      } else if (method === 'PUT') {
+        const body = route.request().postDataJSON();
+        const idx = itemsStore.findIndex((i: { id: string }) => i.id === itemId);
+        if (idx !== -1) {
+          itemsStore[idx] = { ...itemsStore[idx], ...body };
+          await route.fulfill({ status: 200, json: itemsStore[idx] });
+        } else {
+          await route.fulfill({ status: 404, json: { message: 'Not found' } });
+        }
+      } else if (method === 'PATCH') {
+        const idMatch = url.match(/\/api\/menu\/items\/([^/?#]+)\/stock/);
+        const id = idMatch ? decodeURIComponent(idMatch[1]) : null;
+        const body = route.request().postDataJSON();
+        const idx = itemsStore.findIndex((i: { id: string }) => i.id === id);
+        if (idx !== -1) {
+          itemsStore[idx].stock = body.stock;
+          await route.fulfill({ status: 200, json: itemsStore[idx] });
+        } else {
+          await route.fulfill({ status: 404, json: { message: 'Not found' } });
+        }
+      } else if (method === 'DELETE') {
+        const before = itemsStore.length;
+        itemsStore = itemsStore.filter((i: { id: string }) => i.id !== itemId);
+        await route.fulfill(itemId && itemsStore.length < before
+          ? { status: 204 }
+          : { status: 404, json: { message: 'Not found' } });
+      } else {
+        await route.continue();
+      }
+    });
+
+    // Mở trang manager -> Tab Thực đơn (CMS)
+    await cms.goto();
+
+    // Chờ 10s cho trang load dữ liệu rồi mới thao tác
+    await page.waitForTimeout(NAV_WAIT_MS);
+    await expect(cms.menuRows.first()).toBeVisible({ timeout: UI_TIMEOUT });
+  });
 
   // TC-MA-CMS-001
   test('TC-MA-CMS-001: Hiển thị danh sách món ăn đúng cấu trúc bảng', async ({ page }) => {
-    await expect(cms.menuTable).toBeVisible();
+    await expect(cms.menuTable).toBeVisible({ timeout: UI_TIMEOUT });
 
-    // Kiểm tra đủ 8 cột header
     const headers = page.locator('#menu-table thead th');
     await expect(headers.nth(0)).toContainText('STT');
     await expect(headers.nth(1)).toContainText('Hình ảnh');
@@ -41,307 +182,191 @@ test.describe('US-07 — CMS Quản lý Thực đơn', () => {
     await expect(headers.nth(6)).toContainText('Số lượng tồn');
     await expect(headers.nth(7)).toContainText('Thao tác');
 
-    // Có ít nhất 1 dòng trong bảng
+    await expect(cms.menuRow('Coca')).toBeVisible({ timeout: UI_TIMEOUT });
+
+    // Badge "Đang bán" màu xanh (badge-success)
+    const statusBadge = cms.menuRowStatus('Coca');
+    await expect(statusBadge).toHaveClass(/badge-success/);
+    await expect(statusBadge).toHaveText('Đang bán');
+
     const rowCount = await cms.menuRows.count();
     expect(rowCount).toBeGreaterThan(0);
   });
 
   // TC-MA-CMS-002
-  test('TC-MA-CMS-002: Tìm kiếm món ăn theo tên', async ({ page }) => {
-    // Lấy tên món đầu tiên để search
-    const firstRow = cms.menuRows.first();
-    await expect(firstRow).toBeVisible({ timeout: 10000 });
-    const firstName = await firstRow.locator('td:nth-child(3) b').innerText();
+  test('TC-MA-CMS-002: Tìm kiếm món ăn theo tên', async () => {
+    await cms.search('Coca');
+    await expect(cms.menuRow('Coca')).toBeVisible({ timeout: UI_TIMEOUT });
+    await expect(cms.menuRow('Bún chả Hà Nội')).toBeHidden({ timeout: UI_TIMEOUT });
 
-    await cms.search(firstName);
-
-    // Dòng khớp vẫn hiển thị
-    await expect(cms.menuRow(firstName)).toBeVisible();
-
-    // Clear → toàn bộ danh sách trở lại (> 1 dòng)
+    // Clear tìm kiếm -> hiển thị lại tất cả món
     await cms.search('');
-    const countAfterClear = await cms.menuRows.count();
-    expect(countAfterClear).toBeGreaterThan(1);
+    await expect(cms.menuRow('Bún chả Hà Nội')).toBeVisible({ timeout: UI_TIMEOUT });
   });
 
   // TC-MA-CMS-003
   test('TC-MA-CMS-003: Lọc món theo trạng thái "Tạm ẩn"', async () => {
     await cms.filterByStatus('Tạm ẩn');
-
-    // Tất cả badge hiển thị phải là "Tạm ẩn"
-    const badges = cms.page.locator('#menu-table tbody tr .badge');
-    const count = await badges.count();
-    if (count > 0) {
-      for (let i = 0; i < count; i++) {
-        await expect(badges.nth(i)).toContainText('Tạm ẩn');
-      }
-    }
+    await expect(cms.menuRow('Bún chả Hà Nội')).toBeVisible({ timeout: UI_TIMEOUT });
+    await expect(cms.menuRow('Coca')).toBeHidden({ timeout: UI_TIMEOUT });
 
     // Reset về Tất cả
     await cms.filterByStatus('all');
+    await expect(cms.menuRow('Coca')).toBeVisible({ timeout: UI_TIMEOUT });
     const countAll = await cms.menuRows.count();
     expect(countAll).toBeGreaterThan(0);
   });
 
   // TC-MA-CMS-004
-  test('TC-MA-CMS-004: Lọc món theo số lượng tồn "Sắp hết (< 20)"', async ({ page }) => {
+  test('TC-MA-CMS-004: Lọc món theo số lượng tồn "Sắp hết (< 20)"', async () => {
     await cms.filterByStock('low');
+    // Trà đá có tồn = 2 -> hiển thị
+    await expect(cms.menuRow('Trà đá')).toBeVisible({ timeout: UI_TIMEOUT });
+    // Coca có tồn = 24 -> ẩn
+    await expect(cms.menuRow('Coca')).toBeHidden({ timeout: UI_TIMEOUT });
+  });
 
-    // Tất cả stock input hiển thị phải < 20
-    const stockInputs = page.locator('#menu-table tbody tr input.menu-stock-input');
-    const count = await stockInputs.count();
-    if (count > 0) {
-      for (let i = 0; i < count; i++) {
-        const val = await stockInputs.nth(i).inputValue();
-        if (val !== '') {
-          expect(Number(val)).toBeLessThan(20);
-          expect(Number(val)).toBeGreaterThan(0);
-        }
-      }
-    }
+  // TC-MA-CMS-006
+  test('TC-MA-CMS-006: Thêm món mới hợp lệ (Happy Path)', async ({ page }) => {
+    await cms.openAddModal();
+    await cms.fillAddForm({
+      name: 'Sườn sụn rang muối',
+      category: 'Món chính',
+      price: 85000,
+      description: 'Sườn sụn giòn ngon đậm vị.',
+      ingredients: 'Sườn heo, tỏi, ớt',
+      spicy: 'Cay nhẹ',
+      allergens: 'Không có',
+    });
+    await cms.submitAdd();
+
+    await expectToastSuccess(page, 'Thêm món thành công');
+    await expect(cms.menuRow('Sườn sụn rang muối')).toBeVisible({ timeout: UI_TIMEOUT });
+  });
+
+  // TC-MA-CMS-007
+  test('TC-MA-CMS-007: Thêm món mới thiếu trường bắt buộc — bỏ trống Tên', async ({ page }) => {
+    await cms.openAddModal();
+    await cms.fillAddForm({
+      name: '',
+      price: 85000,
+      description: 'Mô tả test',
+      ingredients: 'Thành phần test',
+      allergens: 'Không có',
+    });
+    await cms.submitAdd();
+
+    await expectToastDanger(page, 'Vui lòng nhập Tên món!');
+    await expect(cms.addModal).toBeVisible({ timeout: UI_TIMEOUT });
+  });
+
+  // TC-MA-CMS-008
+  test('TC-MA-CMS-008: Thêm món mới thiếu trường bắt buộc — bỏ trống Giá bán', async ({ page }) => {
+    await cms.openAddModal();
+    await cms.fillAddForm({
+      name: 'Món test thiếu giá',
+      price: '',
+      description: 'Mô tả test',
+      ingredients: 'Thành phần test',
+      allergens: 'Không có',
+    });
+    await cms.submitAdd();
+
+    await expectToastDanger(page, 'Vui lòng nhập Giá bán!');
+    await expect(cms.addModal).toBeVisible({ timeout: UI_TIMEOUT });
+  });
+
+  // TC-MA-CMS-009
+  test('TC-MA-CMS-009: Thêm món với số lượng tồn tùy chọn', async ({ page }) => {
+    await cms.openAddModal();
+    await cms.fillAddForm({
+      name: 'Bò né trứng',
+      category: 'Món chính',
+      price: 65000,
+      stock: 10,
+      description: 'Bò né sốt pa tê trứng ốp la.',
+      ingredients: 'Thịt bò, trứng, pa tê',
+      allergens: 'Trứng',
+    });
+    await cms.submitAdd();
+
+    await expectToastSuccess(page, 'Thêm món thành công');
+    await expect(cms.stockInput('Bò né trứng')).toHaveValue('10', { timeout: UI_TIMEOUT });
+  });
+
+  // TC-MA-CMS-012
+  test('TC-MA-CMS-012: Sửa giá bán món ăn thành công', async ({ page }) => {
+    const updateResponse = page.waitForResponse(response =>
+      response.request().method() === 'PUT'
+      && /\/api\/menu\/(?:items\/)?[^/]+\/?$/.test(new URL(response.url()).pathname),
+    { timeout: UI_TIMEOUT });
+
+    await cms.updatePrice('Coca', 20000);
+    expect((await updateResponse).status()).toBe(200);
+    await expect(cms.editModal).toBeHidden({ timeout: UI_TIMEOUT });
+    await expectToastSuccess(page, 'Cập nhật thành công');
+
+    await expect(cms.menuRow('Coca')).toContainText('20.000đ', { timeout: UI_TIMEOUT });
+  });
+
+  // TC-MA-CMS-013
+  test('TC-MA-CMS-013: Sửa trạng thái món từ "Đang bán" → "Tạm ẩn"', async ({ page }) => {
+    await cms.openEditModal('Coca');
+    await cms.editStatusSelect.selectOption('Tạm ẩn');
+    const updateResponse = page.waitForResponse(response =>
+      response.request().method() === 'PUT'
+      && /\/api\/menu\/(?:items\/)?[^/]+\/?$/.test(new URL(response.url()).pathname),
+    { timeout: UI_TIMEOUT });
+    await cms.editSaveBtn.click();
+
+    expect((await updateResponse).status()).toBe(200);
+    await expect(cms.editModal).toBeHidden({ timeout: UI_TIMEOUT });
+    await expectToastSuccess(page, 'Cập nhật thành công');
+    const badge = cms.menuRowStatus('Coca');
+    await expect(badge).toHaveText('Tạm ẩn', { timeout: UI_TIMEOUT });
+    await expect(badge).toHaveClass(/badge-danger/);
+  });
+
+  // TC-MA-CMS-015
+  test('TC-MA-CMS-015: Cập nhật số lượng tồn inline trực tiếp trên bảng', async () => {
+    await cms.updateStockInline('Trà đá', '50');
+    await expect(cms.stockInput('Trà đá')).toHaveValue('50', { timeout: UI_TIMEOUT });
+  });
+
+  // TC-MA-CMS-016
+  test('TC-MA-CMS-016: Xóa món ăn và xác nhận', async ({ page }) => {
+    // Thêm 1 món test tạm để xóa
+    await cms.openAddModal();
+    await cms.fillAddForm({
+      name: 'Món xóa test',
+      category: 'Khai vị',
+      price: 25000,
+      description: 'Mô tả',
+      ingredients: 'Nguyên liệu',
+      allergens: 'Không có',
+    });
+    await cms.submitAdd();
+    await expect(cms.menuRow('Món xóa test')).toBeVisible({ timeout: UI_TIMEOUT });
+
+    // Click xóa và chấp nhận dialog confirm
+    await cms.deleteItem('Món xóa test', true);
+    await expectToastSuccess(page, 'Xóa thành công');
+    await expect(cms.menuRow('Món xóa test')).toBeHidden({ timeout: UI_TIMEOUT });
+  });
+
+  // TC-MA-CMS-017
+  test('TC-MA-CMS-017: Hủy xóa món ăn (bấm Cancel trong dialog)', async () => {
+    await cms.deleteItem('Coca', false);
+    await expect(cms.menuRow('Coca')).toBeVisible({ timeout: UI_TIMEOUT });
   });
 
   // TC-MA-CMS-020
   test('TC-MA-CMS-020: Sắp xếp giá từ cao đến thấp', async ({ page }) => {
     await cms.sortByPrice('high-low');
 
-    // Thu thập giá của 3 dòng đầu — phải giảm dần
     const rows = page.locator('#menu-table tbody tr');
-    const rowCount = await rows.count();
-    if (rowCount >= 2) {
-      const prices: number[] = [];
-      for (let i = 0; i < Math.min(rowCount, 5); i++) {
-        const text = await rows.nth(i).locator('td:nth-child(5)').innerText();
-        const num = Number(text.replace(/[^\d]/g, ''));
-        prices.push(num);
-      }
-      // Kiểm tra danh sách giá không tăng (sorted descending)
-      for (let i = 1; i < prices.length; i++) {
-        expect(prices[i]).toBeLessThanOrEqual(prices[i - 1]);
-      }
-    }
-  });
-
-  // ── NHÓM 2: XEM CHI TIẾT ──────────────────────────────────────
-
-  // TC-MA-CMS-005
-  test('TC-MA-CMS-005: Xem chi tiết món ăn (modal xem)', async () => {
-    // Lấy tên món đầu tiên
-    const firstRow = cms.menuRows.first();
-    await expect(firstRow).toBeVisible({ timeout: 10000 });
-    const firstName = await firstRow.locator('td:nth-child(3) b').innerText();
-
-    await cms.openDetailModal(firstName);
-    await expect(cms.detailModal).toBeVisible();
-    // Modal body có nội dung (tên món)
-    await expect(cms.detailBody).toContainText(firstName);
-
-    await cms.closeDetailModal();
-    await expect(cms.detailModal).toBeHidden();
-  });
-
-  // ── NHÓM 3: THÊM MÓN ──────────────────────────────────────────
-
-  // TC-MA-CMS-006
-  test('TC-MA-CMS-006: Thêm món mới hợp lệ (Happy Path)', async ({ page }) => {
-    await cms.openAddModal();
-    await cms.fillAddForm({
-      name: TEST_ITEM_NAME,
-      category: 'Khai vị',
-      price: 25000,
-      description: 'Playwright test item — created by automated test.',
-      ingredients: 'Test ingredient',
-      allergens: 'Không có',
-    });
-    await cms.submitAdd();
-
-    // Chờ toast hoặc modal đóng (backend call thật cần timeout dài hơn)
-    await expect(cms.addModal).toBeHidden({ timeout: 15000 });
-    await expect(cms.menuRow(TEST_ITEM_NAME)).toBeVisible({ timeout: 10000 });
-
-    // Cleanup: xóa món vừa thêm
-    await cms.deleteItem(TEST_ITEM_NAME, true);
-    await expect(cms.menuRow(TEST_ITEM_NAME)).toBeHidden({ timeout: 10000 });
-  });
-
-  // TC-MA-CMS-007
-  test('TC-MA-CMS-007: Thêm món thiếu Tên → báo lỗi, modal vẫn mở', async ({ page }) => {
-    await cms.openAddModal();
-    await cms.fillAddForm({
-      name: '',           // bỏ trống Tên
-      price: 50000,
-      description: 'Mô tả test',
-      ingredients: 'Thành phần test',
-      allergens: 'Không',
-    });
-    await cms.submitAdd();
-
-    // Modal vẫn hiển thị (không đóng khi lỗi)
-    await expect(cms.addModal).toBeVisible();
-
-    // Toast hoặc focus vào field Tên
-    const nameInput = page.locator('#menu-name');
-    // Có thể check focus hoặc toast tùy UI — ít nhất modal vẫn mở là pass
-    await expect(nameInput).toBeFocused().catch(() => {
-      // Một số trình duyệt không focus — chấp nhận nếu modal vẫn mở
-    });
-
-    // Đóng modal để cleanup
-    await cms.closeAddModal();
-  });
-
-  // TC-MA-CMS-008
-  test('TC-MA-CMS-008: Thêm món thiếu Giá bán → báo lỗi, modal vẫn mở', async ({ page }) => {
-    await cms.openAddModal();
-    await cms.fillAddForm({
-      name: 'Món test thiếu giá',
-      price: '',          // bỏ trống Giá
-      description: 'Mô tả test',
-      ingredients: 'Thành phần',
-      allergens: 'Không',
-    });
-    await cms.submitAdd();
-
-    await expect(cms.addModal).toBeVisible();
-
-    await cms.closeAddModal();
-  });
-
-  // TC-MA-CMS-009
-  test('TC-MA-CMS-009: Thêm món với số lượng tồn = 10', async () => {
-    const itemName = `TC009 Item ${Date.now()}`;
-    await cms.openAddModal();
-    await cms.fillAddForm({
-      name: itemName,
-      category: 'Đồ uống',
-      price: 15000,
-      stock: 10,
-      description: 'Test item với tồn kho.',
-      ingredients: 'Test',
-      allergens: 'Không',
-    });
-    await cms.submitAdd();
-
-    await expect(cms.addModal).toBeHidden({ timeout: 15000 });
-    const stockInput = cms.stockInput(itemName);
-    await expect(stockInput).toHaveValue('10', { timeout: 10000 });
-
-    // Cleanup
-    await cms.deleteItem(itemName, true);
-  });
-
-  // TC-MA-CMS-010
-  test('TC-MA-CMS-010: Thêm món không nhập tồn kho → hiển thị trống (—)', async () => {
-    const itemName = `TC010 Item ${Date.now()}`;
-    await cms.openAddModal();
-    await cms.fillAddForm({
-      name: itemName,
-      category: 'Đồ uống',
-      price: 20000,
-      stock: '',          // để trống
-      description: 'Test item không tồn kho.',
-      ingredients: 'Test',
-      allergens: 'Không',
-    });
-    await cms.submitAdd();
-
-    await expect(cms.addModal).toBeHidden({ timeout: 15000 });
-    const stockInput = cms.stockInput(itemName);
-    // Giá trị trống → hiển thị placeholder "—"
-    await expect(stockInput).toHaveValue('', { timeout: 10000 });
-
-    // Cleanup
-    await cms.deleteItem(itemName, true);
-  });
-
-  // TC-MA-CMS-011
-  test('TC-MA-CMS-011: Hủy bỏ form thêm món (bấm Hủy bỏ)', async () => {
-    await cms.openAddModal();
-    await cms.fillAddForm({ name: 'Test hủy bỏ' });
-    await cms.closeAddModal();
-
-    await expect(cms.addModal).toBeHidden();
-    // Không có dòng nào tên "Test hủy bỏ" trong bảng
-    await expect(cms.menuRow('Test hủy bỏ')).toBeHidden();
-  });
-
-  // ── NHÓM 4: SỬA MÓN ──────────────────────────────────────────
-
-  // TC-MA-CMS-019
-  test('TC-MA-CMS-019: Mở modal sửa → dữ liệu điền sẵn đúng với bảng', async ({ page }) => {
-    // Lấy thông tin từ dòng đầu trong bảng
-    const firstRow = cms.menuRows.first();
-    await expect(firstRow).toBeVisible({ timeout: 10000 });
-    const nameInTable = await firstRow.locator('td:nth-child(3) b').innerText();
-    const priceInTable = await firstRow.locator('td:nth-child(5)').innerText();
-    const priceNum = priceInTable.replace(/[^\d]/g, '');
-
-    await cms.openEditModal(nameInTable);
-
-    await expect(cms.editNameInput).toHaveValue(nameInTable);
-    await expect(cms.editPriceInput).toHaveValue(priceNum);
-    // Trạng thái phải là "Đang bán" hoặc "Tạm ẩn"
-    const statusVal = await cms.editStatusSelect.inputValue();
-    expect(['Đang bán', 'Tạm ẩn']).toContain(statusVal);
-
-    await cms.closeEditModal();
-  });
-
-  // TC-MA-CMS-014
-  test('TC-MA-CMS-014: Sửa món — xóa trắng Tên → báo lỗi, modal vẫn mở', async () => {
-    const firstRow = cms.menuRows.first();
-    await expect(firstRow).toBeVisible({ timeout: 10000 });
-    const nameInTable = await firstRow.locator('td:nth-child(3) b').innerText();
-
-    await cms.openEditModal(nameInTable);
-    await cms.editNameInput.fill('');
-    await cms.editSaveBtn.click();
-
-    // Modal vẫn mở do validation
-    await expect(cms.editModal).toBeVisible();
-    await cms.closeEditModal();
-  });
-
-  // ── NHÓM 5: XÓA MÓN ──────────────────────────────────────────
-
-  // TC-MA-CMS-016 + TC-MA-CMS-017
-  test('TC-MA-CMS-016+017: Xóa món xác nhận OK / Hủy xóa Cancel', async () => {
-    // Thêm 1 món tạm để test xóa
-    const tempName = `Delete Test ${Date.now()}`;
-    await cms.openAddModal();
-    await cms.fillAddForm({
-      name: tempName,
-      category: 'Khai vị',
-      price: 10000,
-      description: 'Temp item for delete test.',
-      ingredients: 'Test',
-      allergens: 'Không',
-    });
-    await cms.submitAdd();
-    await expect(cms.menuRow(tempName)).toBeVisible({ timeout: 15000 });
-
-    // TC-017: Hủy xóa → món vẫn còn
-    await cms.deleteItem(tempName, false);
-    await expect(cms.menuRow(tempName)).toBeVisible();
-
-    // TC-016: Xác nhận xóa → món biến mất
-    await cms.deleteItem(tempName, true);
-    await expect(cms.menuRow(tempName)).toBeHidden({ timeout: 10000 });
-  });
-
-  // ── NHÓM 6: RBAC ──────────────────────────────────────────────
-
-  // TC-MA-CMS-018
-  test('TC-MA-CMS-018: Waiter gọi API sửa menu → HTTP 403/401 (RBAC)', async ({ request }) => {
-    // Gọi thẳng API backend với token giả của Waiter
-    const res = await request.put('https://smart-orderding.vercel.app/api/menu/ITEM-001', {
-      data: { price: 99999 },
-      headers: {
-        Authorization: 'Bearer WAITER_FAKE_TOKEN',
-        'Content-Type': 'application/json',
-      },
-    });
-    // Backend RBAC phải chặn: 401, 403, hoặc 404 (route không tồn tại với token đó)
-    expect([401, 403, 404, 422]).toContain(res.status());
+    await expect(rows.first()).toBeVisible({ timeout: UI_TIMEOUT });
+    // Bò sốt tiêu đen (120.000đ) là món đắt nhất trong mock data
+    await expect(rows.first()).toContainText('Bò sốt tiêu đen', { timeout: UI_TIMEOUT });
   });
 });

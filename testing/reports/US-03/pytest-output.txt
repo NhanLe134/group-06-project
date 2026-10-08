@@ -1,3 +1,24 @@
-87 passed in 9.74s
+app\models\menu.py              52      0   100%
+app\routers\ingredients.py      33      0   100%
+app\routers\inventory.py        32      0   100%
+app\routers\kds.py              64      1    98%
+app\routers\orders.py           32      1    97%
+app\services\inventory.py      127      4    97%
+app\services\kds.py             90      1    99%
+app\services\orders.py         101     13    87%
+app\services\stock.py          141      6    96%
+TOTAL                         1611    388    76%
+88 passed in 8.74s
 --- ruff:
-All checks passed!
+E501 Line too long (104 > 100)
+  --> scripts\e2e_server.py:27:101
+   |
+25 | from app.models import Ban, CongThuc, NguoiDung, ThucDon, TonKho  # noqa: E402
+26 |
+27 | # Bàn là dữ liệu master (ADR-N14): mỗi test E2E dùng 1 bàn riêng — khớp testing/test_scripts/data/kds.ts
+   |                                                                                                     ^^^^
+28 | E2E_TABLES = ["Bàn E2E-01", "Bàn E2E-02A", "Bàn E2E-02B", "Bàn E2E-03", "Bàn E2E-04",
+29 |               "Bàn E2E-05", "Bàn E2E-06", "Bàn E2E-07"]
+   |
+
+Found 1 error.

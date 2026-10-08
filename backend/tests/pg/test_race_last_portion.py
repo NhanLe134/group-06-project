@@ -94,3 +94,45 @@ async def test_bought_item_last_units_sold_exactly_once(session_factory):
     assert sorted(results) == [200] * 3 + [409] * (SO_DON - 3)
     async with session_factory() as db:
         assert await db.scalar(select(ThucDon.soluongton).where(ThucDon.id == mon_id)) == 0
+
+
+async def test_order_racing_kitchen_out_of_stock_is_rejected(session_factory):
+    """TC-OP-005 (đúng kịch bản gốc của Ny): khách gửi bếp ĐÚNG LÚC bếp bấm "Báo hết".
+
+    Bếp khóa dòng món và chuyển hết hàng nhưng chưa commit; đơn của khách đã qua bước kiểm tra
+    đầu (lúc đó món còn bán) và phải chờ khóa. Bếp commit trước → đơn đến sau bị 409, không trừ kho.
+    Regression BUG-US03-005.
+    """
+
+    async with session_factory() as db:
+        mon = ThucDon(tenmon="Cá hồi", phanloai="Món chính", giaban=200000, soluongton=5)
+        db.add(mon)
+        await db.commit()
+        mon_id = mon.id
+
+    async with session_factory() as kitchen:
+        locked = await kitchen.get(ThucDon, mon_id, with_for_update=True)  # bếp đang bấm "Báo hết"
+        locked.trangthaiban = False
+        await kitchen.flush()
+
+        order = asyncio.create_task(_concurrent_orders_one(session_factory, mon_id))
+        await asyncio.sleep(0.5)  # đơn của khách đã chạy tới chỗ chờ khóa dòng
+        assert not order.done()
+        await kitchen.commit()  # bếp báo hết xong TRƯỚC
+
+    assert await order == 409
+    async with session_factory() as db:
+        assert await db.scalar(select(ThucDon.soluongton).where(ThucDon.id == mon_id)) == 5
+
+
+async def _concurrent_orders_one(factory, thucdon_id: str) -> int:
+    async with factory() as db:
+        data = OrderCreateIn(
+            table_name="Bàn 01", items=[{"thucdon_id": thucdon_id, "soluong": 1}]
+        )
+        try:
+            await order_service.create_order(db, data)
+            return 200
+        except ApiError as err:
+            await db.rollback()
+            return err.status_code
