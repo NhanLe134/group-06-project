@@ -6,7 +6,9 @@ Quy ước trạng thái khớp Supabase (frontend/fe_ofc/dtb.md):
 - chitietmon.trangthai: 'cho_nau' | 'dang_nau' | 'da_xong' | 'da_phuc_vu' | 'da_huy'
 """
 
-from pydantic import BaseModel, Field
+from datetime import UTC, datetime
+
+from pydantic import BaseModel, Field, field_serializer
 
 
 class OrderItemIn(BaseModel):
@@ -32,13 +34,21 @@ class OrderItemOut(BaseModel):
     thanhtien: int
     ghichu: str | None
     trangthai: str
-    dot: int | None = None  # đợt gọi (1, 2...) — chitietmon chưa có cột này nên tạm theo giogoimon
+    dot: int | None = None  # đợt gọi (1, 2...) — nhóm theo mốc giogoimon (ADR-N13)
+    giogoimon: datetime | None = None
+
+    @field_serializer("giogoimon")
+    def _utc(self, value: datetime | None) -> str | None:
+        # DB lưu TIMESTAMP không múi giờ theo UTC → trả ISO có "Z" để trình duyệt đổi đúng giờ VN
+        if value is None:
+            return None
+        return (value if value.tzinfo else value.replace(tzinfo=UTC)).isoformat()
 
 
 class OrderCurrentOut(BaseModel):
-    """Hóa đơn đang mở ('da_chot') của phiên bàn — dùng cho US-09 + chi tiết Thu ngân."""
+    """Hóa đơn tạm tính (tổng các phiếu chưa tính tiền) — US-09 + chi tiết Thu ngân."""
 
-    phienban_id: str
+    phieuban_id: str
     hoadon_id: str
     table_name: str
     tongtien: int
@@ -48,25 +58,25 @@ class OrderCurrentOut(BaseModel):
 
 
 class PayQrOut(BaseModel):
-    """US-05: dữ liệu QR thanh toán cho 1 hóa đơn."""
+    """US-05: dữ liệu QR thanh toán cho các phiếu chưa tính tiền của 1 bàn."""
 
-    hoadon_id: str
+    ban_id: str
     table_name: str
     amount: int
+    so_phieuban: int
     qr_data: str
     qr_url: str
 
 
 class TableOut(BaseModel):
-    """1 dòng của `GET /cashier/tables` — phiên bàn kèm hóa đơn đang mở (nếu có)."""
+    """1 dòng của `GET /cashier/tables` — bàn master + tổng tiền phiếu chưa tính."""
 
     id: str
     tenban: str
     trangthai: str | None
     giobatdau: str | None
-    hoadon_id: str | None
-    hoadon_trangthai: str | None
     tongtien: int
+    so_phieuban: int = 0
 
 
 class CloseTableOut(BaseModel):

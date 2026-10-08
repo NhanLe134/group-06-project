@@ -3,13 +3,13 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.db import get_db
 from app.errors import ApiError
-from app.models import ChiTietMon, HoaDon, PhienBan, ThucDon
+from app.models import Ban, ChiTietPhieu, PhieuBan, ThucDon
 from app.routers.menu import broadcast_flipped
 from app.schemas.kds import KdsItemOut, SplitIn, SplitOut, StatusUpdateIn
 from app.services import kds as service
@@ -30,7 +30,7 @@ async def _notify(items: list[KdsItemOut], reason: str) -> None:
                 KDS_CHANNEL,
                 "ITEM_READY",
                 {
-                    "chitietmon_id": str(i.id),
+                    "chitietphieu_id": str(i.id),
                     "ban": i.ban,
                     "tenmon": i.tenmon,
                     "soluong": i.soluong,
@@ -85,22 +85,24 @@ async def create_demo_orders(db: Db) -> list[KdsItemOut]:
     mon = (await db.execute(select(ThucDon).where(ThucDon.tenmon == DEMO_DISH))).scalars().first()
     if mon is None:
         raise ApiError(409, "MENU_ITEM_MISSING", f"Chưa có món '{DEMO_DISH}' trong thực đơn.")
-    created: list[ChiTietMon] = []
+    created: list[ChiTietPhieu] = []
     for tenban, soluong, ghichu in DEMO_ORDERS:
-        phien = (
-            (await db.execute(select(PhienBan).where(PhienBan.tenban == tenban))).scalars().first()
+        ban = (
+            (await db.execute(select(Ban).where(Ban.tenban == tenban))).scalars().first()
         )
-        if phien is None:
-            phien = PhienBan(tenban=tenban, trangthai="dang_phuc_vu")
-            db.add(phien)
+        if ban is None:
+            ban = Ban(tenban=tenban, trangthai=2)
+            db.add(ban)
             await db.flush()
-        hoadon = HoaDon(phienban_id=phien.id, trangthai="da_chot")
-        db.add(hoadon)
+        phieu = PhieuBan(ban_id=ban.ban_id, giogoimon=func.now(), hoadon_id=None)
+        db.add(phieu)
         await db.flush()
-        item = ChiTietMon(hoadon_id=hoadon.id, thucdon_id=mon.id, soluong=soluong, ghichu=ghichu)
+        item = ChiTietPhieu(
+            phieuban_id=phieu.phieuban_id, mon_id=mon.id, soluong=soluong, ghichu=ghichu
+        )
         db.add(item)
         created.append(item)
     await db.commit()
-    items = [await service.get_item(db, i.id) for i in created]
+    items = [await service.get_item(db, i.chitietphieu_id) for i in created]
     await _notify(items, "new_order")
     return items

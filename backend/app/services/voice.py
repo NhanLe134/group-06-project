@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.models.menu import ThucDon
-from app.models.order import PhienBan
+from app.models.order import Ban, PhieuBan
 from app.models.voice import LogGiongNoi
 from app.schemas.voice import (
     VoiceAdd,
@@ -425,16 +425,23 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
         result = _gemini_result_to_out(body.transcript, gemini_data, dishes)
         # Ghi log và trả về
         if body.table_name:
-            session_result = await db.execute(
-                select(PhienBan)
-                .where(PhienBan.tenban == body.table_name, PhienBan.trangthai == "dang_phuc_vu")
-                .order_by(PhienBan.giobatdau.desc().nullslast(), PhienBan.id.desc())
-                .limit(1)
+            ban_result = await db.execute(
+                select(Ban).where(Ban.tenban == body.table_name).limit(1)
             )
-            table_session = session_result.scalars().first()
-            if table_session:
+            ban = ban_result.scalars().first()
+            if ban:
+                phieu_result = await db.execute(
+                    select(PhieuBan)
+                    .where(PhieuBan.ban_id == ban.ban_id, PhieuBan.hoadon_id.is_(None))
+                    .order_by(PhieuBan.giogoimon.desc(), PhieuBan.phieuban_id.desc())
+                    .limit(1)
+                )
+                phieu = phieu_result.scalars().first()
+            else:
+                phieu = None
+            if phieu:
                 db.add(LogGiongNoi(
-                    phienban_id=table_session.id,
+                    phieuban_id=phieu.phieuban_id,
                     vanbangoc=body.transcript,
                     ydinhai=result.model_dump(mode="json"),
                 ))
@@ -680,16 +687,23 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
     )
     # Ghi transcript theo phiên để có thể xóa khi đóng bàn; không nhận/lưu file âm thanh.
     if body.table_name:
-        session_result = await db.execute(
-            select(PhienBan)
-            .where(PhienBan.tenban == body.table_name, PhienBan.trangthai == "dang_phuc_vu")
-            .order_by(PhienBan.giobatdau.desc().nullslast(), PhienBan.id.desc())
-            .limit(1)
+        ban_result = await db.execute(
+            select(Ban).where(Ban.tenban == body.table_name).limit(1)
         )
-        table_session = session_result.scalars().first()
-        if table_session:
+        ban = ban_result.scalars().first()
+        if ban:
+            phieu_result = await db.execute(
+                select(PhieuBan)
+                .where(PhieuBan.ban_id == ban.ban_id, PhieuBan.hoadon_id.is_(None))
+                .order_by(PhieuBan.giogoimon.desc(), PhieuBan.phieuban_id.desc())
+                .limit(1)
+            )
+            phieu = phieu_result.scalars().first()
+        else:
+            phieu = None
+        if phieu:
             db.add(LogGiongNoi(
-                phienban_id=table_session.id,
+                phieuban_id=phieu.phieuban_id,
                 vanbangoc=body.transcript,
                 ydinhai=result.model_dump(mode="json"),
             ))

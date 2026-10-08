@@ -1,6 +1,6 @@
 """Nghiệp vụ US-08 — đối soát tồn kho & đóng ca. Spec: story-spec-us08-inventory.md.
 
-A = tồn đầu ca, B = đã bán trong kỳ (từ `chitietmon`),
+A = tồn đầu ca, B = đã bán trong kỳ (từ `chitietphieu`),
 C = A - B (tồn lý thuyết), chênh lệch = tồn thực tế - C (âm = hao hụt).
 """
 
@@ -11,7 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.errors import ApiError
-from app.models import ChiTietMon, HoaDon, NguoiDung, ThucDon
+from app.models import ChiTietPhieu, NguoiDung, PhieuBan, ThucDon
 from app.models.inventory import DA_CHOT, NHAP, ChiTietKiemKe, PhieuKiemKe
 from app.schemas.inventory import ShiftDetailOut, ShiftLineIn, ShiftLineOut, ShiftSummaryOut
 
@@ -43,18 +43,17 @@ async def _sold(
     if not dish_ids:
         return {}
     query = (
-        select(ChiTietMon.thucdon_id, func.sum(func.coalesce(ChiTietMon.soluong, 1)))
-        .outerjoin(HoaDon, ChiTietMon.hoadon_id == HoaDon.id)
+        select(ChiTietPhieu.mon_id, func.sum(func.coalesce(ChiTietPhieu.soluong, 1)))
+        .outerjoin(PhieuBan, ChiTietPhieu.phieuban_id == PhieuBan.phieuban_id)
         .where(
-            ChiTietMon.thucdon_id.in_(dish_ids),
-            ChiTietMon.giogoimon >= start,
-            or_(ChiTietMon.trangthai.is_(None), ChiTietMon.trangthai != "da_huy"),
-            or_(HoaDon.trangthai.is_(None), HoaDon.trangthai != "da_huy"),
+            ChiTietPhieu.mon_id.in_(dish_ids),
+            PhieuBan.giogoimon >= start,
+            or_(ChiTietPhieu.trangthai.is_(None), ChiTietPhieu.trangthai != "da_huy"),
         )
-        .group_by(ChiTietMon.thucdon_id)
+        .group_by(ChiTietPhieu.mon_id)
     )
     if end is not None:
-        query = query.where(ChiTietMon.giogoimon < end)
+        query = query.where(PhieuBan.giogoimon < end)
     return {dish: int(total) for dish, total in (await db.execute(query)).all()}
 
 

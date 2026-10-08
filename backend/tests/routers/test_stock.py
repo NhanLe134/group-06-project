@@ -33,6 +33,15 @@ async def _ingredient(client: AsyncClient, name: str, stock: float, unit: str = 
 
 
 async def _dish(db: AsyncSession, name: str, phanloai: str = "Món chính", **kw) -> ThucDon:
+    # POST /orders yêu cầu bàn đã seed trong bảng master `ban`
+    from sqlalchemy import select as _select
+
+    from app.models.order import Ban
+
+    if not (await db.execute(_select(Ban).where(Ban.tenban == "Bàn 01"))).scalars().first():
+        for i in range(1, 7):
+            db.add(Ban(tenban=f"Bàn {i:02d}", trangthai=1))
+        await db.commit()
     mon = ThucDon(tenmon=name, phanloai=phanloai, giaban=80000, **kw)
     db.add(mon)
     await db.commit()

@@ -71,6 +71,10 @@
 - **AC7 (UX — Danh sách nhóm theo phân loại + scroll-spy — ADR-N09)**
   - **Then** Món hiển thị nhóm theo thứ tự `Món chính` ➔ `Set lẩu` ➔ `Đồ uống`; chip nhóm đang xem nền cam, chip khác nền trắng; bấm chip cuộn tới nhóm; tìm kiếm lọc trong nhóm và ẩn nhóm trống.
 
+
+- **AC6 (UX — Hóa đơn nhóm theo đợt gọi — ADR-N13)**
+  - **Then** Hóa đơn có tiêu đề nhóm "Đợt N — gọi lúc HH:MM · X món" cho từng lần gọi bếp; món nằm dưới tiêu đề nhóm của mình.
+
 **Out of Scope:**
 - Gọi món bằng giọng nói AI (Voice-to-order, Clarification) — thuộc US-02.
 - Luồng Bếp nhận ticket và chuyển trạng thái trên KDS — thuộc US-03.

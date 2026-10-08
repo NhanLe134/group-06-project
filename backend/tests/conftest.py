@@ -16,9 +16,10 @@ ID_PREFIX = {
     "thucdon": "MON",
     "tonkho": "NL",
     "congthuc": "CT",
-    "phienban": "PB",
+    "ban": "BAN",
+    "phieuban": "PB",
     "hoadon": "HD",
-    "chitietmon": "CTM",
+    "chitietphieu": "CTP",
     "loghuymon": "HM",
     "loggiongnoi": "GN",
     "phieukiemke": "PKK",
@@ -29,8 +30,12 @@ _id_counter = count(1)
 
 @event.listens_for(Base, "before_insert", propagate=True)
 def _fake_db_generated_id(mapper, connection, target) -> None:
-    if getattr(target, "id", None) is None:
-        target.id = f"{ID_PREFIX[mapper.local_table.name]}-TEST-{next(_id_counter):04d}"
+    table = mapper.local_table.name
+    if table not in ID_PREFIX:
+        return
+    pk_name = mapper.primary_key[0].name
+    if getattr(target, pk_name, None) is None:
+        setattr(target, pk_name, f"{ID_PREFIX[table]}-TEST-{next(_id_counter):04d}")
 
 
 @pytest.fixture

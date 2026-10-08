@@ -1,94 +1,96 @@
 """Nghiệp vụ Gọi món (US-01), Hóa đơn tạm tính (US-09) và Thu ngân (US-05).
 
-Quy tắc đa đợt: 1 phiên bàn có duy nhất 1 hóa đơn 'da_chot' đang mở;
-gọi đợt 2+ chỉ chèn thêm chitietmon vào hóa đơn đó và tính lại tongtien.
+Thiết kế ADR-N14:
+- `ban` = master 6 bàn vật lý (trangthai 1/2/3)
+- Mỗi lần khách gửi bếp = 1 `phieuban` mới (hoadon_id NULL = của khách đang dùng)
+- `hoadon` chỉ tạo khi THANH TOÁN — gắn hoadon_id vào các phiếu, bàn về chờ dọn
+- Hóa đơn tạm tính (US-09) = SELECT tổng hợp các phiếu có hoadon_id NULL
 """
 
-from datetime import UTC, datetime
 from urllib.parse import quote
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.errors import ApiError
-from app.models import ChiTietMon, HoaDon, LogGiongNoi, PhienBan, ThucDon
+from app.models import Ban, ChiTietPhieu, HoaDon, PhieuBan, ThucDon
 from app.schemas.order import (
     OrderCreateIn,
     OrderCurrentOut,
     OrderItemOut,
     PayQrOut,
-    TableOut,
 )
 from app.services import stock
 
-DA_CHOT = "da_chot"
-DA_THANH_TOAN = "da_thanh_toan"
-DANG_PHUC_VU = "dang_phuc_vu"
-TRONG = "trong"
 DA_PHUC_VU = "da_phuc_vu"
+BAN_SAN_SANG, BAN_DANG_PHUC_VU, BAN_CHO_DON = 1, 2, 3
 
 
-async def get_active_session(db: AsyncSession, table_name: str) -> PhienBan | None:
-    """Phiên bàn đang phục vụ (mới nhất) theo tên bàn."""
-    row = await db.execute(
-        select(PhienBan)
-        .where(PhienBan.tenban == table_name, PhienBan.trangthai == DANG_PHUC_VU)
-        .order_by(PhienBan.giobatdau.desc().nullslast(), PhienBan.id.desc())
-        .limit(1)
-    )
-    return row.scalars().first()
+async def get_ban(db: AsyncSession, tenban: str) -> Ban:
+    """MASTER data — bàn phải được seed sẵn trong bảng `ban`."""
+    row = await db.execute(select(Ban).where(Ban.tenban == tenban))
+    ban = row.scalars().first()
+    if ban is None:
+        raise ApiError(404, "TABLE_NOT_FOUND", f"Không tồn tại bàn '{tenban}'.")
+    return ban
 
 
-async def get_open_bill(db: AsyncSession, phienban_id: str) -> HoaDon | None:
-    """Hóa đơn 'da_chot' đang mở của phiên bàn (gọi đợt 1/2/... cùng chung 1 hóa đơn)."""
-    row = await db.execute(
-        select(HoaDon)
-        .where(HoaDon.phienban_id == phienban_id, HoaDon.trangthai == DA_CHOT)
-        .order_by(HoaDon.thoigian.desc(), HoaDon.id.desc())
-        .limit(1)
-    )
-    return row.scalars().first()
-
-
-async def _bill_items(db: AsyncSession, hoadon_id: str) -> list[OrderItemOut]:
+async def get_open_phieuban_list(db: AsyncSession, ban_id: str) -> list[PhieuBan]:
+    """Các phiếu bàn CHƯA tính tiền (hoadon_id NULL) của 1 bàn — cũ nhất trước."""
     rows = await db.execute(
-        select(ChiTietMon, ThucDon.tenmon, ThucDon.giaban)
-        .outerjoin(ThucDon, ChiTietMon.thucdon_id == ThucDon.id)
-        .where(ChiTietMon.hoadon_id == hoadon_id)
-        .order_by(ChiTietMon.giogoimon, ChiTietMon.id)
+        select(PhieuBan)
+        .where(PhieuBan.ban_id == ban_id, PhieuBan.hoadon_id.is_(None))
+        .order_by(PhieuBan.giogoimon, PhieuBan.phieuban_id)
     )
+    return list(rows.scalars().all())
+
+
+async def _bill_items(
+    db: AsyncSession, phieu_list: list[PhieuBan]
+) -> list[OrderItemOut]:
+    """Món của các phiếu, gán `dot` theo thứ tự phiếu (phiếu cũ = đợt trước)."""
+    phieu_ids = [p.phieuban_id for p in phieu_list]
+    rows = await db.execute(
+        select(ChiTietPhieu, ThucDon.tenmon, ThucDon.giaban, PhieuBan.giogoimon)
+        .outerjoin(ThucDon, ChiTietPhieu.mon_id == ThucDon.id)
+        .outerjoin(PhieuBan, ChiTietPhieu.phieuban_id == PhieuBan.phieuban_id)
+        .where(ChiTietPhieu.phieuban_id.in_(phieu_ids))
+        .order_by(PhieuBan.giogoimon, ChiTietPhieu.phieuban_id, ChiTietPhieu.chitietphieu_id)
+    )
+    phieu_index = {p.phieuban_id: i + 1 for i, p in enumerate(phieu_list)}  # đợt theo phiếu
     out: list[OrderItemOut] = []
-    for mon, tenmon, giaban in rows.all():
+    for mon, tenmon, giaban, gio in rows.all():
         so_luong = mon.soluong or 1
         gia = int(giaban or 0)
         out.append(
             OrderItemOut(
-                id=mon.id,
+                id=mon.chitietphieu_id,
                 tenmon=tenmon,
                 soluong=so_luong,
                 gia=gia,
                 thanhtien=gia * so_luong,
                 ghichu=mon.ghichu,
                 trangthai=mon.trangthai or "cho_nau",
+                dot=phieu_index.get(mon.phieuban_id),
+                giogoimon=gio,
             )
         )
     return out
 
 
 async def current_order(db: AsyncSession, table_name: str) -> OrderCurrentOut:
-    """US-09 — hóa đơn tạm tính của bàn: món đợt 1/2 + trạng thái bưng món."""
-    phien = await get_active_session(db, table_name)
-    if phien is None:
-        raise ApiError(404, "TABLE_NOT_FOUND", f"Bàn '{table_name}' chưa có phiên phục vụ nào.")
-    hoadon = await get_open_bill(db, phien.id)
-    if hoadon is None:
+    """US-09 — hóa đơn tạm tính = tổng các phiếu CHƯA tính tiền của bàn."""
+    ban = await get_ban(db, table_name)
+    phieu_list = await get_open_phieuban_list(db, ban.ban_id)
+    if not phieu_list:
         raise ApiError(404, "ORDER_NOT_FOUND", f"Bàn '{table_name}' chưa gọi món nào.")
-    items = await _bill_items(db, hoadon.id)
+    items = await _bill_items(db, phieu_list)
+    tongtien = sum(i.thanhtien for i in items)
     return OrderCurrentOut(
-        phienban_id=phien.id,
-        hoadon_id=hoadon.id,
+        phieuban_id=phieu_list[0].phieuban_id if phieu_list else "",
+        hoadon_id="",  # hóa đơn chỉ sinh khi thanh toán (ADR-N14)
         table_name=table_name,
-        tongtien=int(hoadon.tongtien or 0),
+        tongtien=tongtien,
         items=items,
         all_served=bool(items) and all(i.trangthai == DA_PHUC_VU for i in items),
     )
@@ -97,16 +99,19 @@ async def current_order(db: AsyncSession, table_name: str) -> OrderCurrentOut:
 async def create_order(
     db: AsyncSession, data: OrderCreateIn
 ) -> tuple[OrderCurrentOut, list[ThucDon]]:
-    """US-01 — gửi bếp: đợt 1 tạo phiên + hóa đơn; đợt 2+ chèn thêm vào hóa đơn cũ.
+    """US-01 — gửi bếp: mỗi lần gọi = 1 phiếu bàn mới + các dòng chi tiết phiếu.
 
     Trả thêm các món vừa đổi còn/hết hàng do trừ kho để router phát realtime.
     """
-    # Kiểm tra món hợp lệ + còn bán (REQ-09/BR-03) ngay tại server, client không bypass được
+    ban = await get_ban(db, data.table_name)
+
+    # Kiểm tra món hợp lệ + còn bán (REQ-09/BR-03) ngay tại server
     ids = [it.thucdon_id for it in data.items]
-    menu_rows = (
-        await db.execute(select(ThucDon).where(ThucDon.id.in_(ids)))
-    ).scalars().all()
-    menu_by_id = {mon.id: mon for mon in menu_rows}
+    menu_by_id = {
+        mon.id: mon
+        for mon in (
+            await db.execute(select(ThucDon).where(ThucDon.id.in_(ids)))).scalars().all()
+    }
     for it in data.items:
         mon = menu_by_id.get(it.thucdon_id)
         if mon is None:
@@ -114,99 +119,69 @@ async def create_order(
         if mon.het_hang:
             raise ApiError(409, "ITEM_OUT_OF_STOCK", f"Món '{mon.tenmon}' đã hết hàng.")
 
-    # Trừ kho ngay khi gửi bếp (story-spec-tru-kho-tu-dong.md Q1); thiếu hàng → 409, không tạo món
+    # Trừ kho ngay khi gửi bếp (story-spec-tru-kho-tu-dong.md); thiếu hàng → 409
     watch = await stock.reserve(db, [(it.thucdon_id, it.soluong) for it in data.items])
 
-    # Phiên bàn: đợt 1 → tạo mới; đợt 2+ → dùng phiên đang phục vụ
-    phien = await get_active_session(db, data.table_name)
-    if phien is None:
-        phien = PhienBan(tenban=data.table_name, trangthai=DANG_PHUC_VU, giobatdau=func.now())
-        db.add(phien)
-        await db.flush()
-
-    # Hóa đơn: đợt 1 → tạo 'da_chot'; đợt 2+ → giữ nguyên hóa đơn cũ
-    hoadon = await get_open_bill(db, phien.id)
-    if hoadon is None:
-        hoadon = HoaDon(phienban_id=phien.id, trangthai=DA_CHOT, thoigian=func.now())
-        db.add(hoadon)
-        await db.flush()
+    # Mỗi lần gửi bếp = 1 phiếu bàn mới, hoadon_id NULL (chưa tính tiền)
+    phieu = PhieuBan(ban_id=ban.ban_id, giogoimon=func.now(), hoadon_id=None)
+    db.add(phieu)
+    await db.flush()
 
     for it in data.items:
         db.add(
-            ChiTietMon(
-                hoadon_id=hoadon.id,
-                thucdon_id=it.thucdon_id,
+            ChiTietPhieu(
+                phieuban_id=phieu.phieuban_id,
+                mon_id=it.thucdon_id,
                 soluong=it.soluong,
                 ghichu=it.ghichu,
-                giogoimon=func.now(),
             )
         )
-    await db.flush()
 
-    # Tính lại tổng tiền trên TOÀN BỘ món của hóa đơn (đợt 1 + đợt 2 + ...)
-    tongtien = (
-        await db.execute(
-            select(func.coalesce(func.sum(ThucDon.giaban * ChiTietMon.soluong), 0))
-            .select_from(ChiTietMon)
-            .join(ThucDon, ChiTietMon.thucdon_id == ThucDon.id)
-            .where(ChiTietMon.hoadon_id == hoadon.id)
-        )
-    ).scalar_one()
-    hoadon.tongtien = int(tongtien)
+    # Bàn chuyển sang đang phục vụ (từ sẵn sàng hoặc chờ dọn)
+    if ban.trangthai != BAN_DANG_PHUC_VU:
+        ban.trangthai = BAN_DANG_PHUC_VU
     await db.commit()
     return await current_order(db, data.table_name), stock.flipped(watch)
 
 
-async def list_cashier_tables(db: AsyncSession) -> list[TableOut]:
-    """US-05 — danh sách phiên bàn kèm hóa đơn đang mở cho màn Thu ngân."""
-    phien_list = (
-        await db.execute(
-            select(PhienBan).order_by(PhienBan.trangthai.desc(), PhienBan.giobatdau.desc())
-        )
-    ).scalars().all()
-    out: list[TableOut] = []
-    for phien in phien_list:
-        hoadon = await get_open_bill(db, phien.id)
+async def list_cashier_tables(db: AsyncSession) -> list[dict]:
+    """US-05 — 6 bàn master + tổng tiền các phiếu chưa tính tiền."""
+    bans = (await db.execute(select(Ban).order_by(Ban.ban_id))).scalars().all()
+    out: list[dict] = []
+    for ban in bans:
+        phieu_list = await get_open_phieuban_list(db, ban.ban_id)
+        items = await _bill_items(db, phieu_list) if phieu_list else []
         out.append(
-            TableOut(
-                id=phien.id,
-                tenban=phien.tenban,
-                trangthai=phien.trangthai,
-                giobatdau=phien.giobatdau.isoformat() if phien.giobatdau else None,
-                hoadon_id=hoadon.id if hoadon else None,
-                hoadon_trangthai=hoadon.trangthai if hoadon else None,
-                tongtien=int(hoadon.tongtien or 0) if hoadon else 0,
-            )
+            {
+                "id": ban.ban_id,
+                "tenban": ban.tenban,
+                "trangthai": str(ban.trangthai or BAN_SAN_SANG),
+                "giobatdau": (
+                    phieu_list[0].giogoimon.isoformat() if phieu_list else None
+                ),
+                "tongtien": sum(i.thanhtien for i in items),
+                "so_phieuban": len(phieu_list),
+            }
         )
     return out
 
 
-async def _load_bill_for_pay(db: AsyncSession, hoadon_id: str) -> tuple[HoaDon, PhienBan]:
-    row = (
-        await db.execute(
-            select(HoaDon, PhienBan)
-            .outerjoin(PhienBan, HoaDon.phienban_id == PhienBan.id)
-            .where(HoaDon.id == hoadon_id)
-        )
-    ).first()
-    if row is None:
-        raise ApiError(404, "ORDER_NOT_FOUND", "Không tìm thấy hóa đơn.")
-    hoadon, phien = row
-    if hoadon.trangthai != DA_CHOT:
-        raise ApiError(409, "ORDER_NOT_OPEN", "Hóa đơn không còn ở trạng thái chờ thanh toán.")
-    return hoadon, phien
-
-
-async def create_pay_qr(db: AsyncSession, hoadon_id: str) -> PayQrOut:
-    """US-05 — sinh QR thanh toán cho hóa đơn (mock: qrserver.com; sau này thay
-    bằng QR động MoMo/VNPAY Sandbox theo REQ-04)."""
-    hoadon, phien = await _load_bill_for_pay(db, hoadon_id)
-    amount = int(hoadon.tongtien or 0)
-    qr_data = f"SMARTORDER|PAY|{phien.tenban}|{amount}"
+async def build_pay_qr(db: AsyncSession, ban_id: str) -> PayQrOut:
+    """US-05 — QR thanh toán tính từ các phiếu CHƯA tính tiền (không ghi DB)."""
+    ban = await db.get(Ban, ban_id)
+    if ban is None:
+        raise ApiError(404, "TABLE_NOT_FOUND", "Không tìm thấy bàn.")
+    phieu_list = await get_open_phieuban_list(db, ban.ban_id)
+    if not phieu_list:
+        raise ApiError(409, "NO_OPEN_BILL", f"Bàn '{ban.tenban}' chưa có phiếu nào để thanh toán.")
+    items = await _bill_items(db, phieu_list)
+    amount = sum(i.thanhtien for i in items)
+    qr_data = f"SMARTORDER|PAY|{ban.tenban}|{amount}"
     return PayQrOut(
-        hoadon_id=hoadon.id,
-        table_name=phien.tenban,
+        ban_id=ban.ban_id,
+        table_name=ban.tenban,
         amount=amount,
+        so_phieuban=len(phieu_list),
         qr_data=qr_data,
         qr_url=(
             "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data="
@@ -215,33 +190,55 @@ async def create_pay_qr(db: AsyncSession, hoadon_id: str) -> PayQrOut:
     )
 
 
-async def close_table(db: AsyncSession, phienban_id: str) -> dict:
-    """US-05 — Xác nhận đã nhận tiền & Đóng bàn: chốt hóa đơn, trả bàn về 'trong'."""
-    phien = (
-        await db.execute(select(PhienBan).where(PhienBan.id == phienban_id))
-    ).scalars().first()
-    if phien is None:
-        raise ApiError(404, "TABLE_NOT_FOUND", "Không tìm thấy phiên bàn.")
-    if phien.trangthai != DANG_PHUC_VU:
-        raise ApiError(409, "TABLE_NOT_ACTIVE", f"Bàn '{phien.tenban}' không đang phục vụ.")
-    hoadon = await get_open_bill(db, phien.id)
-    if hoadon is None:
-        raise ApiError(409, "NO_OPEN_BILL", f"Bàn '{phien.tenban}' chưa có hóa đơn để thanh toán.")
+async def close_table(
+    db: AsyncSession, ban_id: str, nhanvien_id: str | None = None
+) -> dict:
+    """US-05 — Thanh toán & đóng bàn:
+    INSERT hoadon (tổng các phiếu chưa tính) → gắn hoadon_id vào phiếu → bàn về chờ dọn (3)."""
+    ban = await db.get(Ban, ban_id)
+    if ban is None:
+        raise ApiError(404, "TABLE_NOT_FOUND", "Không tìm thấy bàn.")
+    phieu_list = await get_open_phieuban_list(db, ban.ban_id)
+    if not phieu_list:
+        raise ApiError(409, "NO_OPEN_BILL", f"Bàn '{ban.tenban}' chưa có phiếu nào để thanh toán.")
 
-    hoadon.trangthai = DA_THANH_TOAN
-    hoadon.thoigian_thanhtoan = func.now()
-    phien.trangthai = TRONG
-    phien.gioketthuc = func.now()
-    # NFR-RO-02: xóa transcript và ý định AI gắn với phiên ngay khi đóng bàn.
-    await db.execute(
-        LogGiongNoi.__table__.delete().where(LogGiongNoi.phienban_id == phien.id)
+    items = await _bill_items(db, phieu_list)
+    tongtien = sum(i.thanhtien for i in items)
+
+    hoadon = HoaDon(
+        ban_id=ban.ban_id,
+        nhanvien_id=nhanvien_id,
+        so_phieuban=len(phieu_list),
+        tongtien=tongtien,
+        thoigianthanhtoan=func.now(),
     )
+    db.add(hoadon)
+    await db.flush()
+    for phieu in phieu_list:
+        phieu.hoadon_id = hoadon.hoadon_id
+
+    ban.trangthai = BAN_CHO_DON
     await db.commit()
     return {
-        "phienban_id": str(phien.id),
-        "table_name": phien.tenban,
-        "hoadon_id": str(hoadon.id),
-        "tongtien": int(hoadon.tongtien or 0),
-        "message": f"Đã thanh toán {phien.tenban} và đóng bàn.",
-        "closed_at": datetime.now(UTC).isoformat(),
+        "ban_id": ban.ban_id,
+        "table_name": ban.tenban,
+        "hoadon_id": hoadon.hoadon_id,
+        "tongtien": tongtien,
+        "so_phieuban": len(phieu_list),
+        "message": (
+            f"Đã thanh toán {ban.tenban}: {len(phieu_list)} phiếu, "
+            f"{tongtien}₫. Bàn chờ dọn."
+        ),
     }
+
+
+async def mark_cleaned(db: AsyncSession, ban_id: str) -> dict:
+    """Waiter xác nhận đã dọn xong: bàn chờ dọn (3) → sẵn sàng (1)."""
+    ban = await db.get(Ban, ban_id)
+    if ban is None:
+        raise ApiError(404, "TABLE_NOT_FOUND", "Không tìm thấy bàn.")
+    if ban.trangthai != BAN_CHO_DON:
+        raise ApiError(409, "TABLE_NOT_WAITING_CLEAN", "Bàn không ở trạng thái chờ dọn.")
+    ban.trangthai = BAN_SAN_SANG
+    await db.commit()
+    return {"ban_id": ban.ban_id, "table_name": ban.tenban, "trangthai": 1}
