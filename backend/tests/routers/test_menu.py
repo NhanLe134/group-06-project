@@ -57,8 +57,7 @@ async def test_menu_item_het_ton_nhung_van_ban_co_listed(
     from app.models.menu import ThucDon, true
 
     db_session.add(
-        ThucDon(tenmon="Trà đá", phanloai="Đồ uống", giaban=5000,
-                trangthaiban=true(), soluongton=0)
+        ThucDon(tenmon="Trà đá", phanloai="Đồ uống", giaban=5000, trangthaiban=true(), soluongton=0)
     )
     await db_session.commit()
 

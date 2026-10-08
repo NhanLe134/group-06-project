@@ -25,14 +25,30 @@ from app.main import app  # noqa: E402
 from app.models import Ban, CongThuc, NguoiDung, ThucDon, TonKho  # noqa: E402
 
 # Bàn là dữ liệu master (ADR-N14): mỗi test E2E dùng 1 bàn riêng
-E2E_TABLES = ["Bàn E2E-01", "Bàn E2E-02A", "Bàn E2E-02B", "Bàn E2E-03", "Bàn E2E-04",
-              "Bàn E2E-05", "Bàn E2E-06"]
+E2E_TABLES = [
+    "Bàn E2E-01",
+    "Bàn E2E-02A",
+    "Bàn E2E-02B",
+    "Bàn E2E-03",
+    "Bàn E2E-04",
+    "Bàn E2E-05",
+    "Bàn E2E-06",
+]
 
 # Trên Supabase mã (MON001, HD-...) do DB sinh (migration 007); SQLite không có → giả lập ở đây
 _PREFIX = {
-    "nguoidung": "NV", "thucdon": "MON", "tonkho": "NL", "congthuc": "CT", "ban": "BAN",
-    "phieuban": "PB", "chitietphieu": "CTP", "hoadon": "HD", "loghuymon": "HM",
-    "loggiongnoi": "GN", "phieukiemke": "PKK", "chitietkiemke": "CTKK",
+    "nguoidung": "NV",
+    "thucdon": "MON",
+    "tonkho": "NL",
+    "congthuc": "CT",
+    "ban": "BAN",
+    "phieuban": "PB",
+    "chitietphieu": "CTP",
+    "hoadon": "HD",
+    "loghuymon": "HM",
+    "loggiongnoi": "GN",
+    "phieukiemke": "PKK",
+    "chitietkiemke": "CTKK",
 }
 _counter = count(1)
 
@@ -51,18 +67,20 @@ def seed(engine) -> None:
         bo = TonKho(tennguyenlieu="Thịt bò", donvitinh="kg", tonhethong=Decimal("10"))
         pho = ThucDon(tenmon="Phở bò", phanloai="Món chính", giaban=65000)
         pho.congthuc.append(CongThuc(nguyenlieu=bo, dinhluong=Decimal("0.2")))  # 50 phần
-        s.add_all([
-            pho,
-            ThucDon(tenmon="Salad cá ngừ", phanloai="Khai vị", giaban=90000),
-            ThucDon(tenmon="Gỏi cuốn", phanloai="Khai vị", giaban=45000),
-            ThucDon(tenmon="Bánh flan", phanloai="Tráng miệng", giaban=25000),
-            ThucDon(tenmon="Chè đậu đen", phanloai="Tráng miệng", giaban=25000),
-            ThucDon(tenmon="Coca", phanloai="Đồ uống", giaban=15000, soluongton=24),
-            ThucDon(tenmon="Trà đá", phanloai="Đồ uống", giaban=5000, soluongton=50),
-            NguoiDung(hoten="Quản lý E2E", vaitro="QUAN_LY", mapin="1234"),
-            NguoiDung(hoten="Thu ngân E2E", vaitro="THU_NGAN", mapin="9999"),
-            *(Ban(tenban=t, trangthai=1) for t in E2E_TABLES),
-        ])
+        s.add_all(
+            [
+                pho,
+                ThucDon(tenmon="Salad cá ngừ", phanloai="Khai vị", giaban=90000),
+                ThucDon(tenmon="Gỏi cuốn", phanloai="Khai vị", giaban=45000),
+                ThucDon(tenmon="Bánh flan", phanloai="Tráng miệng", giaban=25000),
+                ThucDon(tenmon="Chè đậu đen", phanloai="Tráng miệng", giaban=25000),
+                ThucDon(tenmon="Coca", phanloai="Đồ uống", giaban=15000, soluongton=24),
+                ThucDon(tenmon="Trà đá", phanloai="Đồ uống", giaban=5000, soluongton=50),
+                NguoiDung(hoten="Quản lý E2E", vaitro="QUAN_LY", mapin="1234"),
+                NguoiDung(hoten="Thu ngân E2E", vaitro="THU_NGAN", mapin="9999"),
+                *(Ban(tenban=t, trangthai=1) for t in E2E_TABLES),
+            ]
+        )
         s.commit()
 
 

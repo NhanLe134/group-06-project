@@ -38,11 +38,13 @@ class MenuItemOut(BaseModel):
 
 class StockUpdateIn(BaseModel):
     """Đặt số lượng tồn; null = chuyển món về loại không đếm số lượng."""
+
     stock: int | None = Field(ge=0)
 
 
 class MenuItemCreateIn(BaseModel):
     """Body tạo món mới (POST /menu/items)."""
+
     name: str = Field(min_length=1, max_length=200)
     category: str = Field(min_length=1, max_length=100)
     price: int = Field(gt=0)
@@ -54,6 +56,7 @@ class MenuItemCreateIn(BaseModel):
 
 class MenuItemUpdateIn(BaseModel):
     """Body cập nhật món (PATCH /menu/items/{id}) — tất cả trường tùy chọn."""
+
     name: str | None = Field(default=None, min_length=1, max_length=200)
     category: str | None = Field(default=None, min_length=1, max_length=100)
     price: int | None = Field(default=None, gt=0)

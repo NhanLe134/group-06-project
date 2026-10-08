@@ -1,6 +1,6 @@
 /* CSS Waiter.css - Tinh chỉnh Background & Card Design */
-body.waiter-app { background-color: #F1F5F9; font-family: 'Be Vietnam Pro', sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
-.premium-header { background: #ffffff; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); padding: 12px 24px; z-index: 10; }
+body.waiter-app { background-color: #F1F5F9; font-family: 'Be Vietnam Pro', sans-serif; height: 100dvh; width: 100vw; position: fixed; top: 0; left: 0; overflow: hidden; display: flex; flex-direction: column; margin: 0; }
+.premium-header { background: #ffffff; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); padding: 12px 24px; z-index: 10; flex-shrink: 0; }
 .brand-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
 .brand-logo { display: flex; align-items: center; gap: 8px; font-size: 20px; color: var(--color-primary); font-weight: 800; }
 .brand-logo i { font-size: 28px; }
@@ -199,7 +199,7 @@ body.waiter-app { background-color: #F1F5F9; font-family: 'Be Vietnam Pro', sans
     .waiter-layout { padding-bottom: 70px; }
     
     /* Ghi đè lại Side panel trên mobile để biến nó thành Tab Nội dung thay vì ngăn kéo */
-    .side-panel { position: static !important; width: 100% !important; max-width: 100% !important; box-shadow: none !important; right: 0 !important; }
+    .side-panel { position: static !important; width: 100% !important; max-width: 100% !important; box-shadow: none !important; right: 0 !important; flex: 1 !important; overflow: hidden !important; }
     
     /* Mặc định Tab Bàn (main-content) ẩn, Tab Thông báo (side-panel) hiện */
     .main-content { display: none; }

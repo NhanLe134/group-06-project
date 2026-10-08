@@ -140,9 +140,7 @@ async def split_item(
     return await get_item(db, item.chitietphieu_id), await get_item(db, part.chitietphieu_id)
 
 
-async def cancel_out_of_stock(
-    db: AsyncSession, item_id: str
-) -> tuple[KdsItemOut, list[ThucDon]]:
+async def cancel_out_of_stock(db: AsyncSession, item_id: str) -> tuple[KdsItemOut, list[ThucDon]]:
     """Xóa khỏi hàng đợi món CHỜ NẤU mà nguyên liệu đã hết (A-26) — ghi loghuymon.
 
     Món chưa nấu nên cộng trả kho (story-spec-tru-kho-tu-dong.md Q2); trả thêm các món

@@ -11,13 +11,20 @@ from app.services.stock import flipped
 
 def _mon(soluongton: int | None = None, trangthaiban: bool = True, **recipe: str) -> ThucDon:
     """recipe: tên nguyên liệu = "tồn:định lượng", vd. bo="1:0.2" (1 kg bò, 0.2 kg/phần)."""
-    mon = ThucDon(tenmon="Món thử", phanloai="Món chính", giaban=10000,
-                  soluongton=soluongton, trangthaiban=trangthaiban)
+    mon = ThucDon(
+        tenmon="Món thử",
+        phanloai="Món chính",
+        giaban=10000,
+        soluongton=soluongton,
+        trangthaiban=trangthaiban,
+    )
     for ten, spec in recipe.items():
         ton, dinhluong = (Decimal(x) for x in str(spec).split(":"))
         mon.congthuc.append(
-            CongThuc(nguyenlieu=TonKho(tennguyenlieu=ten, donvitinh="kg", tonhethong=ton),
-                     dinhluong=dinhluong)
+            CongThuc(
+                nguyenlieu=TonKho(tennguyenlieu=ten, donvitinh="kg", tonhethong=ton),
+                dinhluong=dinhluong,
+            )
         )
     return mon
 

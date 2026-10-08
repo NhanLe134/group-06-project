@@ -92,9 +92,7 @@ async def _prepare(
         if thucdon_id:
             qty[thucdon_id] += soluong or 1
     dishes = await _lock_dishes(db, qty)
-    tonkho_ids = {
-        ct.tonkho_id for mon in dishes.values() for ct in _cong_thuc(mon) if ct.tonkho_id
-    }
+    tonkho_ids = {ct.tonkho_id for mon in dishes.values() for ct in _cong_thuc(mon) if ct.tonkho_id}
     await _lock_ingredients(db, tonkho_ids)  # đọc lại tồn mới nhất dưới khóa
     return qty, dishes, await _watch(db, dishes.values(), tonkho_ids)
 

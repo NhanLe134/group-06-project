@@ -11,9 +11,7 @@ class VoiceDraftLine(BaseModel):
 class VoiceInterpretIn(BaseModel):
     """Văn bản transcript do Web Speech API hoặc client STT gửi lên."""
 
-    transcript: str = Field(
-        min_length=1, max_length=2000, description="Nội dung khách vừa nói"
-    )
+    transcript: str = Field(min_length=1, max_length=2000, description="Nội dung khách vừa nói")
     draft: list[VoiceDraftLine] = Field(
         default_factory=list, description="Số lượng món hiện có trong Order Draft"
     )

@@ -32,9 +32,7 @@ async def create_order(data: OrderCreateIn, db: Db) -> OrderCurrentOut:
         KDS_CHANNEL,
         "KDS_ITEMS_CHANGED",
         {
-            "item_ids": [
-                i.id for i in order.items if i.trangthai == "cho_nau"
-            ],
+            "item_ids": [i.id for i in order.items if i.trangthai == "cho_nau"],
             "reason": "new_order",
             "ban": order.table_name,
         },

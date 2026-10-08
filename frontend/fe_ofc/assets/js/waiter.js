@@ -1,34 +1,16 @@
-// Cơ sở dữ liệu Table Map mô phỏng với nhiều món ăn để test Tiến độ bưng
-const tables = [
-    { 
-        id: 'T01', name: 'Bàn 01', status: 'occupied', pax: 3, capacity: 4, time: '45 phút',
-        items: [
-            { id: 'i1', name: 'Bò lúc lắc', status: 'served', statusText: 'Đã phục vụ', price: '120.000đ' },
-            { id: 'i2', name: 'Súp cua tuyết', status: 'served', statusText: 'Đã phục vụ', price: '85.000đ' },
-            { id: 'i3', name: 'Bia Tiger (Chai)', status: 'ready', statusText: 'Chưa phục vụ', price: '45.000đ', isDrink: true },
-            { id: 'i4', name: 'Salad cá ngừ', status: 'cooking', statusText: 'Đang nấu', price: '90.000đ' },
-            { id: 'i5', name: 'Cơm chiên hải sản', status: 'cooking', statusText: 'Đang nấu', price: '110.000đ' }
-        ]
-    },
-    { id: 'T02', name: 'Bàn 02', status: 'empty', pax: 0, capacity: 2, time: '', items: [] },
-    { id: 'T03', name: 'Bàn 03', status: 'cleaning', pax: 0, capacity: 6, time: '', items: [] },
-    { 
-        id: 'T04', name: 'Bàn 04', status: 'occupied', pax: 5, capacity: 6, time: '15 phút',
-        items: [
-            { id: 'i6', name: 'Lẩu thái Tomyum', status: 'pending', statusText: 'Chờ nấu', price: '350.000đ' },
-            { id: 'i7', name: 'Nước lẩu thêm', status: 'pending', statusText: 'Chờ nấu', price: '30.000đ' },
-            { id: 'i10', name: 'Coca Cola x2', status: 'ready', statusText: 'Chờ lấy (Quầy Nước)', price: '40.000đ' }
-        ]
-    },
-    { 
-        id: 'T05', name: 'Bàn 05', status: 'occupied', pax: 2, capacity: 4, time: '60 phút',
-        items: [
-            { id: 'i8', name: 'Gà nướng muối ớt', status: 'served', statusText: 'Đã phục vụ', price: '180.000đ' },
-            { id: 'i9', name: 'Rượu soju', status: 'served', statusText: 'Đã phục vụ', price: '60.000đ' }
-        ]
-    },
-    { id: 'T06', name: 'Bàn 06', status: 'empty', pax: 0, capacity: 4, time: '', items: [] } 
-];
+let tables = [];
+
+async function loadTables() {
+    try {
+        const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/waiter/tables`);
+        if (!res.ok) throw new Error('Lỗi tải sơ đồ bàn');
+        tables = await res.json();
+        renderTables();
+    } catch (err) {
+        console.error(err);
+        showToast('Lỗi kết nối', 'Không thể tải Sơ đồ bàn từ Server', 'danger');
+    }
+}
 
 const tableGrid = document.getElementById('table-grid');
 const authModal = document.getElementById('auth-modal');
@@ -48,10 +30,25 @@ const drawerBadge = document.getElementById('drawer-status-badge');
 
 let currentActionCb = null;
 
+let currentZone = 'all';
+
+// Initialize Zone Filter Event Listener
+document.addEventListener('DOMContentLoaded', () => {
+    const zoneFilter = document.getElementById('zone-filter');
+    if (zoneFilter) {
+        zoneFilter.addEventListener('change', (e) => {
+            currentZone = e.target.value;
+            renderTables();
+        });
+    }
+});
+
 // 1. RENDER TABLE MAP CHUYÊN NGHIỆP CÓ TÍNH TOÁN TIẾN ĐỘ LÊN MÓN
 function renderTables() {
     tableGrid.innerHTML = '';
     tables.forEach(t => {
+        if (currentZone !== 'all' && t.zone !== currentZone) return; // Lọc theo khu vực
+        
         const card = document.createElement('div');
         card.className = 'table-card';
         card.setAttribute('data-status', t.status);
@@ -221,28 +218,32 @@ function renderOrderItems(table) {
 }
 
 // 3. NGHIỆP VỤ: ĐÃ PHỤC VỤ (SERVED)
-window.markItemServed = function(tableId, itemId) {
-    const table = tables.find(t => t.id === tableId);
-    if (!table) return;
-    const item = table.items.find(i => i.id === itemId);
-    if (item) {
-        item.status = 'served';
-        item.statusText = 'Đã phục vụ';
+window.markItemServed = async function(tableId, itemId) {
+    try {
+        const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/waiter/items/${itemId}/serve`, { method: 'PATCH' });
+        if (!res.ok) throw new Error('Lỗi cập nhật');
+        await loadTables();
         
-        // Cập nhật lại Drawer & Table Grid
-        renderOrderItems(table);
-        renderTables(); 
+        if (document.getElementById('table-drawer').classList.contains('active')) {
+            const table = tables.find(t => t.id === tableId);
+            if (table) renderOrderItems(table);
+        }
+    } catch (e) {
+        showToast('Lỗi', 'Không thể xác nhận phục vụ', 'danger');
     }
 }
 
 // 4. NGHIỆP VỤ: HOÀN TẤT DỌN BÀN
-window.markTableClean = function(tableId) {
-    const table = tables.find(t => t.id === tableId);
-    if (table) {
-        table.status = 'empty'; table.pax = 0; table.time = ''; table.items = [];
+window.markTableClean = async function(tableId) {
+    try {
+        const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/waiter/tables/${tableId}/clean`, { method: 'PATCH' });
+        if (!res.ok) throw new Error('Lỗi cập nhật');
+        
         closeTableDrawer();
-        renderTables();
-        showToast('Đã dọn dẹp', `${table.name} đã sẵn sàng đón khách mới.`, 'success');
+        await loadTables();
+        showToast('Đã dọn dẹp', `Bàn đã sẵn sàng đón khách mới.`, 'success');
+    } catch (e) {
+        showToast('Lỗi', 'Không thể cập nhật dọn bàn', 'danger');
     }
 }
 
@@ -252,28 +253,43 @@ window.requestVoid = function(tableId, itemId, itemName, itemStatus) {
         ? `<br><br><span style="color: var(--color-danger); font-weight: 600;"><i class="ph-bold ph-warning-circle"></i> Món đang ở bếp! Hủy món sẽ báo Bếp dừng làm ngay lập tức.</span>` 
         : '';
         
-    document.getElementById('auth-desc').innerHTML = `Nhập mã PIN (1234) để xác nhận hủy món <b>${itemName}</b>.${extraMsg}`;
+    document.getElementById('auth-desc').innerHTML = `Nhập mã PIN quản lý để xác nhận hủy món <b>${itemName}</b>.${extraMsg}`;
 
     authModal.style.display = 'flex';
     pinInput.value = '';
     authError.style.display = 'none';
     pinInput.focus();
     
-    currentActionCb = () => {
-        const table = tables.find(t => t.id === tableId);
-        if(table) {
-            table.items = table.items.filter(i => i.id !== itemId);
-            renderOrderItems(table);
-            renderTables();
-            showToast('Đã hủy món', `Yêu cầu hủy đã bắn trực tiếp xuống KDS để Bếp ngưng làm.`, 'danger');
+    currentActionCb = async () => {
+        try {
+            const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/waiter/items/${itemId}/void`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin: pinInput.value })
+            });
+            if (!res.ok) {
+                if (res.status === 401) throw new Error('Mã PIN không đúng');
+                throw new Error('Không thể hủy món');
+            }
+            
+            authModal.style.display = 'none';
+            await loadTables();
+            
+            if (document.getElementById('table-drawer').classList.contains('active')) {
+                const table = tables.find(t => t.id === tableId);
+                if (table) renderOrderItems(table);
+            }
+            showToast('Đã hủy món', `Yêu cầu hủy đã bắn trực tiếp xuống KDS.`, 'danger');
+        } catch (e) {
+            authError.style.display = 'block';
+            authError.innerText = e.message;
         }
     };
 };
 
 document.getElementById('btn-cancel-auth').addEventListener('click', () => { authModal.style.display = 'none'; });
 document.getElementById('btn-confirm-auth').addEventListener('click', () => {
-    if (pinInput.value === '1234') { 
-        authModal.style.display = 'none';
+    if (pinInput.value) { 
         if (currentActionCb) currentActionCb();
     } else { authError.style.display = 'block'; }
 });
@@ -587,27 +603,34 @@ function renderTasks() {
     }
 }
 
-window.serveBatch = function(itemName) {
+window.serveBatch = async function(itemName) {
+    const itemsToServe = [];
     tables.forEach(t => {
         t.items.forEach(i => {
             if (i.status === 'ready' && i.name === itemName) {
-                i.status = 'served';
-                i.statusText = 'Đã phục vụ';
+                itemsToServe.push(i.id);
             }
         });
     });
     
-    renderTables();
+    if (itemsToServe.length === 0) return;
     
-    // Update drawer if active
-    if (document.getElementById('table-drawer').classList.contains('active')) {
-        const titleText = document.getElementById('drawer-title').innerText;
-        const tableName = titleText.split('Đang')[0].trim();
-        const activeTable = tables.find(t => t.name.includes(tableName));
-        if (activeTable) renderOrderItems(activeTable);
+    try {
+        await Promise.all(itemsToServe.map(id => 
+            fetch(`${window.APP_CONFIG.API_BASE_URL}/waiter/items/${id}/serve`, { method: 'PATCH' })
+        ));
+        
+        await loadTables();
+        
+        if (document.getElementById('table-drawer').classList.contains('active')) {
+            const titleText = document.getElementById('drawer-title').innerText;
+            const activeTable = tables.find(t => t.name.includes(titleText));
+            if (activeTable) renderOrderItems(activeTable);
+        }
+        showToast('Hoàn tất', `Đã bưng <b>${itemName}</b> đến các bàn.`, 'success');
+    } catch (e) {
+        showToast('Lỗi', 'Không thể gom bưng món', 'danger');
     }
-    
-    showToast('Hoàn tất', `Đã bưng <b>${itemName}</b> đến các bàn.`, 'success');
 }
 
 // TÍNH NĂNG: THÔNG BÁO (NOTIFICATION BELL & BOTTOM NAV)
@@ -662,33 +685,62 @@ const escHtml = s => String(s ?? '').replace(/[&<>"']/g, c => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
 ));
 
-function pushReadyNotif({ ban, tenmon, soluong }) {
+// Smart Batching (US-10) Buffer
+const batchingTimers = {};
+
+function pushReadyNotifBatch(ban) {
+    const batch = batchingTimers[ban];
+    if (!batch || batch.items.length === 0) return;
+    
+    const items = batch.items;
+    delete batchingTimers[ban];
+    
     const emptyState = notifList.querySelector('.empty-state');
     if (emptyState) emptyState.style.display = 'none';
 
-    const table = tables.find(t => t.name === ban);   // sơ đồ bàn hiện còn là dữ liệu mẫu
+    const table = tables.find(t => t.name === ban);
     const time = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    
+    const totalItems = items.reduce((sum, i) => sum + i.soluong, 0);
+    const itemsHtml = items.map(i => `<p style="margin:0 0 4px 0;"><i class="ph-bold ph-cooking-pot"></i> <b>${escHtml(i.tenmon)}</b> × ${i.soluong}</p>`).join('');
+    
     const card = document.createElement('div');
     card.className = 'notif-card';
     card.innerHTML = `
         <div class="notif-header"><span class="notif-table">Bếp Gọi: ${escHtml(ban)}</span><span class="notif-time">${time}</span></div>
         <div class="notif-desc">
-            <p style="margin:0;"><i class="ph-bold ph-cooking-pot"></i> <b>${escHtml(tenmon)}</b> × ${Number(soluong) || 1}</p>
+            ${itemsHtml}
         </div>
         ${table ? `<button class="btn-serve" onclick="openTableDrawer('${table.id}')"><i class="ph-bold ph-eye"></i> Mở xem ${escHtml(ban)}</button>` : ''}
     `;
     notifList.prepend(card);
     notifCount++; notifCountBadge.innerText = notifCount;
 
-    showToast('KDS Alert', `${escHtml(ban)}: <b>${escHtml(tenmon)}</b> × ${Number(soluong) || 1} vừa nấu xong. Mời bưng món!`, 'success');
+    showToast('KDS Alert', `${escHtml(ban)}: <b>${totalItems} món</b> đã sẵn sàng. Mời bưng món!`, 'success');
     if (typeof playTing === 'function') playTing();
+}
+
+function handleItemReadyEvent({ ban, tenmon, soluong }) {
+    // US-11: Lọc bỏ qua thông báo nếu bàn thuộc khu vực khác
+    const table = tables.find(t => t.name === ban);
+    if (table && currentZone !== 'all' && table.zone !== currentZone) {
+        return; // Bỏ qua, không đưa vào danh sách gộp hay kêu chuông
+    }
+
+    if (!batchingTimers[ban]) {
+        batchingTimers[ban] = {
+            items: [],
+            timerId: setTimeout(() => pushReadyNotifBatch(ban), 10000)
+        };
+    }
+    batchingTimers[ban].items.push({ tenmon, soluong: Number(soluong) || 1 });
 }
 
 if (typeof subscribeChannel === 'function') {
     subscribeChannel('kds:tickets', msg => {
-        if (msg.event === 'ITEM_READY') pushReadyNotif(msg.payload || {});
+        if (msg.event === 'ITEM_READY') handleItemReadyEvent(msg.payload || {});
     });
 }
 
 // Khởi chạy
-renderTables();
+loadTables();
