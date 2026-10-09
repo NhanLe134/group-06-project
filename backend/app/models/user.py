@@ -20,6 +20,8 @@ class NguoiDung(Base):
     id: Mapped[str] = mapped_column(String(30), primary_key=True, server_default=FetchedValue())
     hoten: Mapped[str] = mapped_column(String)
     vaitro: Mapped[str] = mapped_column(String)
+    tendangnhap: Mapped[str | None] = mapped_column(String, unique=True, default=None)
+    matkhau: Mapped[str | None] = mapped_column(String, default=None)
     mapin: Mapped[str | None] = mapped_column(String, default=None)
     ngaytao: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=False), server_default=func.now()

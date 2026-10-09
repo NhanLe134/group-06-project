@@ -8,6 +8,8 @@ CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     full_name VARCHAR(100) NOT NULL,
     role VARCHAR(20) NOT NULL CHECK (role IN ('MANAGER', 'WAITER', 'KITCHEN', 'CASHIER')),
+    tendangnhap VARCHAR(50) UNIQUE, -- Thêm cho tính năng Đăng nhập
+    matkhau VARCHAR(255),           -- Thêm cho tính năng Đăng nhập
     pin_code VARCHAR(10), -- VD: '1234' dùng để Manager duyệt Hủy món
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

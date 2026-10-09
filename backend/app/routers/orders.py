@@ -79,7 +79,13 @@ async def create_pay_qr(ban_id: str, db: Db) -> PayQrOut:
 @router.post("/tables/{ban_id}/close", response_model=dict)
 async def close_table(ban_id: str, db: Db) -> dict:
     """US-05 — Xác nhận đã nhận tiền: tạo hoadon, gắn các phiếu, bàn về chờ dọn (3)."""
-    return await service.close_table(db, ban_id)
+    result = await service.close_table(db, ban_id)
+    await manager.publish(
+        "kds:tickets",
+        "TABLE_CLEANING",
+        {"ban": result["table_name"], "ban_id": result["ban_id"]}
+    )
+    return result
 
 
 @router.post("/tables/{ban_id}/cleaned", response_model=dict)

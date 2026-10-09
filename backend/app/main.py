@@ -13,13 +13,52 @@ from app.config import settings
 from app.db import Base, async_session_factory, engine, get_db
 from app.errors import register_error_handlers
 from app.models.menu import ThucDon
-from app.routers import ingredients, inventory, kds, menu, orders, voice, waiter
+from app.models.user import NguoiDung
+from app.routers import auth, ingredients, inventory, kds, menu, orders, voice, waiter
 from app.ws import router as ws_router
 
 SEED_MENU_ITEMS = [
     {"tenmon": "Phở bò tái lăn", "phanloai": "Món chính", "giaban": 65000, "trangthaiban": True},
     {"tenmon": "Bún chả Hà Nội", "phanloai": "Món chính", "giaban": 55000, "trangthaiban": True},
     {"tenmon": "Trà đá", "phanloai": "Đồ uống", "giaban": 5000, "trangthaiban": True},
+]
+
+SEED_USERS = [
+    {
+        "id": "NV001",
+        "hoten": "Nhàn & Ny (Khách demo)",
+        "vaitro": "KHACH",
+        "tendangnhap": "customer",
+        "matkhau": "Abcd@1234",
+    },
+    {
+        "id": "NV002",
+        "hoten": "Nhã (Bếp)",
+        "vaitro": "BEP",
+        "tendangnhap": "kitchen",
+        "matkhau": "Abcd@1234",
+    },
+    {
+        "id": "NV003",
+        "hoten": "Trang (Phục vụ)",
+        "vaitro": "PHUC_VU",
+        "tendangnhap": "waiter",
+        "matkhau": "Abcd@1234",
+    },
+    {
+        "id": "NV004",
+        "hoten": "Nhàn (Thu ngân)",
+        "vaitro": "THU_NGAN",
+        "tendangnhap": "cashier",
+        "matkhau": "Abcd@1234",
+    },
+    {
+        "id": "NV005",
+        "hoten": "Trang & Ny & Nhã (Quản lý)",
+        "vaitro": "QUAN_LY",
+        "tendangnhap": "manager",
+        "matkhau": "Abcd@1234",
+    },
 ]
 
 
@@ -34,6 +73,11 @@ async def lifespan(app: FastAPI):
             existing = await session.execute(select(ThucDon.id).limit(1))
             if existing.first() is None:
                 session.add_all(ThucDon(**item) for item in SEED_MENU_ITEMS)
+                await session.commit()
+            
+            existing_user = await session.execute(select(NguoiDung.id).limit(1))
+            if existing_user.first() is None:
+                session.add_all(NguoiDung(**user) for user in SEED_USERS)
                 await session.commit()
     yield
 
@@ -59,6 +103,7 @@ app.include_router(voice.router)
 app.include_router(voice.ai_router)
 app.include_router(waiter.router)
 app.include_router(ws_router.router)
+app.include_router(auth.router)
 
 
 @app.get("/health")
