@@ -332,9 +332,7 @@ async def test_case_4_light_food_real_data_or_ask_clarification(client: AsyncCli
     assert "Gỏi cuốn" in body2["message"]
 
 
-async def test_case_5_soup_cold_weather_seafood_warning(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_case_5_soup_cold_weather_seafood_warning(client: AsyncClient, db_session: AsyncSession):
     """Case 5: 'Tôi muốn món có nước, trời lạnh' -> Món có nước dùng;
     cảnh báo hải sản nếu tất cả món nước là hải sản.
     """
