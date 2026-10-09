@@ -3,12 +3,14 @@
 Thiết kế ADR-N14: mỗi lần gửi bếp = 1 phiếu bàn; hoadon chỉ sinh khi thanh toán.
 """
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
+from app.logging_setup import kv
 from app.routers.menu import broadcast_flipped
 from app.schemas.order import (
     OrderCreateIn,
@@ -19,6 +21,7 @@ from app.schemas.order import (
 from app.services import orders as service
 from app.ws.manager import KDS_CHANNEL, manager
 
+log = logging.getLogger("app.orders")
 router = APIRouter(tags=["orders"])
 Db = Annotated[AsyncSession, Depends(get_db)]
 
@@ -27,6 +30,9 @@ Db = Annotated[AsyncSession, Depends(get_db)]
 async def create_order(data: OrderCreateIn, db: Db) -> OrderCurrentOut:
     """US-01 — Gửi bếp: mỗi lần gọi = 1 phiếu bàn mới (hoadon_id NULL)."""
     order, flipped = await service.create_order(db, data)
+    log.info("order_sent_to_kitchen %s", kv(
+        ban=order.table_name, items=sum(it.soluong for it in data.items), lines=len(data.items),
+    ))
     # US-03 AC1: báo màn hình Bếp (KDS) có món mới — KDS tự tải lại GET /kds/items
     await manager.publish(
         KDS_CHANNEL,
@@ -79,7 +85,13 @@ async def create_pay_qr(ban_id: str, db: Db) -> PayQrOut:
 @router.post("/tables/{ban_id}/close", response_model=dict)
 async def close_table(ban_id: str, db: Db) -> dict:
     """US-05 — Xác nhận đã nhận tiền: tạo hoadon, gắn các phiếu, bàn về chờ dọn (3)."""
-    return await service.close_table(db, ban_id)
+    result = await service.close_table(db, ban_id)
+    await manager.publish(
+        "kds:tickets",
+        "TABLE_CLEANING",
+        {"ban": result["table_name"], "ban_id": result["ban_id"]}
+    )
+    return result
 
 
 @router.post("/tables/{ban_id}/cleaned", response_model=dict)

@@ -7,6 +7,7 @@ Các hàm trả về "watch" = trạng thái hết hàng trước khi đổi c�
 phát `ITEM_OOS_BROADCAST` cho món đổi còn ↔ hết sau khi commit (`flipped`).
 """
 
+import logging
 from collections import defaultdict
 from collections.abc import Iterable
 from decimal import Decimal
@@ -15,6 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.errors import ApiError
+from app.logging_setup import kv
 from app.models.menu import CongThuc, ThucDon, TonKho
 from app.schemas.stock import (
     IngredientIn,
@@ -25,6 +27,7 @@ from app.schemas.stock import (
     RecipeOut,
 )
 
+log = logging.getLogger("app.stock")
 Watch = dict[str, tuple[ThucDon, bool]]
 
 
@@ -130,6 +133,7 @@ async def reserve(db: AsyncSession, lines: Iterable[tuple[str, int]]) -> Watch:
             for mon in thieu
         ]
         ten = ", ".join(f"'{d['tenmon']}' (còn {d['con_lai']} phần)" for d in details)
+        log.info("stock_rejected %s", kv(dishes=",".join(d["thucdon_id"] for d in details)))
         raise ApiError(409, "ITEM_OUT_OF_STOCK", f"Không đủ hàng cho món {ten}.", details)
 
     for thucdon_id, soluong in qty.items():
@@ -138,6 +142,9 @@ async def reserve(db: AsyncSession, lines: Iterable[tuple[str, int]]) -> Watch:
             mon.soluongton -= soluong
     for tid, n in need.items():
         nguyenlieu[tid].tonhethong = (nguyenlieu[tid].tonhethong or 0) - n
+    log.info("stock_reserved %s", kv(
+        dishes=",".join(qty), ingredients=",".join(f"{t}:-{n}" for t, n in need.items()) or "-",
+    ))
     return watch
 
 
@@ -152,6 +159,7 @@ async def release(db: AsyncSession, lines: Iterable[tuple[str, int]]) -> Watch:
             mon.soluongton += soluong
         for ct in _cong_thuc(mon):
             ct.nguyenlieu.tonhethong = (ct.nguyenlieu.tonhethong or 0) + ct.dinhluong * soluong
+    log.info("stock_released %s", kv(dishes=",".join(qty)))
     return watch
 
 

@@ -80,7 +80,8 @@ Chi tiết request/response: `api-contract.md` Mục 6. Tóm tắt:
 ## 9. Observability / logging
 
 - Hủy món ghi `loghuymon` (bằng chứng chống gian lận).
-- `GET /health/db` dùng cho smoke test. Chưa có structured logging cho thao tác KDS — việc còn lại cho Bài cuối (§12 giáo trình).
+- `GET /health/db` dùng cho smoke test.
+- **Log backend** (2026-10-09, giáo trình §12 bước 4): `app/logging_setup.py`; mỗi request 1 dòng (`app.http`), sự kiện nghiệp vụ `order_sent_to_kitchen`, `stock_reserved/rejected/released`, `kds_status/split/cancel_out_of_stock`, `menu_availability`, `ws_client_dropped`; lỗi 500 trả `INTERNAL_ERROR` chung cho client, log đủ traceback. Không ghi secret, PIN, ghi chú khách. Cách xem: `docs/RUNBOOK.md` Mục 7. Test: `backend/tests/routers/test_logging.py`.
 
 ## 10. Test plan
 
