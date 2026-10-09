@@ -20,7 +20,7 @@ async function apiFetch(path, options = {}) {
       ...options,
     });
   } catch {
-    const e = new Error('Không kết nối được máy chủ. Vui lòng thử lại.');
+    const e = new Error('Không tìm thấy món nào phù hợp. Vui lòng thử lại.');
     e.code = 'NETWORK_ERROR';
     e.status = 0;
     throw e;
