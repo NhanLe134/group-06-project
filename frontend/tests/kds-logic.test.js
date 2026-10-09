@@ -19,7 +19,9 @@ function loadScript(file, names, globals = {}) {
   return run(...params.map(k => globals[k]));
 }
 
-const { aiBatching, stockLabel, fromApi } = loadScript('kds-logic.js', ['aiBatching', 'stockLabel', 'fromApi']);
+const { aiBatching, stockLabel, fromApi, waitLabel, isOverdue, overdueFirst } = loadScript(
+  'kds-logic.js', ['aiBatching', 'stockLabel', 'fromApi', 'waitLabel', 'isOverdue', 'overdueFirst'],
+);
 
 const item = (id, dishId, table, qty = 1, placedTs = 0, status = 'PENDING') =>
   ({ id, dishId, table, qty, placedTs, status });
@@ -106,6 +108,37 @@ describe('fromApi — đổi dữ liệu GET /kds/items sang thẻ KDS (TC-OP-KD
   it('vẫn đọc được tên trường cũ (thucdon_id, hoadon_id)', () => {
     expect(fromApi({ ...base, thucdon_id: 'MON002', hoadon_id: 'HD-1' }))
       .toMatchObject({ dishId: 'MON002', orderCode: 'HD-1' });
+  });
+});
+
+describe('REQ-08 — đồng hồ chờ & chớp đỏ quá 15 phút (TC-OP-002, UT-05)', () => {
+  const MIN = 60 * 1000;
+  const now = Date.parse('2026-10-09T12:00:00Z');
+
+  it('waitLabel: hiện thời gian đã chờ dạng mm:ss, quá 60 phút vẫn đếm phút', () => {
+    expect(waitLabel(now, now)).toBe('00:00');
+    expect(waitLabel(now - (12 * MIN + 30 * 1000), now)).toBe('12:30');
+    expect(waitLabel(now - 75 * MIN - 3000, now)).toBe('75:03');
+    expect(waitLabel(now + 5000, now)).toBe('00:00');   // lệch đồng hồ máy → không âm
+  });
+
+  it('isOverdue: chỉ QUÁ 15 phút mới tính; món Đã nấu không bao giờ quá giờ', () => {
+    const at = (min, status = 'PENDING') => ({ status, placedTs: now - min * MIN });
+    expect(isOverdue(at(15), now)).toBe(false);          // biên: đúng 15:00
+    expect(isOverdue({ status: 'PENDING', placedTs: now - 15 * MIN - 1000 }, now)).toBe(true);
+    expect(isOverdue(at(20, 'COOKING'), now)).toBe(true);
+    expect(isOverdue(at(40, 'READY'), now)).toBe(false);
+  });
+
+  it('overdueFirst: khối quá giờ lên đầu (cũ nhất trước), phần còn lại giữ nguyên thứ tự', () => {
+    const blocks = [
+      { name: 'mẻ Phở', overdue: false, ts: 5 },
+      { name: 'Bàn 2', overdue: true, ts: 3 },
+      { name: 'Bàn 3', overdue: false, ts: 1 },
+      { name: 'Bàn 1', overdue: true, ts: 2 },
+    ];
+    expect(overdueFirst(blocks).map(b => b.name)).toEqual(['Bàn 1', 'Bàn 2', 'mẻ Phở', 'Bàn 3']);
+    expect(overdueFirst([])).toEqual([]);
   });
 });
 

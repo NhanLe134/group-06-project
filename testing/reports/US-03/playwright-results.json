@@ -115,15 +115,15 @@
                   "annotations": [
                     {
                       "type": "latency_ms samples (NFR-RO-01 < 500 ms)",
-                      "description": "311, 208, 215, 230, 217"
+                      "description": "354, 212, 228, 206, 215"
                     },
                     {
                       "type": "latency_ms median",
-                      "description": "217"
+                      "description": "215"
                     },
                     {
                       "type": "latency_ms max",
-                      "description": "311"
+                      "description": "354"
                     }
                   ],
                   "expectedStatus": "passed",
@@ -134,24 +134,24 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3859,
+                      "duration": 3286,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-08T06:54:23.921Z",
+                      "startTime": "2026-10-09T12:05:06.315Z",
                       "annotations": [
                         {
                           "type": "latency_ms samples (NFR-RO-01 < 500 ms)",
-                          "description": "311, 208, 215, 230, 217"
+                          "description": "354, 212, 228, 206, 215"
                         },
                         {
                           "type": "latency_ms median",
-                          "description": "217"
+                          "description": "215"
                         },
                         {
                           "type": "latency_ms max",
-                          "description": "311"
+                          "description": "354"
                         }
                       ],
                       "attachments": []
@@ -181,12 +181,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1833,
+                      "duration": 1863,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-08T06:54:28.133Z",
+                      "startTime": "2026-10-09T12:05:09.920Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -215,12 +215,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3964,
+                      "duration": 13790,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-08T06:54:29.986Z",
+                      "startTime": "2026-10-09T12:05:11.810Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -243,7 +243,7 @@
                   "annotations": [
                     {
                       "type": "oos_sync_ms (REQ-09 < 1 s)",
-                      "description": "52"
+                      "description": "41"
                     }
                   ],
                   "expectedStatus": "passed",
@@ -254,16 +254,16 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3786,
+                      "duration": 3810,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-08T06:54:33.964Z",
+                      "startTime": "2026-10-09T12:05:25.620Z",
                       "annotations": [
                         {
                           "type": "oos_sync_ms (REQ-09 < 1 s)",
-                          "description": "52"
+                          "description": "41"
                         }
                       ],
                       "attachments": []
@@ -274,7 +274,7 @@
               ],
               "id": "abdf3079eb1e965fda17-85b0b0880fc8a50b5400",
               "file": "us03-kds.spec.ts",
-              "line": 82,
+              "line": 83,
               "column": 7
             },
             {
@@ -293,12 +293,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3721,
+                      "duration": 3495,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-08T06:54:37.765Z",
+                      "startTime": "2026-10-09T12:05:29.452Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -308,7 +308,7 @@
               ],
               "id": "abdf3079eb1e965fda17-222bc707fe8f3a94bbea",
               "file": "us03-kds.spec.ts",
-              "line": 103,
+              "line": 104,
               "column": 7
             },
             {
@@ -327,12 +327,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4287,
+                      "duration": 3334,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-08T06:54:41.503Z",
+                      "startTime": "2026-10-09T12:05:32.971Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -342,7 +342,7 @@
               ],
               "id": "abdf3079eb1e965fda17-30afe2a32f7ae253cc6a",
               "file": "us03-kds.spec.ts",
-              "line": 126,
+              "line": 128,
               "column": 7
             },
             {
@@ -358,7 +358,7 @@
                       "description": "Chờ story Auth/JWT (AI_USAGE_LOG A-84) — chưa có đăng nhập để kiểm tra",
                       "location": {
                         "file": "D:\\MIS3032\\group-06-project\\testing\\test_scripts\\tests\\us03-kds.spec.ts",
-                        "line": 154,
+                        "line": 156,
                         "column": 10
                       }
                     }
@@ -371,19 +371,19 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "skipped",
-                      "duration": 1812,
+                      "duration": 1453,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-08T06:54:45.812Z",
+                      "startTime": "2026-10-09T12:05:36.326Z",
                       "annotations": [
                         {
                           "type": "skip",
                           "description": "Chờ story Auth/JWT (AI_USAGE_LOG A-84) — chưa có đăng nhập để kiểm tra",
                           "location": {
                             "file": "D:\\MIS3032\\group-06-project\\testing\\test_scripts\\tests\\us03-kds.spec.ts",
-                            "line": 154,
+                            "line": 156,
                             "column": 10
                           }
                         }
@@ -396,61 +396,41 @@
               ],
               "id": "abdf3079eb1e965fda17-beb13cd45ea0cce65d3a",
               "file": "us03-kds.spec.ts",
-              "line": 153,
+              "line": 155,
               "column": 7
             },
             {
-              "title": "TC-OP-002: thẻ quá 15 phút chớp đỏ & đẩy lên đầu",
+              "title": "TC-OP-002 (REQ-08): món chờ quá 15 phút → đồng hồ, chớp đỏ, nhãn \"Chờ quá 15 phút\", lên đầu cột",
               "ok": true,
               "tags": [],
               "tests": [
                 {
                   "timeout": 45000,
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "Chưa làm: REQ-08 có nhưng không nằm trong 5 AC của US-03 — chờ PO quyết",
-                      "location": {
-                        "file": "D:\\MIS3032\\group-06-project\\testing\\test_scripts\\tests\\us03-kds.spec.ts",
-                        "line": 158,
-                        "column": 10
-                      }
-                    }
-                  ],
-                  "expectedStatus": "skipped",
+                  "annotations": [],
+                  "expectedStatus": "passed",
                   "projectId": "local-e2e",
                   "projectName": "local-e2e",
                   "results": [
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "skipped",
-                      "duration": 1871,
+                      "status": "passed",
+                      "duration": 2077,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-08T06:54:47.659Z",
-                      "annotations": [
-                        {
-                          "type": "skip",
-                          "description": "Chưa làm: REQ-08 có nhưng không nằm trong 5 AC của US-03 — chờ PO quyết",
-                          "location": {
-                            "file": "D:\\MIS3032\\group-06-project\\testing\\test_scripts\\tests\\us03-kds.spec.ts",
-                            "line": 158,
-                            "column": 10
-                          }
-                        }
-                      ],
+                      "startTime": "2026-10-09T12:05:37.789Z",
+                      "annotations": [],
                       "attachments": []
                     }
                   ],
-                  "status": "skipped"
+                  "status": "expected"
                 }
               ],
-              "id": "abdf3079eb1e965fda17-e61367eec9257e48d3ad",
+              "id": "abdf3079eb1e965fda17-6a9df1fb7bb5fd3f20cc",
               "file": "us03-kds.spec.ts",
-              "line": 157,
+              "line": 159,
               "column": 7
             }
           ]
@@ -486,12 +466,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 12073,
+                      "duration": 10428,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-08T06:54:49.557Z",
+                      "startTime": "2026-10-09T12:05:39.907Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -520,12 +500,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6657,
+                      "duration": 6138,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-08T06:55:01.647Z",
+                      "startTime": "2026-10-09T12:05:50.347Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -545,10 +525,10 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-08T06:54:21.129Z",
-    "duration": 48436.770000000004,
-    "expected": 8,
-    "skipped": 2,
+    "startTime": "2026-10-09T12:05:03.432Z",
+    "duration": 54359.191999999995,
+    "expected": 9,
+    "skipped": 1,
     "unexpected": 0,
     "flaky": 0
   }
