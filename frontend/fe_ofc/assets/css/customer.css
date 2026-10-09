@@ -360,9 +360,15 @@
 }
 .menu-loading-note i {
   font-size: 17px; color: var(--color-primary);
-  animation: spin 0.9s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.spin {
+  animation: spin 0.9s linear infinite;
+  display: inline-block;
+}
 .sk-card {
   display: flex; align-items: center; gap: 8px;
   height: 88px; padding: 10px;
@@ -925,3 +931,33 @@
   border-bottom: 1px solid #E2E8F0;
 }
 .bill-table .dot-row td i { margin-right: 4px; }
+
+/* US-01 AC5 — banner lỗi kết nối: menu giữ nguyên, chỉ báo lỗi + Thử lại */
+.net-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 2px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md, 12px);
+  background: var(--color-danger, #DC2626);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.net-banner[hidden] { display: none; }
+.net-banner i { font-size: 18px; flex-shrink: 0; }
+.net-banner .banner-retry {
+  margin-left: auto;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  cursor: pointer;
+}
+.net-banner .banner-retry:active { background: rgba(255, 255, 255, 0.15); }

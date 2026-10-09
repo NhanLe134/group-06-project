@@ -44,3 +44,5 @@ function playTing() {
     osc.stop(ctx.currentTime + 0.4);
   } catch { /* không có âm thanh cũng không sao */ }
 }
+
+

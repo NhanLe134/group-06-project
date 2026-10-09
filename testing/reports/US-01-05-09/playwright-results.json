@@ -5,10 +5,9 @@
       "D:\\MIS3032\\group-06-project\\testing\\test_scripts\\node_modules\\@playwright\\test\\cli.js",
       "test",
       "-c",
-      "playwright.us03.config.ts",
-      "--project=local-e2e"
+      "playwright.us010509.config.ts"
     ],
-    "configFile": "D:\\MIS3032\\group-06-project\\testing\\test_scripts\\playwright.us03.config.ts",
+    "configFile": "D:\\MIS3032\\group-06-project\\testing\\test_scripts\\playwright.us010509.config.ts",
     "rootDir": "D:/MIS3032/group-06-project/testing/test_scripts/tests",
     "failOnFlakyTests": false,
     "forbidOnly": false,
@@ -25,7 +24,7 @@
     "preserveOutput": "always",
     "projects": [
       {
-        "outputDir": "D:/MIS3032/group-06-project/testing/test_scripts/reports/us03/results",
+        "outputDir": "D:/MIS3032/group-06-project/testing/test_scripts/reports/us010509/results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -38,12 +37,12 @@
           "/smoke/"
         ],
         "testMatch": [
-          "/us0[38]-.*\\.spec\\.ts/"
+          "/us0[159]-.*\\.spec\\.ts/"
         ],
         "timeout": 45000
       },
       {
-        "outputDir": "D:/MIS3032/group-06-project/testing/test_scripts/reports/us03/results",
+        "outputDir": "D:/MIS3032/group-06-project/testing/test_scripts/reports/us010509/results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -54,7 +53,7 @@
         "testDir": "D:/MIS3032/group-06-project/testing/test_scripts/tests",
         "testIgnore": [],
         "testMatch": [
-          "/us03-smoke\\.spec\\.ts/"
+          "/us010509-smoke\\.spec\\.ts/"
         ],
         "timeout": 45000
       }
@@ -68,14 +67,7 @@
       [
         "json",
         {
-          "outputFile": "./reports/us03/results.json"
-        }
-      ],
-      [
-        "html",
-        {
-          "outputFolder": "./reports/us03/html",
-          "open": "never"
+          "outputFile": "./reports/us010509/results.json"
         }
       ]
     ],
@@ -93,80 +85,20 @@
   },
   "suites": [
     {
-      "title": "us03-kds.spec.ts",
-      "file": "us03-kds.spec.ts",
+      "title": "us01-emenu.spec.ts",
+      "file": "us01-emenu.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "US-03 — KDS Bếp",
-          "file": "us03-kds.spec.ts",
-          "line": 18,
+          "title": "US-01 — E-Menu & Order Draft",
+          "file": "us01-emenu.spec.ts",
+          "line": 23,
           "column": 6,
           "specs": [
             {
-              "title": "TC-OP-001 + TC-OP-KDS-013 (AC1): đơn mới hiện ngay trên KDS, không F5, có báo \"Đơn mới\"",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [
-                    {
-                      "type": "latency_ms samples (NFR-RO-01 < 500 ms)",
-                      "description": "354, 212, 228, 206, 215"
-                    },
-                    {
-                      "type": "latency_ms median",
-                      "description": "215"
-                    },
-                    {
-                      "type": "latency_ms max",
-                      "description": "354"
-                    }
-                  ],
-                  "expectedStatus": "passed",
-                  "projectId": "local-e2e",
-                  "projectName": "local-e2e",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 3286,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-09T12:05:06.315Z",
-                      "annotations": [
-                        {
-                          "type": "latency_ms samples (NFR-RO-01 < 500 ms)",
-                          "description": "354, 212, 228, 206, 215"
-                        },
-                        {
-                          "type": "latency_ms median",
-                          "description": "215"
-                        },
-                        {
-                          "type": "latency_ms max",
-                          "description": "354"
-                        }
-                      ],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "abdf3079eb1e965fda17-7b7ba72c170d48b30256",
-              "file": "us03-kds.spec.ts",
-              "line": 27,
-              "column": 7
-            },
-            {
-              "title": "TC-OP-KDS-001 (AC1): 2 bàn cùng gọi Phở → mẻ \"3× Phở bò\" nhãn \"Gợi ý nấu chung\", đứng đầu cột",
+              "title": "TC-GO-001 (AC1): thêm món → Draft có món với số lượng 1, chưa gửi bếp",
               "ok": true,
               "tags": [],
               "tests": [
@@ -181,12 +113,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1863,
+                      "duration": 2710,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-09T12:05:09.920Z",
+                      "startTime": "2026-10-09T13:02:26.854Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -194,13 +126,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "abdf3079eb1e965fda17-853e2249f218d42d5626",
-              "file": "us03-kds.spec.ts",
-              "line": 51,
+              "id": "8d69376c716ca6ddcd1d-d55a1e4ec9b9c9cbbb4d",
+              "file": "us01-emenu.spec.ts",
+              "line": 24,
               "column": 7
             },
             {
-              "title": "TC-OP-KDS-004 (AC2): bấm \"Xong\" → DB đổi da_xong, màn Phục vụ nhận thông báo món xong",
+              "title": "TC-US01-006 (AC6): bấm \"+\" 2 lần → bộ đếm − 2 + trên thẻ",
               "ok": true,
               "tags": [],
               "tests": [
@@ -215,12 +147,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 13790,
+                      "duration": 2609,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-09T12:05:11.810Z",
+                      "startTime": "2026-10-09T13:02:30.627Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -228,57 +160,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "abdf3079eb1e965fda17-3e6b87f4f37a0ce411c4",
-              "file": "us03-kds.spec.ts",
-              "line": 65,
+              "id": "8d69376c716ca6ddcd1d-f41f405758b5b50f2ac0",
+              "file": "us01-emenu.spec.ts",
+              "line": 36,
               "column": 7
             },
             {
-              "title": "TC-OP-003 (AC3): Bếp báo hết \"Salad cá ngừ\" → E-Menu của khách gỡ món < 1 s, không F5",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [
-                    {
-                      "type": "oos_sync_ms (REQ-09 < 1 s)",
-                      "description": "41"
-                    }
-                  ],
-                  "expectedStatus": "passed",
-                  "projectId": "local-e2e",
-                  "projectName": "local-e2e",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 3810,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-09T12:05:25.620Z",
-                      "annotations": [
-                        {
-                          "type": "oos_sync_ms (REQ-09 < 1 s)",
-                          "description": "41"
-                        }
-                      ],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "abdf3079eb1e965fda17-85b0b0880fc8a50b5400",
-              "file": "us03-kds.spec.ts",
-              "line": 83,
-              "column": 7
-            },
-            {
-              "title": "TC-OP-KDS-010 (AC3 tự động): hết nguyên liệu → E-Menu xám \"Hết hàng\", món đã gửi vẫn nấu được",
+              "title": "TC-GO-002 (AC4): explicit confirmation → gửi bếp thành công, popup có \"Mã đơn:\", Draft làm trống",
               "ok": true,
               "tags": [],
               "tests": [
@@ -293,12 +181,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3495,
+                      "duration": 3729,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-09T12:05:29.452Z",
+                      "startTime": "2026-10-09T13:02:33.293Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -306,13 +194,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "abdf3079eb1e965fda17-222bc707fe8f3a94bbea",
-              "file": "us03-kds.spec.ts",
-              "line": 104,
+              "id": "8d69376c716ca6ddcd1d-55526e4c0f255451cb2c",
+              "file": "us01-emenu.spec.ts",
+              "line": 45,
               "column": 7
             },
             {
-              "title": "TC-OP-004 (AC5): mất mạng → \"Offline: Đang lưu cục bộ\", có mạng lại tự đồng bộ + nhận bù đơn bị nhỡ",
+              "title": "TC-US01-004 (AC5): mất mạng → banner đỏ, menu GIỮ NGUYÊN; \"Thử lại\" → tải lại thành công",
               "ok": true,
               "tags": [],
               "tests": [
@@ -327,12 +215,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3334,
+                      "duration": 3024,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-09T12:05:32.971Z",
+                      "startTime": "2026-10-09T13:02:37.075Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -340,67 +228,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "abdf3079eb1e965fda17-30afe2a32f7ae253cc6a",
-              "file": "us03-kds.spec.ts",
-              "line": 128,
+              "id": "8d69376c716ca6ddcd1d-ef6490bf562080bdf3bc",
+              "file": "us01-emenu.spec.ts",
+              "line": 66,
               "column": 7
             },
             {
-              "title": "TC-OP-KDS-011 (AC4): tài khoản Phục vụ vào KDS bị chặn 403",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "Chờ story Auth/JWT (AI_USAGE_LOG A-84) — chưa có đăng nhập để kiểm tra",
-                      "location": {
-                        "file": "D:\\MIS3032\\group-06-project\\testing\\test_scripts\\tests\\us03-kds.spec.ts",
-                        "line": 156,
-                        "column": 10
-                      }
-                    }
-                  ],
-                  "expectedStatus": "skipped",
-                  "projectId": "local-e2e",
-                  "projectName": "local-e2e",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "skipped",
-                      "duration": 1453,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-09T12:05:36.326Z",
-                      "annotations": [
-                        {
-                          "type": "skip",
-                          "description": "Chờ story Auth/JWT (AI_USAGE_LOG A-84) — chưa có đăng nhập để kiểm tra",
-                          "location": {
-                            "file": "D:\\MIS3032\\group-06-project\\testing\\test_scripts\\tests\\us03-kds.spec.ts",
-                            "line": 156,
-                            "column": 10
-                          }
-                        }
-                      ],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "skipped"
-                }
-              ],
-              "id": "abdf3079eb1e965fda17-beb13cd45ea0cce65d3a",
-              "file": "us03-kds.spec.ts",
-              "line": 155,
-              "column": 7
-            },
-            {
-              "title": "TC-OP-002 (REQ-08): món chờ quá 15 phút → đồng hồ, chớp đỏ, nhãn \"Chờ quá 15 phút\", lên đầu cột",
+              "title": "TC-US01-011 (AC4): giỏ trống → không mở modal gửi bếp",
               "ok": true,
               "tags": [],
               "tests": [
@@ -415,12 +249,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2077,
+                      "duration": 2634,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-09T12:05:37.789Z",
+                      "startTime": "2026-10-09T13:02:40.149Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -428,9 +262,9 @@
                   "status": "expected"
                 }
               ],
-              "id": "abdf3079eb1e965fda17-6a9df1fb7bb5fd3f20cc",
-              "file": "us03-kds.spec.ts",
-              "line": 159,
+              "id": "8d69376c716ca6ddcd1d-cf3a1e52c11d3e00d0f4",
+              "file": "us01-emenu.spec.ts",
+              "line": 91,
               "column": 7
             }
           ]
@@ -438,20 +272,20 @@
       ]
     },
     {
-      "title": "us08-inventory.spec.ts",
-      "file": "us08-inventory.spec.ts",
+      "title": "us05-cashier.spec.ts",
+      "file": "us05-cashier.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "US-08 — Kiểm kê tồn kho & Đóng ca",
-          "file": "us08-inventory.spec.ts",
-          "line": 17,
+          "title": "US-05 — Thu ngân thanh toán SePay",
+          "file": "us05-cashier.spec.ts",
+          "line": 44,
           "column": 6,
           "specs": [
             {
-              "title": "TC-MA-004 + TC-MA-INV-002/003: hao hụt bắt buộc lý do, PIN Quản lý, chốt ca khóa phiếu",
+              "title": "TC-US05-001 + 009 + 010 (AC1/AC5/AC2): guard món chưa phục vụ → tạo QR định danh → đóng bàn",
               "ok": true,
               "tags": [],
               "tests": [
@@ -466,12 +300,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 10428,
+                      "duration": 3267,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-09T12:05:39.907Z",
+                      "startTime": "2026-10-09T13:02:42.860Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -479,13 +313,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "b15c0934f9453bae0c62-bb9d9f4ebbf1ba28d586",
-              "file": "us08-inventory.spec.ts",
-              "line": 18,
+              "id": "e47607ecfc5d94c743e3-323f0d3848594c919215",
+              "file": "us05-cashier.spec.ts",
+              "line": 45,
               "column": 7
             },
             {
-              "title": "TC-MA-005: nhập tồn thực tế âm → báo lỗi, không cho chốt ca",
+              "title": "TC-US05-011 + AC3 (TC-US05-007): demo-sim → Toast \"Thanh toán SePay thành công!\", bàn về chờ dọn",
               "ok": true,
               "tags": [],
               "tests": [
@@ -500,12 +334,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6138,
+                      "duration": 2936,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-09T12:05:50.347Z",
+                      "startTime": "2026-10-09T13:02:46.176Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -513,9 +347,247 @@
                   "status": "expected"
                 }
               ],
-              "id": "b15c0934f9453bae0c62-d23da433e9a40eab641e",
-              "file": "us08-inventory.spec.ts",
-              "line": 66,
+              "id": "e47607ecfc5d94c743e3-c9b806af233879fb190a",
+              "file": "us05-cashier.spec.ts",
+              "line": 73,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "us09-bill.spec.ts",
+      "file": "us09-bill.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "US-09 — Hóa đơn tạm tính",
+          "file": "us09-bill.spec.ts",
+          "line": 36,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-US09-001 + 007 (AC1/AC6): 2 đợt gọi → 2 nhóm \"Đợt N\", nút thanh toán khóa khi còn món",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "local-e2e",
+                  "projectName": "local-e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3996,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-09T13:02:49.184Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a814ef6b6971b476c98f-2503e18b9b8c1f644284",
+              "file": "us09-bill.spec.ts",
+              "line": 37,
+              "column": 7
+            },
+            {
+              "title": "TC-US09-004 (AC3): phục vụ đủ → nút mở khóa, bấm → hướng dẫn ra quầy",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "local-e2e",
+                  "projectName": "local-e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2737,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-09T13:02:53.250Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a814ef6b6971b476c98f-2e2c9afd55ed86381b4d",
+              "file": "us09-bill.spec.ts",
+              "line": 58,
+              "column": 7
+            },
+            {
+              "title": "TC-US09-006 (AC5): bàn chưa có đơn → hóa đơn rỗng, nút Disabled",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "local-e2e",
+                  "projectName": "local-e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2339,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-09T13:02:56.037Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a814ef6b6971b476c98f-dad8159164d57d3ce3d7",
+              "file": "us09-bill.spec.ts",
+              "line": 74,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "us010509-smoke.spec.ts",
+      "file": "us010509-smoke.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "US-01/05/09 — Smoke trên staging (chỉ đọc)",
+          "file": "us010509-smoke.spec.ts",
+          "line": 12,
+          "column": 6,
+          "specs": [
+            {
+              "title": "backend staging sống và trả thực đơn + danh sách bàn",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "staging-smoke",
+                  "projectName": "staging-smoke",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7723,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-09T13:02:59.939Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "79f14f42a68827b01671-5859d7704e1175b18f64",
+              "file": "us010509-smoke.spec.ts",
+              "line": 15,
+              "column": 7
+            },
+            {
+              "title": "E-Menu staging mở được và render món (US-01)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "staging-smoke",
+                  "projectName": "staging-smoke",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6908,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-09T13:03:07.724Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "79f14f42a68827b01671-d99ac7d800c9ee25d169",
+              "file": "us010509-smoke.spec.ts",
+              "line": 29,
+              "column": 7
+            },
+            {
+              "title": "Màn Thu ngân staging mở được và có danh sách bàn (US-05)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "staging-smoke",
+                  "projectName": "staging-smoke",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5285,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-09T13:03:15.201Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "79f14f42a68827b01671-333605c78299d0c03471",
+              "file": "us010509-smoke.spec.ts",
+              "line": 34,
               "column": 7
             }
           ]
@@ -525,10 +597,10 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-09T12:05:03.432Z",
-    "duration": 54359.191999999995,
-    "expected": 9,
-    "skipped": 1,
+    "startTime": "2026-10-09T13:02:23.364Z",
+    "duration": 58707.256,
+    "expected": 13,
+    "skipped": 0,
     "unexpected": 0,
     "flaky": 0
   }

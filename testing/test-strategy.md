@@ -24,8 +24,8 @@
   - Gọi món bổ sung bằng giọng nói AI Voice-to-Order (`REQ-01`, `REQ-05`) kèm tính năng làm rõ tên món mơ hồ (Clarification Rule - `BR-RO-04`).
   - Xử lý món Out of Stock nằm trong Order Draft: món mờ xám, nhãn đỏ *"Món đã hết"*, nút gửi bếp bị Disabled, AI Assistant nhắc nhở (`REQ-15`, `ADR-001`).
   - Chế độ tự động chuyển sang gõ chữ (**Text Fallback**) khi micro lỗi hoặc ồn quá 2 lần (`NFR-RO-05`).
-  - Tính năng chia tiền hóa đơn **Split Bill** (Chia đều / Chia theo món - `REQ-03`).
-  - Thanh toán QR MoMo/VNPAY động với số tiền tính toán server-side chính xác (`REQ-04`, `BR-06`).
+  - ~~Split Bill~~ — **đã cắt khỏi MVP theo ADR-N08 (2026-10-03)**; thay bằng thanh toán toàn bàn.
+  - Thanh toán **SePay VietQR + Webhook biến động số dư tự động** với số tiền/nội dung chuyển khoản tính toán server-side chính xác (`REQ-04`; ADR-N15/N16 — cập nhật 2026-10-09, thay MoMo/VNPAY).
 - **Epic 2: Kitchen & Table Operations (Vận hành Bếp & Phục vụ)**:
   - Màn hình KDS nhận ticket order theo thời gian thực (Real-time WebSocket - `REQ-08`).
   - Đồng hồ đếm ngược ticket KDS, tự động chớp đỏ nhấp nháy (`Flashing Red`) và đẩy lên top khi chờ $> 15$ phút (`REQ-08`).
@@ -71,7 +71,7 @@ Chiến lược tuân thủ nghiêm ngặt mô hình Kim tự tháp kiểm thử
 ### 2.1. Tầng 1 – Unit Tests (Tỷ lệ: ~55%)
 - **Mục tiêu**: Kiểm thử độc lập các hàm logic nghiệp vụ cốt lõi, tốc độ thực thi siêu nhanh ($< 1\text{ms}/test$).
 - **Chi tiết kịch bản**:
-  - `UT-01`: Algorithm tính tổng tiền đơn hàng, VAT, và chia đều cho $N$ người trong Split Bill (`US-05`, `REQ-03`).
+  - `UT-01`: Algorithm tính tổng tiền đơn hàng; đối soát nội dung chuyển khoản (khớp hoadon_id → tên bàn bỏ dấu → số tiền) và nhóm đợt gọi trên hóa đơn (`US-05`/`US-09`, ADR-N15/N16, ADR-N13).
   - `UT-02`: Validation check tồn kho nguyên liệu ($Stock \ge Quantity requested$), từ chối nếu vượt hạn mức (`BR-06`, `US-08`).
   - `UT-03`: Hàm parse JSON kết quả từ AI Voice Speech-to-Text (`US-02`).
   - `UT-04`: AI Prompt Formatter: Đảm bảo dữ liệu giá món lấy 100% từ Database, không tự sinh giá hoặc mã giảm giá (`BR-04`).

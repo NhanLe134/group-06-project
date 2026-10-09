@@ -26,7 +26,7 @@ let billViewMode = 'main'; /* 'main' = Hóa đơn chính (gộp món), 'detail' 
 const TRANGTHAI_LABEL = {
   cho_nau: 'Chờ nấu',
   dang_nau: 'Đang nấu',
-  da_xong: 'Đã xong — chờ phục vụ',
+  da_xong: 'Chờ phục vụ',
   da_phuc_vu: 'Đã phục vụ',
 };
 
@@ -111,13 +111,30 @@ async function run(fn) {
 
 /* ===================== DANH SÁCH BÀN ===================== */
 async function loadTables() {
+  const tableList = $('#table-list');
+  if (tableList && (!tables || !tables.length)) {
+    tableList.innerHTML = `
+      <div class="cashier-loading-note">
+        <i class="ph-bold ph-circle-notch spin"></i>
+        <span>Đang tải danh sách bàn...</span>
+      </div>
+      <div class="sk-table-grid">
+        <div class="sk-table-card"></div>
+        <div class="sk-table-card"></div>
+        <div class="sk-table-card"></div>
+        <div class="sk-table-card"></div>
+        <div class="sk-table-card"></div>
+        <div class="sk-table-card"></div>
+      </div>`;
+  }
   tables = await apiFetch('/cashier/tables');
   renderTableList();
 }
 
 function renderTableList() {
   const occupied = tables.filter(t => t.trangthai === '2');
-  $('#occupied-count').textContent = occupied.length;
+  const countEl = $('#occupied-count');
+  if (countEl) countEl.textContent = occupied.length;
 
   $('#table-list').innerHTML = tables.length ? tables.map(t => {
     /* Chỉ 3 trạng thái bàn (ADR-N14): đang phục vụ / sẵn sàng / chờ dọn */
@@ -176,7 +193,15 @@ async function openTable(id) {
       </div>
     </div>`;
   panel.innerHTML = headHTML + `
-    <div class="draft-empty"><i class="ph-duotone ph-spinner"></i><p>Đang tải hóa đơn...</p></div>`;
+    <div class="cashier-loading-note">
+      <i class="ph-bold ph-circle-notch spin"></i>
+      <span>Đang tải chi tiết hóa đơn...</span>
+    </div>
+    <div class="sk-detail-box">
+      <div class="sk-line-block w40"></div>
+      <div class="sk-line-block h120"></div>
+      <div class="sk-line-block w70"></div>
+    </div>`;
 
   /* Chi tiết món đợt 1, đợt 2 từ GET /orders/current */
   try {
@@ -280,7 +305,7 @@ function renderDetailPanel() {
     </div>
 
     <div class="pay-box">
-      <h4><i class="ph-duotone ph-credit-card"></i> Thanh toán (US-05)</h4>
+      <h4><i class="ph-duotone ph-credit-card"></i> Thanh toán</h4>
       <p class="pay-hint">Thanh toán toàn bộ hóa đơn qua mã QR.</p>
       ${qr ? `
       <div class="payer-card">
@@ -292,10 +317,7 @@ function renderDetailPanel() {
           <img class="qr-img" alt="Mã QR thanh toán" src="${esc(qr.qr_url)}">
           <p class="qr-content">Nội dung CK: <b>${esc(qr.qr_data)}</b></p>
         </div>
-      </div>
-      <button class="btn-confirm-pay" id="btn-confirm-pay" style="margin-top:14px; width:100%;">
-        <i class="ph-bold ph-hand-coins"></i> Xác nhận đã nhận tiền &amp; Đóng bàn
-      </button>` : `
+      </div>` : `
       <button class="btn-primary btn-create" id="btn-create-qr">
         <i class="ph-duotone ph-qr-code"></i> Tạo mã thanh toán
       </button>`}
@@ -316,9 +338,25 @@ function createQR() {
     return;
   }
 
+  const btn = $('#btn-create-qr');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i class="ph-bold ph-circle-notch spin"></i> Đang tạo mã QR...`;
+  }
+
   run(async () => {
-    qr = await apiFetch(`/tables/${selectedId}/pay-qr`, { method: 'POST' });
-    renderDetailPanel();
+    try {
+      qr = await apiFetch(`/tables/${selectedId}/pay-qr`, { method: 'POST' });
+      renderDetailPanel();
+    } catch (e) {
+      /* US-05 AC4: lỗi tạo QR → toast đúng spec, giữ nguyên hóa đơn để "Thử lại" */
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="ph-duotone ph-qr-code"></i> Tạo mã thanh toán`;
+      }
+      toast('Không thể khởi tạo mã QR thanh toán.',
+        'Vui lòng kiểm tra lại mạng hoặc thử lại. Hóa đơn của bạn vẫn được giữ nguyên.', true);
+    }
   });
 }
 

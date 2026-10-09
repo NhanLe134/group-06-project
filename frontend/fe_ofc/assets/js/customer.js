@@ -40,13 +40,21 @@ setText('#success-table', tableName);
 renderCategories();
 renderStickyBar();
 renderMenuSkeleton();
-loadMenu().catch(e => {
-  $('#menu-grid').innerHTML = `
-    <div class="menu-empty">
-      <i class="ph-duotone ph-wifi-slash"></i>
-      <p>${esc(e.message)}</p>
-      <button class="btn-primary" style="margin-top:12px;" onclick="loadMenu()">Tải lại thực đơn</button>
-    </div>`;
+/* US-01 AC5: mất mạng/API lỗi → banner đỏ + "Thử lại"; DANH SÁCH MÓN GIỮ NGUYÊN,
+   Order Draft bảo toàn (draft là state riêng, không đụng tới). */
+const netBanner = $('#net-banner');
+function showNetBanner() {
+  setText('#net-banner-msg',
+    'Lỗi kết nối. Vui lòng kiểm tra mạng và thử lại; danh sách món chưa thay đổi.');
+  if (netBanner) netBanner.hidden = false;
+}
+function hideNetBanner() { if (netBanner) netBanner.hidden = true; }
+loadMenu()
+  .then(hideNetBanner)
+  .catch(() => showNetBanner());
+$('#btn-net-retry')?.addEventListener('click', () => {
+  hideNetBanner();
+  loadMenu().then(hideNetBanner).catch(() => showNetBanner());
 });
 
 /* US-03 AC3: Bếp/Quản lý báo Hết hàng / Còn hàng → tải lại menu ngay, không cần F5.
@@ -58,4 +66,23 @@ if (typeof subscribeChannel === 'function') {
       .then(() => { renderStickyBar(); renderDraft(); })
       .catch(() => { /* giữ menu hiện tại nếu tải lại lỗi */ });
   });
+}
+
+/* ---------- WAITER BACK BUTTON (Ẩn/Hiện dựa vào URL role=waiter) ---------- */
+{
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('role') === 'waiter') {
+    const topbarInner = document.querySelector('.cust-topbar-inner');
+    if (topbarInner) {
+      topbarInner.insertAdjacentHTML('afterbegin', `
+        <button onclick="window.location.href='waiter.html?table=${encodeURIComponent(tableName)}'" 
+                style="display: flex; align-items: center; gap: 4px; background: #FFFBEB; color: #B45309; border: 1px solid #FCD34D; padding: 6px 12px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 13px; margin-right: auto; font-family: inherit; z-index: 10;">
+          <i class="ph-bold ph-arrow-left"></i> Phục vụ
+        </button>
+      `);
+      // Ẩn logo để nhường chỗ cho nút Quay về trên màn hình nhỏ
+      const logo = document.querySelector('.brand-logo');
+      if (logo) logo.style.display = 'none';
+    }
+  }
 }

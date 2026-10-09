@@ -9,38 +9,23 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <link rel="stylesheet" href="../assets/css/global.css">
+  <link rel="stylesheet" href="../assets/css/design-system.css">
   <style>
     /* ===================== US-03 — KDS bản TỐI GIẢN (chỉ dùng cho trang này) =====================
        Theo docs/05-Design/DESIGN.md (Output #16): tokens màu, Typography Scale §2, radius.md 12px,
        radius.full cho pill, touch target ≥ 44px, tương phản ≥ 4.5:1, KDS tablet min-width 768px.
        Font: "Be Vietnam Pro" (CSS handoff) — Outfit không có bộ ký tự tiếng Việt nên chữ có dấu bị lệch font.
-       Riêng color.primary: DESIGN.md ghi #0D5C75 nhưng design-system.css + E-Menu đang dùng #FF5A36 → tạm theo #FF5A36. */
+       Màu, bo góc, kiểu chữ dùng CHUNG từ ../assets/css/design-system.css (Design System của Nhàn,
+       #FF5A36 + Be Vietnam Pro) — ở đây chỉ khai báo thêm token riêng của KDS (A-126). */
     :root {
-      /* 1. Màu (DESIGN.md §1) */
-      --color-primary: #FF5A36; --color-primary-dark: #E8461F; --color-primary-soft: #FFF0ED;
-      --color-success: #15803D; --color-warning: #D97706; --color-danger: #DC2626; --color-info: #2563EB;
-      --color-neutral-bg: #F8FAFC; --color-neutral-card: #FFFFFF;
-      --color-text-main: #0F172A; --color-text-muted: #64748B;
-      --color-line: #E2E8F0; --color-tint: #EEF2F7;
-      /* 2. Bo góc */
-      --radius-md: 12px; --radius-full: 9999px;
-      /* 3. Typography Scale (DESIGN.md §2) */
-      --font-sans: "Be Vietnam Pro", "Segoe UI", Roboto, Arial, sans-serif;
-      --type-display: 700 24px/30px var(--font-sans);   /* tiêu đề màn hình */
-      --type-heading: 700 18px/24px var(--font-sans);   /* tiêu đề khối */
-      --type-title: 700 16px/22px var(--font-sans);     /* tiêu đề modal, tiêu đề mẻ */
-      --type-subhead: 700 15px/20px var(--font-sans);   /* tên món trên thẻ */
-      --type-body: 400 14px/20px var(--font-sans);
-      --type-desc: 400 13px/20px var(--font-sans);      /* ghi chú món, empty state */
-      --type-caption: 400 12px/16px var(--font-sans);   /* mã đơn, giờ nhận */
-      --type-button: 700 14px/20px var(--font-sans);
+      --color-info: #2563EB;                      /* cột Đang nấu */
+      --color-line: var(--color-border);          /* tên cũ trong KDS, trỏ về token chung */
+      --color-tint: #EEF2F7;
       --type-chip: 600 12px/16px var(--font-sans);
-      --type-badge: 700 11px/16px var(--font-sans);
       --type-overline: 700 14px/18px var(--font-sans);  /* tiêu đề nhóm (h4) — cỡ 14px theo §2.4 */
       --shadow-card: 0 4px 14px rgba(15, 23, 42, .06);
       --shadow-primary: 0 6px 16px rgba(255, 90, 54, .32);
     }
-    body { font: var(--type-body); color: var(--color-text-main); background: var(--color-neutral-bg); -webkit-font-smoothing: antialiased; }
     button, input, select { font-family: var(--font-sans); }
     .numeric, time, .kc-time, [data-clock] { font-variant-numeric: tabular-nums; }
 
@@ -89,6 +74,13 @@
     .kcard { position: relative; background: var(--color-neutral-card); border-radius: var(--radius-md); padding: 12px 16px 16px; box-shadow: var(--shadow-card); cursor: grab; }
     .kcard.dragging, .kcard-row.dragging { opacity: .4; }
     .kcard.is-new { box-shadow: 0 0 0 2px var(--color-primary), var(--shadow-card); }
+    /* REQ-08 — chờ quá 15 phút: viền đỏ + nền nhấp nháy + nhãn chữ (không chỉ dựa vào màu) */
+    .kc-wait { font-weight: 700; color: var(--color-text-main); white-space: nowrap; }
+    .kcard.overdue, .batch.overdue { box-shadow: 0 0 0 2px var(--color-danger), var(--shadow-card); animation: kds-flash 1.2s ease-in-out infinite; }
+    .kcard.overdue .kc-wait, .kcard-row.overdue .kc-wait { color: var(--color-danger); }
+    .kc-late { margin-top: 8px; }
+    @keyframes kds-flash { 0%, 100% { background-color: var(--color-neutral-card); } 50% { background-color: #FEE2E2; } }
+    @media (prefers-reduced-motion: reduce) { .kcard.overdue, .batch.overdue { animation: none; } }
     .kc-top { display: flex; align-items: center; gap: 8px; font: var(--type-caption); color: var(--color-text-muted); }
     .kc-top b { padding: 2px 8px; border-radius: 8px; background: var(--color-tint); color: var(--color-text-main); font-weight: 700; }
     .kc-time { margin-left: auto; }
@@ -117,10 +109,6 @@
     .kcard.oos-card .kc-top, .kcard.oos-card h3, .kcard.oos-card .kc-note { opacity: .6; filter: grayscale(.8); }
     .kcard.oos-card h3 { text-decoration: line-through; }
 
-    /* Pill / Badge (type.badge, radius.full, viết hoa + letter-spacing .04em) */
-    .pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: var(--radius-full); font: var(--type-badge); text-transform: uppercase; letter-spacing: .04em; }
-    .pill-warning { background: #FEF3C7; color: #92400E; }
-    .pill-danger { background: #FEF2F2; color: #B91C1C; }
     .kc-oos { margin-top: 8px; }
 
     /* ---------- Mẻ gợi ý nấu chung (REQ-08 / AC1) ---------- */
@@ -540,12 +528,12 @@
     $('#modal-root').innerHTML = `
       <div class="kds-overlay" data-action="close-modal">
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="oos-title" data-stop>
-          <h3 id="oos-title"><i class="ph-bold ph-warning" style="color:var(--red)"></i> Đánh dấu Hết hàng?</h3>
+          <h3 id="oos-title"><i class="ph-bold ph-warning" style="color:var(--color-danger)"></i> Đánh dấu Hết hàng?</h3>
           <p>Xác nhận món <b>${name}</b> đã hết nguyên liệu trong kho.</p>
           <p class="muted">Món sẽ bị làm mờ và khóa ngay trên E-Menu của tất cả các bàn và máy POS của phục vụ (BR-03).</p>
           <div class="modal-actions">
             <button class="btn-ghost" data-action="close-modal">Hủy</button>
-            <button class="btn-primary" style="background:var(--red)" data-action="do-oos" data-dish="${dishId}">Đánh dấu Hết hàng</button>
+            <button class="btn-primary" style="background:var(--color-danger)" data-action="do-oos" data-dish="${dishId}">Đánh dấu Hết hàng</button>
           </div>
         </div>
       </div>`;
@@ -560,12 +548,12 @@
     $('#modal-root').innerHTML = `
       <div class="kds-overlay" data-action="close-modal">
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rm-title" data-stop>
-          <h3 id="rm-title"><i class="ph-bold ph-trash" style="color:var(--red)"></i> Xóa món khỏi hàng đợi?</h3>
+          <h3 id="rm-title"><i class="ph-bold ph-trash" style="color:var(--color-danger)"></i> Xóa món khỏi hàng đợi?</h3>
           <p>Xóa <b>${it.qty}× ${esc(it.dishName)}</b> của <b>${esc(it.table)}</b> (${esc(it.orderCode)}) vì đã hết nguyên liệu.</p>
           <p class="muted">Phục vụ sẽ nhận thông báo để báo lại cho khách.</p>
           <div class="modal-actions">
             <button class="btn-ghost" data-action="close-modal">Hủy</button>
-            <button class="btn-primary" style="background:var(--red)" data-action="do-remove" data-id="${it.id}">Xóa món</button>
+            <button class="btn-primary" style="background:var(--color-danger)" data-action="do-remove" data-id="${it.id}">Xóa món</button>
           </div>
         </div>
       </div>`;
@@ -620,18 +608,20 @@
         <span>${queued ? 'Sẽ báo phục vụ khi có mạng' : 'Đã báo phục vụ'}</span>
         <button class="link-btn" data-action="status" data-id="${it.id}" data-to="COOKING">Hoàn tác</button>
       </div>`;
+    const late = isOverdue(it, Date.now());   /* REQ-08 — kds-logic.js */
     return `
-    <article class="kcard ${blocked ? 'oos-card' : ''} ${S.newIds.has(it.id) ? 'is-new' : ''}" draggable="${!blocked}" data-id="${it.id}"
-      aria-label="${esc(it.table)}: ${it.qty} ${esc(it.dishName)} — ${COLS[it.status].label}">
+    <article class="kcard ${blocked ? 'oos-card' : ''} ${S.newIds.has(it.id) ? 'is-new' : ''} ${late ? 'overdue' : ''}" draggable="${!blocked}" data-id="${it.id}"
+      aria-label="${esc(it.table)}: ${it.qty} ${esc(it.dishName)} — ${COLS[it.status].label}${late ? ' — chờ quá 15 phút' : ''}">
       <div class="kc-top">
         <b>${esc(it.table)}</b><span>${esc(it.orderCode)}</span>
-        <span class="kc-time" title="Giờ gọi món">${fmtTime(it.placedTs)}</span>
+        <span class="kc-time" title="Giờ gọi món">${fmtTime(it.placedTs)}${it.status !== 'READY' ? ` · <span class="kc-wait" data-since="${it.placedTs}" title="Thời gian chờ">⏱ ${waitLabel(it.placedTs, Date.now())}</span>` : ''}</span>
         <button class="kc-more" data-action="menu" data-id="${it.id}" aria-label="Tùy chọn khác" aria-expanded="${S.menuFor === it.id}"><i class="ph-bold ph-dots-three"></i></button>
       </div>
       <h3><span class="qty">${it.qty}×</span> ${esc(it.dishName)}</h3>
       ${it.origQty && it.origQty !== it.qty ? `<span class="kc-part">${{ PENDING: 'Còn lại', COOKING: 'Đang nấu', READY: 'Đã nấu' }[it.status]} ${it.qty}/${it.origQty} suất</span>` : ''}
       ${it.note ? `<p class="kc-note">${esc(it.note)}</p>` : ''}
-      ${blocked ? `<span class="pill pill-danger kc-oos">Hết hàng · không thể nấu</span>` : ''}
+      ${blocked ? `<span class="badge badge-danger kc-oos">Hết hàng · không thể nấu</span>` : ''}
+      ${late ? `<span class="badge badge-danger kc-late"><i class="ph-bold ph-alarm"></i> Chờ quá 15 phút</span>` : ''}
       ${queued && it.status !== 'READY' ? `<p class="kc-sub">Chờ đồng bộ</p>` : ''}
       ${action}
       ${renderMenu(it, oos)}
@@ -641,14 +631,17 @@
   /* AC1 — mẻ gợi ý nấu chung: 1 khung, liệt kê các bàn, mỗi bàn vẫn có nút riêng (AC2) */
   function renderBatch(b) {
     const name = esc(menuName(b.dishId));
+    const now = Date.now();
+    const late = b.items.some(it => isOverdue(it, now));
     return `
-    <section class="batch" aria-label="Gợi ý nấu chung ${b.totalQty} ${name}">
-      <span class="pill pill-warning"><i class="ph-bold ph-sparkle"></i> Gợi ý nấu chung</span>
+    <section class="batch ${late ? 'overdue' : ''}" aria-label="Gợi ý nấu chung ${b.totalQty} ${name}${late ? ' — có bàn chờ quá 15 phút' : ''}">
+      <span class="badge badge-warning"><i class="ph-bold ph-sparkle"></i> Gợi ý nấu chung</span>
+      ${late ? `<span class="badge badge-danger"><i class="ph-bold ph-alarm"></i> Chờ quá 15 phút</span>` : ''}
       <h3><b>${b.totalQty}×</b> ${name}</h3>
       <ul class="batch-rows">
         ${b.items.map(it => `
-          <li class="kcard-row" draggable="true" data-id="${it.id}">
-            <b>${esc(it.table)}</b><span>${it.origQty && it.origQty !== it.qty ? `còn ${it.qty}/${it.origQty}` : `${it.qty}×`}${it.note ? ' · ' + esc(it.note) : ''} · <time>${fmtTime(it.placedTs)}</time></span>
+          <li class="kcard-row ${isOverdue(it, now) ? 'overdue' : ''}" draggable="true" data-id="${it.id}">
+            <b>${esc(it.table)}</b><span>${it.origQty && it.origQty !== it.qty ? `còn ${it.qty}/${it.origQty}` : `${it.qty}×`}${it.note ? ' · ' + esc(it.note) : ''} · <time>${fmtTime(it.placedTs)}</time> · <span class="kc-wait" data-since="${it.placedTs}">⏱ ${waitLabel(it.placedTs, now)}</span></span>
             <div class="row-actions">
               <button class="row-btn" data-action="status" data-id="${it.id}" data-to="COOKING" aria-label="Nấu riêng ${esc(it.table)}">Nấu</button>
               <button class="row-btn success" data-action="status" data-id="${it.id}" data-to="READY" aria-label="Xong ${esc(it.table)}">Xong</button>
@@ -662,13 +655,21 @@
   function renderColumn(status, batches) {
     const list = S.items.filter(it => it.status === status).sort((a, b) => a.placedTs - b.placedTs);   /* FIFO */
     let body;
+    const now = Date.now();
+    const cardBlock = it => ({ overdue: isOverdue(it, now), ts: it.placedTs, html: () => renderCard(it) });
+    let blocks;
     if (status === 'PENDING') {
-      /* AC1 — mẻ gợi ý nấu chung luôn ưu tiên lên đầu cột */
+      /* AC1 — mẻ gợi ý nấu chung ưu tiên lên đầu cột */
       const batched = new Set(batches.flatMap(b => b.items.map(x => x.id)));
-      body = batches.map(renderBatch).join('') + list.filter(it => !batched.has(it.id)).map(renderCard).join('');
+      blocks = [
+        ...batches.map(b => ({ overdue: b.items.some(it => isOverdue(it, now)), ts: Math.min(...b.items.map(x => x.placedTs)), html: () => renderBatch(b) })),
+        ...list.filter(it => !batched.has(it.id)).map(cardBlock),
+      ];
     } else {
-      body = list.map(renderCard).join('');
+      blocks = list.map(cardBlock);
     }
+    /* REQ-08 — món chờ quá 15 phút được đẩy lên đầu cột (kds-logic.js overdueFirst) */
+    body = overdueFirst(blocks).map(b => b.html()).join('');
     const empty = { PENDING: 'Chưa có món chờ nấu', COOKING: 'Kéo thẻ vào đây để bắt đầu nấu', READY: 'Kéo thẻ vào đây khi món đã nấu xong' }[status];
     return `
     <section class="col" data-status="${status}" data-drop="${status}">
@@ -821,6 +822,14 @@
   window.addEventListener('online', () => { flushQueue(); render(); });
 
   setInterval(() => { const c = document.querySelector('[data-clock]'); if (c) c.textContent = fmtTime(Date.now()); }, 15000);
+  /* REQ-08 — đồng hồ chờ trên từng thẻ chạy mỗi giây; món vừa qua mốc 15 phút → vẽ lại để chớp đỏ + lên đầu cột */
+  let overdueKey = '';
+  setInterval(() => {
+    const now = Date.now();
+    document.querySelectorAll('[data-since]').forEach(el => { el.textContent = `⏱ ${waitLabel(Number(el.dataset.since), now)}`; });
+    const key = S.items.filter(it => isOverdue(it, now)).map(it => it.id).join(',');
+    if (key !== overdueKey) { overdueKey = key; if (S.loaded) render(); }
+  }, 1000);
 
   /* Chiều cao thanh tiêu đề (đổi khi xuống dòng trên màn hình hẹp) → banner Offline dính ngay bên dưới */
   const syncTopbarH = () => document.documentElement.style.setProperty('--topbar-h', `${$('.topbar').offsetHeight}px`);

@@ -105,4 +105,5 @@ Chi tiết request/response: `api-contract.md` Mục 6. Tóm tắt:
 - [x] Màn hình Phục vụ nhận `ITEM_READY`; E-Menu nhận `menu:oos` (A-72).
 - [ ] AC4 kiểm tra quyền ở server (chờ story Auth/JWT).
 - [ ] PR có Story ID + review của thành viên khác trước khi merge (PR `feature/US-03-tests`).
+- [x] REQ-08 — đồng hồ chờ trên thẻ + chớp đỏ, đẩy lên đầu cột khi chờ quá 15 phút (2026-10-09, TC-OP-002; tính ở trình duyệt từ giờ gọi món, không thêm API).
 - [x] Độ trễ đơn mới < 500 ms (NFR-RO-01): trung vị 217 ms trên 5 mẫu (2026-10-08). Lần đo 1 mẫu ngày 07/10 (635 ms) là đơn đầu tiên lúc trang vừa mở — đã sửa cách đo. Chưa đo dưới tải 50 bàn.

@@ -42,6 +42,12 @@
 
     <!-- US-01 (Nhàn): thanh phân loại + danh sách món — render tự động -->
     <div class="cat-row" id="cat-row"></div>
+    <!-- US-01 AC5: banner lỗi kết nối — menu giữ nguyên, chỉ báo lỗi + thử lại -->
+    <div class="net-banner" id="net-banner" hidden>
+      <i class="ph-fill ph-wifi-slash"></i>
+      <span id="net-banner-msg"></span>
+      <button id="btn-net-retry" class="banner-retry" type="button">Thử lại</button>
+    </div>
     <div class="menu-grid" id="menu-grid"></div>
 
     <!-- US-02 (Ny): Trợ lý Voice AI — FAB micro -->
@@ -87,6 +93,15 @@
         <button class="btn-ghost" id="btn-cancel-confirm">Hủy bỏ</button>
         <button class="btn-primary" id="btn-confirm-send">Xác nhận</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal loading (Đang gửi đơn xuống bếp) -->
+  <div class="modal-overlay" id="sending-modal" style="display: none;" role="status" aria-label="Đang xử lý">
+    <div class="modal" style="text-align: center;">
+      <div class="modal-icon teal"><i class="ph-bold ph-circle-notch spin"></i></div>
+      <h3>Đang gửi đơn xuống bếp...</h3>
+      <p style="margin-top: 6px; font-size: 13px; color: var(--color-text-muted);">Vui lòng chờ trong giây lát, bếp đang tiếp nhận đơn hàng của bạn.</p>
     </div>
   </div>
 

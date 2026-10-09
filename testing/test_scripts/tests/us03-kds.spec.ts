@@ -156,7 +156,22 @@ test.describe('US-03 — KDS Bếp', () => {
     test.skip(true, 'Chờ story Auth/JWT (AI_USAGE_LOG A-84) — chưa có đăng nhập để kiểm tra');
   });
 
-  test('TC-OP-002: thẻ quá 15 phút chớp đỏ & đẩy lên đầu', async () => {
-    test.skip(true, 'Chưa làm: REQ-08 có nhưng không nằm trong 5 AC của US-03 — chờ PO quyết');
-  });
+  test('TC-OP-002 (REQ-08): món chờ quá 15 phút → đồng hồ, chớp đỏ, nhãn "Chờ quá 15 phút", lên đầu cột',
+    async ({ page, request }) => {
+      await page.clock.install();   // tua đồng hồ trình duyệt thay vì chờ 15 phút thật
+      await page.reload();
+      await expect(kds.connection).toContainText('Realtime');
+      await sendToKitchen(request, T.OVERDUE, D.GOI_CUON);
+      const card = kds.card(T.OVERDUE);
+      await expect(card).toBeVisible();
+      await expect(card).not.toHaveClass(/overdue/);
+      await expect(card.locator('.kc-wait')).toContainText('00:0');
+
+      await page.clock.fastForward('15:10');   // 15 phút 10 giây
+
+      await expect(card).toHaveClass(/overdue/);
+      await expect(card).toContainText('Chờ quá 15 phút');
+      await expect(card.locator('.kc-wait')).toContainText('15:1');
+      await expect(kds.column('PENDING').locator('.col-body > *').first()).toHaveClass(/overdue/);
+    });
 });

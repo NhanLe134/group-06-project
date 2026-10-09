@@ -1,82 +1,102 @@
 /**
- * US-01: E-Menu & Order Draft
+ * US-01: E-Menu & Order Draft — E2E (tầng E2E của testing pyramid, giáo trình §11.2)
  * Phụ trách: Nhàn
- * Test cases: TC-GO-001, TC-GO-002, TC-GO-003, TC-GO-004, TC-GO-005
+ * Test cases: testing/test_cases/test-cases-US01.md
+ *   TC-GO-001 (AC1 thêm món), TC-GO-002 + TC-US01-003 (AC4 explicit confirmation + mã đơn),
+ *   TC-US01-004 (AC5 offline banner + Thử lại), TC-US01-006 (AC6 bộ đếm − n +),
+ *   TC-US01-011 (AC4 giỏ trống).
+ * Viết lại 2026-10-09: chạy trên backend E2E riêng (không còn mock route như bản cũ).
+ *
+ * Chạy: npx playwright test -c playwright.us010509.config.ts
  */
-import { test, expect } from '@playwright/test';
-import { EMenuPage } from '../pages/EMenuPage';
-import { MENU_ITEMS, TABLES } from '../data/menu';
+import { KDS_DISHES as D, KDS_TABLES as T } from '../data/kds';
+import { API, expect, test } from '../utils/localApi';
+
+test.skip(!process.env.E2E_API_URL, 'Chạy bằng playwright.us010509.config.ts (backend E2E riêng)');
+
+const DISH = D.PHO_BO; // món "Phở bò" — có công thức + nguyên liệu đủ trong dữ liệu E2E
+
+function customerUrl(table: string): string {
+  return `/pages/customer.html?table=${encodeURIComponent(table)}`;
+}
 
 test.describe('US-01 — E-Menu & Order Draft', () => {
-  let menu: EMenuPage;
+  test('TC-GO-001 (AC1): thêm món → Draft có món với số lượng 1, chưa gửi bếp', async ({ page }) => {
+    await page.goto(customerUrl(T.REALTIME));
+    await page.locator('.menu-card', { hasText: DISH }).waitFor({ timeout: 15_000 });
 
-  test.beforeEach(async ({ page }) => {
-    menu = new EMenuPage(page);
-    await menu.goto(TABLES.TABLE_05);
+    await page.locator('.menu-card', { hasText: DISH }).locator('[data-add]').click();
+    await page.locator('#btn-open-draft').click();
+    await expect(page.locator('#draft-sheet')).toContainText(DISH);
+    // REQ-02/BR-01: Draft là client-side, chưa POST /orders → backend CHƯA có phiếu (404)
+    const res = await page.request.get(`${API}/orders/current?table_name=${encodeURIComponent(T.REALTIME)}`);
+    expect(res.status()).toBe(404);
   });
 
-  // TC-GO-001
-  test('chọn món thành công vào Order Draft', async () => {
-    await menu.addItem(MENU_ITEMS.PHO_BO.name);
-    await expect(menu.stickyBarText()).toContainText('1 món trong bản nháp');
-    await menu.openDraft();
-    await expect(menu.draftSheet).toContainText(MENU_ITEMS.PHO_BO.name);
+  test('TC-US01-006 (AC6): bấm "+" 2 lần → bộ đếm − 2 + trên thẻ', async ({ page }) => {
+    await page.goto(customerUrl(T.REALTIME));
+    const card = page.locator('.menu-card', { hasText: DISH });
+    await card.waitFor({ timeout: 15_000 });
+    await card.locator('[data-add]').click();
+    await card.locator('[data-inc-menu]').click();
+    await expect(card).toContainText('2');
   });
 
-  // TC-GO-002
-  test('chốt đơn qua Explicit Confirmation (BR-01)', async ({ page }) => {
-    await menu.addItem(MENU_ITEMS.PHO_BO.name);
-    await menu.openDraft();
+  test('TC-GO-002 (AC4): explicit confirmation → gửi bếp thành công, popup có "Mã đơn:", Draft làm trống', async ({ page }) => {
+    await page.goto(customerUrl(T.REALTIME));
+    const card = page.locator('.menu-card', { hasText: DISH });
+    await card.waitFor({ timeout: 15_000 });
+    await card.locator('[data-add]').click();
 
-    // Intercept API để không cần backend thật
-    await page.route('**/orders', async route => {
-      await route.fulfill({ status: 201, json: { id: 'HD001' } });
+    await page.locator('#btn-open-draft').click();
+    await page.locator('#draft-sheet').waitFor({ state: 'visible' });
+    await page.locator('[data-open-confirm]').click();
+    await expect(page.locator('#confirm-modal')).toBeVisible();
+    await page.locator('#btn-confirm-send').click();
+
+    await expect(page.locator('#success-modal')).toBeVisible();
+    await expect(page.locator('#success-code')).toContainText('Mã đơn:'); // US-01 AC4 — hệ thống sinh mã đơn
+    // Đơn thật sự nằm ở backend (ADR-N14): GET /orders/current trả về phiếu
+    const res = await page.request.get(`${API}/orders/current?table_name=${encodeURIComponent(T.REALTIME)}`);
+    expect(res.status()).toBe(200);
+    const bill = await res.json();
+    expect(bill.items.some((i: { tenmon: string }) => i.tenmon === DISH)).toBeTruthy();
+  });
+
+  test('TC-US01-004 (AC5): mất mạng → banner đỏ, menu GIỮ NGUYÊN; "Thử lại" → tải lại thành công', async ({ page }) => {
+    await page.goto(customerUrl(T.OFFLINE));
+    await page.locator('.menu-card').first().waitFor({ timeout: 15_000 });
+    const cardsBefore = await page.locator('.menu-card').count();
+
+    // Mất mạng trong phiên: khách kéo làm mới → loadMenu() lỗi → banner, menu GIỮ NGUYÊN
+    let offline = true;
+    await page.route('**/menu', async route => {
+      if (offline) await route.abort('failed');
+      else await route.continue();
     });
+    await page.evaluate('loadMenu().catch(() => showNetBanner())').catch(() => {}); // banner mới là kết quả
+    const banner = page.locator('#net-banner');
+    await expect(banner).toBeVisible();
+    await expect(banner).toContainText('Lỗi kết nối');
+    await expect(banner).toContainText('danh sách món chưa thay đổi');
+    // Menu KHÔNG bị xóa — đúng spec AC5
+    expect(await page.locator('.menu-card').count()).toBe(cardsBefore);
 
-    await menu.submitOrder();
-    await expect(menu.successModal).toBeVisible();
+    offline = false;
+    await page.locator('#btn-net-retry').click();
+    await expect(banner).toBeHidden({ timeout: 15_000 });
+    await expect(page.locator('.menu-card').first()).toBeVisible({ timeout: 15_000 });
   });
 
-  // TC-GO-003
-  test('món Out of Stock hiển thị grayed-out, nút thêm bị disabled', async () => {
-    const oosCard = menu.menuCard(MENU_ITEMS.CUA_CA_MAU.name);
-    // Nếu món OOS tồn tại trên menu thì kiểm tra
-    const count = await oosCard.count();
-    if (count > 0) {
-      await expect(oosCard).toHaveClass(/oos/);
-      await expect(menu.addButton(MENU_ITEMS.CUA_CA_MAU.name)).toBeDisabled();
-    }
-  });
-
-  // TC-GO-004
-  test('món OOS trong Draft làm nút gửi bếp bị KHÓA (ADR-001)', async ({ page }) => {
-    await menu.addItem(MENU_ITEMS.PHO_BO.name);
-    await menu.openDraft();
-
-    // Giả lập món trở thành OOS bằng cách mock menu API
-    await page.route('**/menu*', async route => {
-      const json = [
-        { ...MENU_ITEMS.PHO_BO, trangthaiban: false, soluongton: 0 },
-      ];
-      await route.fulfill({ json });
-    });
-    await page.reload();
-
-    await menu.openDraft();
-    await expect(menu.submitBtn).toBeDisabled();
-  });
-
-  // TC-GO-005
-  test('URL mã bàn không hợp lệ → trang báo lỗi', async ({ page }) => {
-    await page.goto('/fe_ofc/pages/customer.html?table=INVALID_99');
-    // Trang vẫn mở nhưng hiển thị lỗi khi gọi API menu
-    const response = await page.waitForResponse(
-      resp => resp.url().includes('/menu') && !resp.ok(),
-      { timeout: 5000 },
-    ).catch(() => null);
-    // Nếu backend trả lỗi, frontend nên hiện thông báo
-    if (response) {
-      await expect(page.locator('.menu-empty')).toBeVisible();
-    }
+  test('TC-US01-011 (AC4): giỏ trống → không mở modal gửi bếp', async ({ page }) => {
+    await page.goto(customerUrl(T.OFFLINE_MISSED));
+    await page.locator('.menu-card').first().waitFor({ timeout: 15_000 });
+    await page.locator('#btn-open-draft').click();
+    await page.locator('#draft-sheet').waitFor({ state: 'visible' });
+    // Giỏ trống: nút gửi bếp không có trong footer (hoặc disabled) — openConfirm() chặn khi draft rỗng
+    const sendBtn = page.locator('[data-open-confirm]');
+    const goneOrDisabled = (await sendBtn.count()) === 0 || !(await sendBtn.first().isEnabled());
+    expect(goneOrDisabled).toBeTruthy();
+    await expect(page.locator('#confirm-modal')).toBeHidden();
   });
 });

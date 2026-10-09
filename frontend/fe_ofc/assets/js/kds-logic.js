@@ -54,3 +54,25 @@ function fromApi(x) {
     placedTs: Date.parse(x.giogoimon),
   };
 }
+
+/* REQ-08 — món chờ quá 15 phút: chớp đỏ + đẩy lên đầu cột (TC-OP-002, A-126).
+   Tính ở trình duyệt từ giờ gọi món (`placedTs`) nên không cần thêm API. */
+const OVERDUE_MS = 15 * 60 * 1000;
+
+/** Thời gian đã chờ dạng "mm:ss" (quá 60 phút vẫn đếm phút, vd. "75:03"). */
+function waitLabel(placedTs, now) {
+  const s = Math.max(0, Math.floor((now - placedTs) / 1000));
+  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+}
+
+/** Món Chờ nấu / Đang nấu đã chờ QUÁ 15 phút (đúng 15:00 chưa tính là quá). */
+function isOverdue(it, now) {
+  return it.status !== 'READY' && now - it.placedTs > OVERDUE_MS;
+}
+
+/** Thứ tự trong 1 cột: khối quá giờ lên đầu (cũ nhất trước), các khối còn lại giữ nguyên thứ tự.
+   `blocks` = [{ overdue, ts, ... }] — 1 thẻ hoặc 1 mẻ gom (ts = giờ gọi sớm nhất). */
+function overdueFirst(blocks) {
+  const late = blocks.filter(b => b.overdue).sort((a, b) => a.ts - b.ts);
+  return [...late, ...blocks.filter(b => !b.overdue)];
+}

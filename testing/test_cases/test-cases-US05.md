@@ -1,0 +1,44 @@
+# TEST CASES CHI TIẾT — US-05: THANH TOÁN HÓA ĐƠN QUA QR (SEPAY VIETQR)
+
+> **Tài liệu kiểm soát:** `testing/test_cases/test-cases-US05.md`
+> **User Story:** US-05 — Thanh toán hóa đơn qua QR (Toàn bộ) (`docs/04-Backlog/user stories/US-05.md` — viết lại 09/10/2026 theo ADR-N15/N16; **thay thế bộ TC thời Split Bill** — chia bill đã cắt theo ADR-N08)
+> **Người thực hiện (Who checked):** Nhàn (owner US-05; AI hỗ trợ viết testcase — AI_USAGE_LOG A-N70, A-N72)
+> **Lần chạy:** chưa chạy (`Un-tested`) — integration tests liên quan đã pass 116/116 (2026-10-09), evidence sẽ lưu `testing/reports/US-05/`
+> **Màn hình kiểm thử:** `frontend/fe_ofc/pages/cashier.html` (Thu ngân); backend `backend/app/routers/sepay.py`, `backend/app/services/orders.py`
+> **Yêu cầu liên quan:** `REQ-04`, `NFR-RO-03`, `BR-05`, `ADR-N08`, `ADR-N14`, `ADR-N15`, `ADR-N16`
+> **Cấu hình bảng:** cùng mẫu 15 cột với `testing/test-cases.md` (Ny). Cột **Mode**: `Automated` / `Manual/E2E`; tầng test ghi ở cột **Comment**. Cột **Testing Result**: `Passed` · `Failed` · `Blocked` · `Un-tested`.
+
+## Liên kết với `testing/test-strategy.md` (Ny)
+
+| Mã chiến lược | Nội dung | Test case ở file này |
+|---|---|---|
+| `IT-01` (tương đương) | API thanh toán + DB (hoadon/phiếu/bàn) | TC-US05-001…004, TC-US05-010 |
+| §11.3 | Slow/offline/5xx khi tạo QR | TC-US05-008 |
+| §11.3 | 401/403 (sai Apikey webhook) | TC-US05-006 |
+| §11.3 | Ambiguous match (2 bàn trùng tổng) | TC-US05-005 |
+| §11.3 | Unicode trong nội dung CK | TC-US05-001 |
+
+## Môi trường & cách chạy (kế hoạch)
+
+| Tầng | Công cụ | Ghi chú |
+|---|---|---|
+| Integration | pytest + httpx (`backend/tests/routers/test_sepay.py`, `test_orders.py`) | SQLite trong bộ nhớ; webhook giả lập không cần SePay thật |
+| E2E | Playwright (`testing/test_scripts/`) | `us05-cashier.spec.ts`; thanh toán thật dùng `POST /sepay/demo-sim/{ban_id}` |
+| Smoke staging | Vercel + Render | kiểm tra QR deploy có đúng `acc` thật |
+
+## BẢNG TEST CASES — US-05
+
+| TC-ID | Description (Test Scenario) | User Story / Trace | Pre-condition | Test step | Step condition to perform | Data | Priority | Mode | Expected result | Testing Result | Date | Who checked | BUG ID | Comment |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| **TC-US05-001** | Tạo QR — nội dung CK định danh hóa đơn | `US-05` AC1<br>`REQ-04`, `ADR-N15`, `ADR-N16` | Bàn đang ăn, tất cả món đã phục vụ. | 1. Thu ngân bấm "Tạo mã thanh toán".<br>2. Đọc QR + dòng "Nội dung CK". | 1.1 Bàn có phiếu chưa tính. | `Bàn 06`, tổng 250.000đ | High | Automated | QR `https://qr.sepay.vn/img?bank=...&acc=...&amount=250000&des=Ban%2006%20-%20{hoadon_id}`; hiển thị "Nội dung CK: Ban 06 - {hoadon_id}" dưới QR; số tiền khớp tổng các phiếu chưa tính; nội dung không dấu lỗi. | `Passed` | 2026-10-09 | Nhàn | - | Integration `test_sepay.py::test_sepay_qr_noi_dung_chuyen_khoan_ban_so`. Đã smoke trên Supabase thật 09/10: `Ban 01 - HD-20261009-0003`. |
+| **TC-US05-002** | Tạo QR 2 lần → tái dùng hóa đơn nháp | `US-05` AC1, AC4<br>`ADR-N16` | Đã tạo QR cho bàn (có hóa đơn `chua_thanh_toan`). | 1. Bấm "Tạo mã thanh toán" lần 2 (khách gọi thêm món trước đó). | - | Cùng bàn | High | Automated | Không sinh hóa đơn thứ 2; cùng `hoadon_id`, `tongtien`/`so_phieuban` cập nhật theo món mới. | `Passed` | 2026-10-09 | Nhàn | - | Integration `test_sepay.py::test_sepay_close_tai_su_dung_hoadon_nhap`; smoke thật: 2 lần gọi → cùng `HD-20261009-0003`. |
+| **TC-US05-003** | Webhook khớp bill qua hoadon_id (ưu tiên cao nhất) | `US-05` AC2<br>`ADR-N15`, `ADR-N16` | Đã tạo QR; SePay gửi webhook tiền vào. | 1. Gửi `POST /sepay/webhook` với content chứa `{hoadon_id}` (không nhắc tên bàn). | 1.1 `transferAmount` khớp tổng tiền. | content: "chuyen tien theo HD {hoadon_id}" | High | Automated | HTTP 200 + `{"success": true}` (đúng ràng buộc SePay ≤ 30s); hóa đơn nháp chốt `da_thanh_toan`; phiếu gắn `hoadon_id`; bàn về "chờ dọn" (3). | `Passed` | 2026-10-09 | Nhàn | - | Integration `test_sepay.py::test_sepay_webhook_khop_hoadon_id`. |
+| **TC-US05-004** | Webhook fallback khớp tên bàn (không phân biệt dấu) | `US-05` AC2<br>`ADR-N15` | Khách gõ tay nội dung không có hoadon_id. | 1. Gửi webhook content "DH BAN06 TTOAN" / "Ban 06 Nguyen Van A". | 1.1 Số tiền khớp hóa đơn bàn. | content không dấu; `tenban` = "Bàn 06" (có dấu) | High | Automated | Vẫn khớp đúng bàn nhờ fold Unicode bỏ dấu; đóng bàn thành công. | `Passed` | 2026-10-09 | Nhàn | - | Integration `test_sepay.py::test_sepay_webhook_gach_no_tu_dong`. Lịch sử: trước 09/10 so khớp có dấu nên LUÔN rớt xuống fallback số tiền — đã fix. |
+| **TC-US05-005** | Webhook mơ hồ (2 bàn trùng tổng, content sai) → không đóng nhầm | `US-05` AC2<br>§11.3 ambiguous | 2 bàn cùng tổng tiền; content không khớp tên bàn/hoadon_id. | 1. Gửi webhook chỉ khớp theo số tiền. | 1.1 Có > 1 bàn trùng tổng. | 2 bàn × 250.000đ | High | Automated | Không đóng bàn nào; trả `{"success": true, "message": "Không tìm thấy bàn khớp..."}` (SePay coi là delivered, không retry vô hạn). | `Un-tested` | 2026-10-09 | Nhàn | - | Integration (`_find_table_by_sepay_content` — `matching_bans` chỉ trả khi duy nhất). |
+| **TC-US05-006** | Webhook sai/thiếu API key → 401 | `US-05` AC2<br>§11.3 401/403 | Đã cấu hình `SEPAY_WEBHOOK_API_KEY`. | 1. Gửi webhook không có header / sai header `Authorization: Apikey`. | - | Header sai: "Apikey wrong" | High | Automated | HTTP 401 `UNAUTHORIZED_WEBHOOK`; không có thay đổi dữ liệu. | `Un-tested` | 2026-10-09 | Nhàn | - | Integration `test_sepay.py` (fixture `_clear_sepay_webhook_key` tách test khỏi key thật trong `.env`). |
+| **TC-US05-007** | Realtime — Thu ngân nhận Toast khi webhook thành công | `US-05` AC3<br>`ADR-N15` | Màn Thu ngân mở, WS kênh `cashier:tables` connected. | 1. Khách chuyển khoản (hoặc demo-sim).<br>2. Quan sát màn Thu ngân. | 1.1 Webhook đối soát thành công. | `Bàn 06` | High | Manual/E2E | Toast "Thanh toán SePay thành công!" kèm bàn/tiền/ngân hàng; danh sách bàn tự làm mới; thẻ QR tự đóng; **không cần F5**. | `Passed` | 2026-10-09 | Nhàn | - | E2E + log backend `[accepted]` `/ws/cashier:tables`. Lịch sử: cashier.js từng nối sai `/ws?channel=` (403) — đã fix 09/10. **Chính test này là regression test cho fix WS path**: Toast chỉ hiện khi WS nhận `PAYMENT_SUCCESS` — test pass = kênh realtime sống. |
+| **TC-US05-008** | Lỗi tạo QR → toast đúng spec, giữ hóa đơn | `US-05` AC4<br>§11.3 offline/5xx | Thu ngân đang mở hóa đơn bàn. | 1. Ngắt mạng / backend trả 5xx.<br>2. Bấm "Tạo mã thanh toán".<br>3. Có mạng, bấm lại. | 3.1 Lỗi chỉ là tạm thời. | - | High | Automated/E2E | Toast vàng "Không thể khởi tạo mã QR thanh toán. Vui lòng kiểm tra lại mạng hoặc thử lại. Hóa đơn của bạn vẫn được giữ nguyên."; nút trở lại "Tạo mã thanh toán"; bấm lại thành công không lặp hóa đơn (hóa đơn nháp tái dùng — TC-US05-002). | `Un-tested` | 2026-10-09 | Nhàn | - | E2E (`route.abort('**/pay-qr')`). |
+| **TC-US05-009** | Chặn tạo QR khi còn món chưa hoàn thành | `US-05` AC5<br>đồng bộ US-09 AC2 | Bàn còn món `cho_nau`/`dang_nau`/`da_xong`. | 1. Thu ngân bấm "Tạo mã thanh toán". | - | Bàn còn 1 món `Chờ phục vụ` | High | Automated/E2E | Chặn, toast "còn N món chưa hoàn thành"; không sinh QR. | `Passed` | 2026-10-09 | Nhàn | - | Hiện guard ở FE (`cashier.js` createQR). **Đang chờ B1 (F1): bổ sung validate backend + integration test** — checklist A-N72. |
+| **TC-US05-010** | Thanh toán tiền mặt — đóng bàn thủ công | `US-05` AC2<br>`ADR-N14` | Bàn có phiếu chưa tính. | 1. Thu ngân bấm "Xác nhận đã nhận tiền & Đóng bàn". | - | `Bàn 05` | High | Automated | `POST /tables/{ban_id}/close` → hoadon `da_thanh_toan` + `thoigianthanhtoan`; bàn về 3; nếu đã có hóa đơn nháp thì **chốt hóa đơn đó** chứ không tạo mới. | `Passed` | 2026-10-09 | Nhàn | - | Integration `test_orders.py::test_cashier_tables_va_qr_va_dong_ban`, `test_sepay.py::test_sepay_close_tai_su_dung_hoadon_nhap`. |
+| **TC-US05-011** | Demo-sim — mô phỏng webhook không cần tiền thật | `US-05` AC6<br>`ADR-N15` | Backend chạy, bàn có phiếu. | 1. Gọi `POST /sepay/demo-sim/{ban_id}`. | - | `BAN006` | Medium | Automated | Chạy đúng luồng AC2→AC3: chốt hóa đơn + WS `PAYMENT_SUCCESS`; content mô phỏng đúng format QR thật. | `Passed` | 2026-10-09 | Nhàn | - | Integration `test_sepay.py::test_sepay_demo_simulation_endpoint` + `test_sepay_demo_simulation_tat_khi_demo_mode_false`. **BUG-US05-001**: E2E phát hiện demo-sim không xác thực trên production — đã gate DEMO_MODE + tự ký Apikey, test lại pass. |
+| **TC-US05-012** | Webhook bỏ qua giao dịch tiền ra / số tiền <= 0 | `US-05` AC2<br>§11.3 invalid | SePay gửi `transferAmount <= 0`. | 1. Gửi webhook `transferAmount: 0` hoặc âm. | - | `transferAmount: 0` | Medium | Automated | HTTP 200 `{"success": true, "message": "Ignored..."}`; không đổi dữ liệu. | `Un-tested` | 2026-10-09 | Nhàn | - | Integration (`sepay_webhook` nhánh `transferAmount <= 0`). |
