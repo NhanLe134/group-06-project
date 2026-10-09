@@ -1,5 +1,6 @@
 """US-03 — API cho màn hình Bếp KDS. Spec: vault/06-Engineering/story-spec-us03-kds.md."""
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
@@ -9,18 +10,24 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.db import get_db
 from app.errors import ApiError
+from app.logging_setup import kv
 from app.models import Ban, ChiTietPhieu, PhieuBan, ThucDon
 from app.routers.menu import broadcast_flipped
 from app.schemas.kds import KdsItemOut, SplitIn, SplitOut, StatusUpdateIn
 from app.services import kds as service
 from app.ws.manager import KDS_CHANNEL, manager
 
+log = logging.getLogger("app.kds")
 router = APIRouter(prefix="/kds", tags=["kds"])
 Db = Annotated[AsyncSession, Depends(get_db)]
 
 
 async def _notify(items: list[KdsItemOut], reason: str) -> None:
     """Báo mọi màn hình KDS tải lại; món vừa xong thì báo thêm cho Phục vụ (AC2)."""
+    for i in items:
+        log.info("kds_%s %s", reason, kv(
+            item=i.id, ban=i.ban, mon=i.tenmon, soluong=i.soluong, trangthai=i.trangthai,
+        ))
     await manager.publish(
         KDS_CHANNEL, "KDS_ITEMS_CHANGED", {"item_ids": [str(i.id) for i in items], "reason": reason}
     )

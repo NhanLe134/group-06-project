@@ -4,12 +4,14 @@ Kênh dùng cho KDS: `kds:tickets` (vòng đời món trong bếp) và `menu:oos
 Giới hạn: state nằm trong 1 tiến trình — client chỉ nhận sự kiện của backend mà nó kết nối.
 """
 
+import logging
 from collections import defaultdict
 from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import WebSocket
 
+log = logging.getLogger("app.ws")
 KDS_CHANNEL = "kds:tickets"
 MENU_OOS_CHANNEL = "menu:oos"
 CASHIER_CHANNEL = "cashier:tables"
@@ -33,6 +35,7 @@ class ConnectionManager:
             try:
                 await ws.send_json(message)
             except Exception:  # client đã ngắt giữa chừng — bỏ khỏi kênh, không làm hỏng request
+                log.warning("ws_client_dropped channel=%s event=%s", channel, event)
                 self.disconnect(channel, ws)
 
 

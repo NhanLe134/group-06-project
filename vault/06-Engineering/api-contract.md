@@ -9,6 +9,7 @@
 > ```json
 > { "error_code": "STRING_CODE", "message": "Mô tả lỗi cho người dùng/dev" }
 > ```
+> Lỗi không lường trước (2026-10-09): **500** `{ "error_code": "INTERNAL_ERROR", "message": "Lỗi máy chủ, vui lòng thử lại." }` — không lộ chi tiết; nguyên nhân + traceback nằm trong log backend (`app/errors.py`, `docs/RUNBOOK.md` Mục 7).
 
 ---
 

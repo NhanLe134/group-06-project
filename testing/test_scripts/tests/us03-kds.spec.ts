@@ -75,8 +75,9 @@ test.describe('US-03 — KDS Bếp', () => {
       await expect(kds.column('READY').getByText(T.READY)).toBeVisible();
       await expect.poll(async () => (await kdsItem(request, T.READY, D.GOI_CUON))?.trangthai)
         .toBe('da_xong');
+      // US-10 (Trang): trang Phục vụ gom thông báo theo bàn 10 giây rồi mới hiện → chờ tối đa 15 s
       await expect(waiter.locator('.notif-card').filter({ hasText: T.READY }))
-        .toContainText(D.GOI_CUON);
+        .toContainText(D.GOI_CUON, { timeout: 15_000 });
     });
 
   test('TC-OP-003 (AC3): Bếp báo hết "Salad cá ngừ" → E-Menu của khách gỡ món < 1 s, không F5',

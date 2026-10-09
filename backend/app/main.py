@@ -1,7 +1,9 @@
+import logging
+import time
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import select, text
@@ -12,6 +14,7 @@ import app.models  # noqa: F401 — đăng ký toàn bộ bảng vào Base.metad
 from app.config import settings
 from app.db import Base, async_session_factory, engine, get_db
 from app.errors import register_error_handlers
+from app.logging_setup import configure_logging, kv
 from app.models.menu import ThucDon
 from app.routers import ingredients, inventory, kds, menu, orders, sepay, voice, waiter
 from app.ws import router as ws_router
@@ -38,7 +41,24 @@ async def lifespan(app: FastAPI):
     yield
 
 
+configure_logging(settings.log_level)
+http_log = logging.getLogger("app.http")
+
 app = FastAPI(title="Restaurant Smart Ordering API", lifespan=lifespan)
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """1 dòng log mỗi request: phương thức, đường dẫn, mã trạng thái, thời gian xử lý (ms)."""
+    started = time.perf_counter()
+    response = await call_next(request)
+    ms = round((time.perf_counter() - started) * 1000)
+    level = logging.WARNING if response.status_code >= 500 else logging.INFO
+    http_log.log(level, "request %s", kv(
+        method=request.method, path=request.url.path, status=response.status_code, ms=ms,
+    ))
+    return response
+
 
 app.add_middleware(
     CORSMiddleware,
