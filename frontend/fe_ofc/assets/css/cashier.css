@@ -130,9 +130,7 @@
     /* chờ dọn — vàng nhạt */
 
 /* Công tắc mô phỏng lỗi (AC5) */
-.sim-box { padding: 12px 16px; border-top: 1px dashed #E2E8F0; background: #FFFBEB; }
-.sim-toggle { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #A16207; cursor: pointer; }
-.sim-toggle input { width: 16px; height: 16px; accent-color: var(--color-warning); }
+/* (Đã cắt công tắc "Mô phỏng lỗi cổng thanh toán" — AC5/demo-only, không dùng ở quầy thật) */
 
 /* ---------- Cột phải: chi tiết hóa đơn (mở rộng chiếm diện tích còn lại) ---------- */
 .detail-panel {

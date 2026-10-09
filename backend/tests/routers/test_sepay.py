@@ -42,13 +42,13 @@ async def test_sepay_webhook_gach_no_tu_dong(client, setup_order):
     """Bơm payload Webhook từ SePay → Tự động gạch nợ hóa đơn Bàn 06."""
     ban_id = setup_order
 
-    # Gửi Webhook SePay mô phỏng tiền vào 250,000đ nội dung 'DH BAN06'
+    # Gửi Webhook SePay mô phỏng tiền vào 250,000đ nội dung format mới 'Ban 06'
     payload = {
         "id": 99999,
         "gateway": "MBBank",
         "transactionDate": "2026-10-08 21:40:00",
         "accountNumber": "0123456789",
-        "content": "DH BAN06 TTOAN",
+        "content": "Ban 06 NGUYEN VAN A",
         "transferAmount": 250000,
         "referenceCode": "FT2610089999",
     }
@@ -63,6 +63,14 @@ async def test_sepay_webhook_gach_no_tu_dong(client, setup_order):
     ban06 = next(r for r in tables if r["id"] == ban_id)
     assert ban06["trangthai"] == "3"
     assert ban06["tongtien"] == 0
+
+
+async def test_sepay_qr_noi_dung_chuyen_khoan_ban_so(client, setup_order):
+    """QR sinh nội dung CK 'Ban 06' (số bàn) — hoadon chỉ sinh khi thanh toán (ADR-N14)."""
+    ban_id = setup_order
+    qr = (await client.post(f"/tables/{ban_id}/pay-qr")).json()
+    assert qr["qr_data"] == "Ban 06"
+    assert "des=Ban%2006" in qr["qr_url"]
 
 
 async def test_sepay_demo_simulation_endpoint(client, setup_order):

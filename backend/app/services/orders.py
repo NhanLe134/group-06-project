@@ -7,6 +7,7 @@ Thiết kế ADR-N14:
 - Hóa đơn tạm tính (US-09) = SELECT tổng hợp các phiếu có hoadon_id NULL
 """
 
+import re
 from urllib.parse import quote
 
 from sqlalchemy import func, select
@@ -171,6 +172,17 @@ async def list_cashier_tables(db: AsyncSession) -> list[dict]:
     return out
 
 
+def build_transfer_content(tenban: str) -> str:
+    """Nội dung chuyển khoản SePay: 'Ban 06' (số bàn trong tên bàn).
+
+    Không đưa hoadon_id vào — hoadon chỉ sinh KHI thanh toán (ADR-N14),
+    lúc khách quét QR thì chưa tồn tại. Webhook khớp bàn theo chuỗi này
+    (so khớp không phân biệt dấu — xem sepay._find_table_by_sepay_content).
+    """
+    m = re.search(r"\d+", tenban)
+    return f"Ban {m.group()}" if m else f"DH_{tenban.replace(' ', '')}"
+
+
 async def build_pay_qr(db: AsyncSession, ban_id: str) -> PayQrOut:
     """US-05 — QR thanh toán tính từ các phiếu CHƯA tính tiền (SePay VietQR, ADR-N15)."""
     ban = await db.get(Ban, ban_id)
@@ -182,8 +194,8 @@ async def build_pay_qr(db: AsyncSession, ban_id: str) -> PayQrOut:
     items = await _bill_items(db, phieu_list)
     amount = sum(i.thanhtien for i in items)
 
-    # Nội dung chuyển khoản SePay: DH_BAN06
-    des = f"DH_{ban.tenban.replace(' ', '')}"
+    # Nội dung chuyển khoản SePay: Ban 06 (số bàn — khớp webhook)
+    des = build_transfer_content(ban.tenban)
     bank = settings.sepay_bank_code or "MBBank"
     acc = settings.sepay_account_no or "0123456789"
 

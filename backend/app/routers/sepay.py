@@ -7,6 +7,7 @@ Cấu hình SePay Webhook:
   -> Backend tự động gạch nợ và phát WebSocket PAYMENT_SUCCESS.
 """
 
+import unicodedata
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Header
@@ -40,17 +41,31 @@ class SepayWebhookIn(BaseModel):
     description: str | None = None
 
 
+def _fold(s: str) -> str:
+    """Chuẩn hóa so khớp: bỏ dấu tiếng Việt, in hoa, bỏ khoảng trắng/gạch dưới.
+
+    'Bàn 06' và 'Ban 06'/'DH_BAN06' phải khớp được với nhau — trước đây
+    so khớp có dấu ('BÀN06' vs 'BAN06') nên luôn rớt xuống lượt so tiền.
+    """
+    nfkd = unicodedata.normalize("NFKD", s)
+    return (
+        "".join(c for c in nfkd if not unicodedata.combining(c))
+        .upper()
+        .replace(" ", "")
+        .replace("_", "")
+    )
+
+
 async def _find_table_by_sepay_content(
     db: AsyncSession, content: str | None, amount: int
 ) -> Ban | None:
-    """Tìm bàn theo nội dung chuyển khoản (VD: 'DH_BAN06' -> Bàn 06) hoặc số tiền."""
+    """Tìm bàn theo nội dung chuyển khoản (VD: 'Ban 06'/'DH_BAN06' -> Bàn 06) hoặc số tiền."""
     bans = (await db.execute(select(Ban))).scalars().all()
-    normalized_content = (content or "").upper().replace(" ", "").replace("_", "")
+    normalized_content = _fold(content or "")
 
-    # 1. Tìm theo mã tên bàn trùng trong nội dung
+    # 1. Tìm theo mã tên bàn trùng trong nội dung (không phân biệt dấu)
     for ban in bans:
-        clean_name = ban.tenban.upper().replace(" ", "").replace("_", "")
-        if clean_name in normalized_content:
+        if _fold(ban.tenban) in normalized_content:
             return ban
 
     # 2. Nếu không khớp chuỗi tên bàn, tìm bàn có tổng tiền hóa đơn trùng với số tiền chuyển vào
@@ -136,10 +151,10 @@ async def sepay_demo_simulation(ban_id: str, db: Db) -> dict[str, Any]:
     items = await service._bill_items(db, phieu_list)
     amount = sum(i.thanhtien for i in items)
 
-    # Giả lập payload Webhook từ SePay
+    # Giả lập payload Webhook từ SePay (cùng format nội dung với QR thật)
     sim_data = SepayWebhookIn(
         gateway="MBBank",
-        content=f"DH_{ban.tenban.replace(' ', '')}",
+        content=service.build_transfer_content(ban.tenban),
         transferAmount=amount,
     )
     return await sepay_webhook(sim_data, db)

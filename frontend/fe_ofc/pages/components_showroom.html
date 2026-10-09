@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design Foundations & Master Components — Import to Figma (1-Click)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/customer.css">
+  <link rel="stylesheet" href="../assets/css/cashier.css">
+  <link rel="stylesheet" href="../assets/css/voice.css">
+
+  <style>
+    body {
+      padding: 40px;
+      background-color: #F1F5F9;
+      font-family: var(--font-sans);
+      color: var(--color-text-main);
+    }
+    .showroom-header {
+      margin-bottom: 35px;
+      padding-bottom: 20px;
+      border-bottom: 3px solid #CBD5E1;
+    }
+    .showroom-header h1 {
+      margin: 0 0 10px 0;
+      color: var(--color-primary);
+      font-size: 32px;
+      font-weight: 800;
+    }
+    .section-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #0F172A;
+      margin: 40px 0 20px 0;
+      padding-left: 12px;
+      border-left: 5px solid var(--color-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .showroom-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 30px;
+      align-items: start;
+    }
+    .comp-box {
+      background: #FFFFFF;
+      border: 1px dashed #94A3B8;
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+    .comp-label {
+      margin-top: 16px;
+      padding: 6px 12px;
+      background: #0F172A;
+      color: #FFFFFF;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 6px;
+      font-family: monospace;
+      letter-spacing: 0.05em;
+    }
+    .comp-title {
+      font-size: 13px;
+      color: #64748B;
+      margin-top: 4px;
+      font-weight: 600;
+    }
+    .full-width {
+      grid-column: 1 / -1;
+    }
+
+    /* FOUNDATIONS STYLES */
+    .color-swatch-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      width: 100%;
+      justify-content: center;
+    }
+    .swatch-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .swatch-circle {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      border: 2px solid #FFFFFF;
+    }
+    .swatch-hex {
+      font-size: 12px;
+      font-weight: 700;
+      color: #0F172A;
+      font-family: monospace;
+    }
+    .swatch-name {
+      font-size: 11px;
+      color: #64748B;
+    }
+
+    .type-scale-list {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .type-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      border-bottom: 1px solid #E2E8F0;
+      padding-bottom: 8px;
+    }
+    .type-info {
+      font-size: 11px;
+      font-family: monospace;
+      color: var(--color-primary);
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="showroom-header">
+    <h1>🎨 Design Foundations & Master Components Showroom</h1>
+    <p>Trang tổng hợp đầy đủ <b>Foundations (Màu sắc, Typography, Radius)</b> và <b>Master Components (Buttons, Cards, Modals)</b>. Dùng Plugin <b>html.to.design</b> import 1 lần là có đủ cả 2 trang trên Figma!</p>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- PHẦN 1: FOUNDATIONS (MÀU SẮC, FONT CHỮ, BO GÓC, ICONS) -->
+  <!-- ========================================================= -->
+  <div class="section-title"><i class="ph-duotone ph-paint-brush-broad"></i> 1. DESIGN FOUNDATIONS (TOKENS)</div>
+
+  <div class="showroom-grid">
+
+    <!-- F1: COLOR SWATCHES -->
+    <div class="comp-box full-width">
+      <div class="color-swatch-list">
+        <div class="swatch-card">
+          <div class="swatch-circle" style="background: #FF5A36;"></div>
+          <span class="swatch-hex">#FF5A36</span>
+          <span class="swatch-name">color.primary (Cam)</span>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-circle" style="background: #E04826;"></div>
+          <span class="swatch-hex">#E04826</span>
+          <span class="swatch-name">primary.dark (Hover)</span>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-circle" style="background: #FFF1EE; border-color: #FF5A36;"></div>
+          <span class="swatch-hex">#FFF1EE</span>
+          <span class="swatch-name">primary.soft (Nền nhạt)</span>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-circle" style="background: #15803D;"></div>
+          <span class="swatch-hex">#15803D</span>
+          <span class="swatch-name">color.success (Xanh)</span>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-circle" style="background: #D97706;"></div>
+          <span class="swatch-hex">#D97706</span>
+          <span class="swatch-name">color.warning (Vàng)</span>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-circle" style="background: #DC2626;"></div>
+          <span class="swatch-hex">#DC2626</span>
+          <span class="swatch-name">color.danger (Đỏ)</span>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-circle" style="background: #F8FAFC; border-color: #CBD5E1;"></div>
+          <span class="swatch-hex">#F8FAFC</span>
+          <span class="swatch-name">neutral.bg (Nền App)</span>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-circle" style="background: #0F172A;"></div>
+          <span class="swatch-hex">#0F172A</span>
+          <span class="swatch-name">text.main (Chữ chính)</span>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-circle" style="background: #64748B;"></div>
+          <span class="swatch-hex">#64748B</span>
+          <span class="swatch-name">text.muted (Chữ phụ)</span>
+        </div>
+      </div>
+      <div class="comp-label">FOUNDATION-COLOR-PALETTE</div>
+      <div class="comp-title">Bảng màu chuẩn Design Tokens (Color Swatches)</div>
+    </div>
+
+    <!-- F2: TYPOGRAPHY SCALE -->
+    <div class="comp-box full-width">
+      <div class="type-scale-list">
+        <div class="type-row">
+          <span style="font-size: 24px; font-weight: 700;">H1 Display — Smart Ordering</span>
+          <span class="type-info">24px / Line 30 / Bold 700</span>
+        </div>
+        <div class="type-row">
+          <span style="font-size: 18px; font-weight: 700;">H2 Section — Thực đơn hôm nay</span>
+          <span class="type-info">18px / Line 24 / Bold 700</span>
+        </div>
+        <div class="type-row">
+          <span style="font-size: 16px; font-weight: 700;">H3 Dialog Title — Xác nhận gửi bếp</span>
+          <span class="type-info">16px / Line 22 / Bold 700</span>
+        </div>
+        <div class="type-row">
+          <span style="font-size: 15px; font-weight: 700;">H4 Subhead — Phở Bò Tái Nạm</span>
+          <span class="type-info">15px / Line 20 / Bold 700</span>
+        </div>
+        <div class="type-row">
+          <span style="font-size: 14px; font-weight: 400;">Body Text — Nước dùng đậm đà ninh 12 tiếng kèm rau thơm</span>
+          <span class="type-info">14px / Line 20 / Regular 400</span>
+        </div>
+        <div class="type-row">
+          <span style="font-size: 14px; font-weight: 700; color: var(--color-primary);">Button Text — Xác nhận gửi Bếp ngay</span>
+          <span class="type-info">14px / Line 20 / Bold 700</span>
+        </div>
+        <div class="type-row">
+          <span style="font-size: 14px; font-weight: 800; color: var(--color-primary);" class="numeric">Price Numeric — 135.000 ₫</span>
+          <span class="type-info">14px / Tabular-nums / ExtraBold 800</span>
+        </div>
+        <div class="type-row">
+          <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-danger);">Badge Text — HẾT HÀNG</span>
+          <span class="type-info">11px / Line 16 / Bold 700 Uppercase</span>
+        </div>
+      </div>
+      <div class="comp-label">FOUNDATION-TYPOGRAPHY-SCALE</div>
+      <div class="comp-title">Thang Phông Chữ chuẩn Font Be Vietnam Pro</div>
+    </div>
+
+    <!-- F3: RADIUS & SPACING -->
+    <div class="comp-box">
+      <div style="display: flex; gap: 20px; align-items: center;">
+        <div style="width: 70px; height: 70px; background: var(--color-primary-soft); border: 2px solid var(--color-primary); border-radius: 12px; display: grid; place-items: center; font-weight: 700; font-size: 12px;">
+          12px<br>(MD)
+        </div>
+        <div style="width: 70px; height: 70px; background: var(--color-primary); color: #fff; border-radius: 9999px; display: grid; place-items: center; font-weight: 700; font-size: 12px;">
+          9999px<br>(Full)
+        </div>
+      </div>
+      <div class="comp-label">FOUNDATION-RADIUS-SYSTEM</div>
+      <div class="comp-title">Quy chuẩn Bo góc (Radius MD 12px & Radius Full 9999px)</div>
+    </div>
+
+    <!-- F4: PHOSPHOR ICON SYSTEM -->
+    <div class="comp-box">
+      <div style="display: flex; gap: 16px; font-size: 28px; color: var(--color-primary);">
+        <i class="ph-fill ph-storefront"></i>
+        <i class="ph-duotone ph-microphone"></i>
+        <i class="ph-duotone ph-receipt"></i>
+        <i class="ph-duotone ph-note-pencil"></i>
+        <i class="ph-duotone ph-hand-coins"></i>
+        <i class="ph-bold ph-check"></i>
+      </div>
+      <div class="comp-label">FOUNDATION-ICON-SYSTEM</div>
+      <div class="comp-title">Bộ Thư viện Icons chuẩn (Phosphor Icons)</div>
+    </div>
+
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- PHẦN 2: MASTER COMPONENTS (LINH KIỆN MASTER CHO FIGMA) -->
+  <!-- ========================================================= -->
+  <div class="section-title"><i class="ph-duotone ph-squares-four"></i> 2. MASTER COMPONENTS (FIGMA COMPONENTS PAGE)</div>
+
+  <div class="showroom-grid">
+
+    <!-- 1. CMP-VOICE-BTN -->
+    <div class="comp-box">
+      <button class="voice-fab" style="position: static; transform: none;">
+        <i class="ph-duotone ph-microphone"></i>
+      </button>
+      <div class="comp-label">CMP-VOICE-BTN</div>
+      <div class="comp-title">Voice FAB Button (Màu Cam #FF5A36)</div>
+    </div>
+
+    <!-- 2. CMP-CTA-BUTTONS -->
+    <div class="comp-box">
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+        <button class="btn-primary"><i class="ph-bold ph-check"></i> Xác nhận gửi Bếp ngay</button>
+        <button class="btn-ghost">Hủy bỏ</button>
+        <button class="btn-view-bill"><i class="ph-duotone ph-receipt"></i> Xem hóa đơn</button>
+      </div>
+      <div class="comp-label">CMP-CTA-BUTTONS</div>
+      <div class="comp-title">Nút bấm CTA Chính, Nút Phụ Ghost & Xem Hóa đơn</div>
+    </div>
+
+    <!-- 3. CMP-STATUS-BADGES -->
+    <div class="comp-box">
+      <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+        <span class="badge badge-success"><i class="ph-bold ph-check"></i> Bàn trống</span>
+        <span class="badge badge-danger"><i class="ph-bold ph-user"></i> Bàn đang ăn</span>
+        <span class="badge badge-warning"><i class="ph-bold ph-clock"></i> Yêu cầu trả tiền</span>
+        <span class="badge badge-primary">Bản nháp</span>
+      </div>
+      <div class="comp-label">CMP-STATUS-BADGES</div>
+      <div class="comp-title">Bộ Nhãn Trạng Thái (Status Badges / Pills)</div>
+    </div>
+
+    <!-- 4. CMP-PROD-CARD (Available) -->
+    <div class="comp-box">
+      <div class="menu-card" style="width: 100%; margin: 0;">
+        <div class="menu-thumb" style="background: var(--color-primary-soft); color: var(--color-primary); font-size: 24px; display: grid; place-items: center; height: 70px; border-radius: 12px;">🍲</div>
+        <div class="menu-info">
+          <b class="menu-name">Phở Bò Tái Nạm</b>
+          <div class="menu-desc">Nước dùng đậm đà 12 tiếng, kèm rau thơm</div>
+          <div class="menu-foot">
+            <span class="menu-price">65.000 ₫</span>
+            <button class="btn-add"><i class="ph-bold ph-plus"></i></button>
+          </div>
+        </div>
+      </div>
+      <div class="comp-label">CMP-PROD-CARD</div>
+      <div class="comp-title">Thẻ Món ăn (State: Available)</div>
+    </div>
+
+    <!-- 5. CMP-PROD-CARD (Out of Stock) -->
+    <div class="comp-box">
+      <div class="menu-card oos" style="width: 100%; margin: 0; opacity: 0.6; filter: grayscale(0.8);">
+        <div class="menu-thumb" style="background: #E2E8F0; color: #94A3B8; font-size: 24px; display: grid; place-items: center; height: 70px; border-radius: 12px;">☕</div>
+        <div class="menu-info">
+          <b class="menu-name">Cà phê Muối Huê</b>
+          <div class="menu-desc">Đã hết hàng lúc 10:30</div>
+          <div class="menu-foot">
+            <span class="menu-price">35.000 ₫</span>
+            <span class="badge badge-danger">Hết hàng</span>
+          </div>
+        </div>
+      </div>
+      <div class="comp-label">CMP-PROD-CARD-OOS</div>
+      <div class="comp-title">Thẻ Món ăn (State: Out of Stock mờ xám)</div>
+    </div>
+
+    <!-- 6. CMP-CASHIER-TABLE-CARD -->
+    <div class="comp-box">
+      <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+        <div class="tc-card tc-green" style="width: 100%;">
+          <b>Bàn 01</b>
+          <span class="badge badge-success">Bàn trống</span>
+        </div>
+        <div class="tc-card tc-red" style="width: 100%;">
+          <b>Bàn 06</b>
+          <span style="font-weight: 700; color: var(--color-danger);">185.000 ₫ (3 món)</span>
+          <span class="badge badge-danger">Đang ăn</span>
+        </div>
+        <div class="tc-card tc-amber active" style="width: 100%;">
+          <b>Bàn 12</b>
+          <span style="font-weight: 700; color: var(--color-warning);">320.000 ₫</span>
+          <span class="badge badge-warning">Yêu cầu trả tiền</span>
+        </div>
+      </div>
+      <div class="comp-label">CMP-CASHIER-TABLE-CARD</div>
+      <div class="comp-title">Thẻ Bàn Thu ngân (3 Trạng thái Màu)</div>
+    </div>
+
+    <!-- 7. CMP-SIM-TOGGLE -->
+    <div class="comp-box">
+      <div class="sim-box" style="width: 100%; margin: 0;">
+        <label class="sim-toggle" style="display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer;">
+          <input type="checkbox" id="err-sim-demo" checked style="width: 18px; height: 18px;">
+          <span>Mô phỏng lỗi cổng thanh toán (AC5)</span>
+        </label>
+      </div>
+      <div class="comp-label">CMP-SIM-TOGGLE</div>
+      <div class="comp-title">Checkbox Mô Phỏng Lỗi Cổng Thanh Toán</div>
+    </div>
+
+    <!-- 8. CMP-NOTE-MODAL (Full width preview) -->
+    <div class="comp-box full-width">
+      <div class="modal modal-left" style="max-width: 420px; width: 100%; border: 1px solid #CBD5E1; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+        <h3><i class="ph-duotone ph-note-pencil"></i> Ghi chú món ăn</h3>
+        <p style="font-size: 13px; color: #64748B;">Chọn nhanh hoặc gõ yêu cầu riêng cho món này (bếp sẽ thấy khi nhận đơn).</p>
+        <div class="note-chips" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
+          <button class="note-chip picked" style="padding: 6px 12px; border-radius: 9999px; background: var(--color-primary); color: #fff; border: none; font-size: 12px; font-weight: 600;">không hành</button>
+          <button class="note-chip" style="padding: 6px 12px; border-radius: 9999px; background: #F1F5F9; color: #0F172A; border: 1px solid #E2E8F0; font-size: 12px;">nhiều cay</button>
+          <button class="note-chip" style="padding: 6px 12px; border-radius: 9999px; background: #F1F5F9; color: #0F172A; border: 1px solid #E2E8F0; font-size: 12px;">ít đường</button>
+        </div>
+        <textarea class="note-input" rows="2" style="width: 100%; border: 1px solid #CBD5E1; border-radius: 8px; padding: 8px;" placeholder="VD: ít đá, mang ra trước..."></textarea>
+        <div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px;">
+          <button class="btn-ghost">Xóa ghi chú</button>
+          <button class="btn-primary">Lưu ghi chú</button>
+        </div>
+      </div>
+      <div class="comp-label">CMP-NOTE-MODAL</div>
+      <div class="comp-title">Modal Ghi chú Món ăn (State: Opened / Picked chips)</div>
+    </div>
+
+    <!-- 9. SCR-BILL-VIEW (Full width preview) -->
+    <div class="comp-box full-width">
+      <div class="bill-view-preview" style="max-width: 480px; width: 100%; background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.08);">
+        <header style="background: #F8FAFC; padding: 14px 18px; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; justify-content: space-between;">
+          <b><i class="ph-duotone ph-receipt" style="color: var(--color-primary);"></i> Hóa đơn tạm tính — Bàn 06</b>
+          <span class="badge badge-warning">Chờ thanh toán</span>
+        </header>
+        <div style="padding: 16px;">
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #E2E8F0; font-size: 14px;">
+            <span>1× Phở Bò Tái Nạm (không hành)</span>
+            <b>65.000 ₫</b>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #E2E8F0; font-size: 14px;">
+            <span>2× Trà Đào Sả Nhãn</span>
+            <b>70.000 ₫</b>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 12px 0 0 0; font-size: 16px; font-weight: 800; color: var(--color-primary);">
+            <span>TỔNG TIỀN TẠM TÍNH</span>
+            <span class="numeric">135.000 ₫</span>
+          </div>
+        </div>
+        <footer style="padding: 14px 18px; background: #F8FAFC; border-top: 1px solid #E2E8F0;">
+          <button class="btn-primary" style="width: 100%;"><i class="ph-duotone ph-hand-coins"></i> Yêu cầu thanh toán</button>
+        </footer>
+      </div>
+      <div class="comp-label">SCR-BILL-VIEW</div>
+      <div class="comp-title">Khung Hóa đơn tạm tính & Nút Yêu cầu thanh toán</div>
+    </div>
+
+  </div>
+
+</body>
+</html>

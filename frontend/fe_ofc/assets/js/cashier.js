@@ -7,8 +7,7 @@
    - POST /tables/{ban_id}/pay-qr → tạo QR cho các phiếu chưa tính tiền
    - POST /tables/{ban_id}/close → tạo hoadon + bàn về chờ dọn
    - POST /tables/{phienban_id}/close → hoadon 'da_thanh_toan', bàn về 'trong'
-   QR trả về từ backend (mock qrserver.com; sau này thay bằng MoMo/VNPAY).
-   Công tắc "Mô phỏng lỗi cổng thanh toán" giữ lại cho AC5.
+   QR trả về từ backend (SePay VietQR, ADR-N15).
    ===================================================================== */
 
 'use strict';
@@ -91,7 +90,7 @@ function getRoundGroupedItems(items) {
   return rounds;
 }
 
-/* ===================== TOAST (AC4/AC5) ===================== */
+/* ===================== TOAST ===================== */
 function toast(title, body, warn = false) {
   const box = document.createElement('div');
   box.className = 'toast ' + (warn ? 'toast-warn' : 'toast-ok');
@@ -316,12 +315,6 @@ function createQR() {
     return;
   }
 
-  /* AC5 — mô phỏng cổng thanh toán lỗi: toast vàng + giữ nguyên hóa đơn */
-  if ($('#err-sim').checked) {
-    toast('Không thể khởi tạo mã QR thanh toán.',
-      'Vui lòng kiểm tra lại mạng hoặc thử lại. Hóa đơn của bạn vẫn được giữ nguyên.', true);
-    return;
-  }
   run(async () => {
     qr = await apiFetch(`/tables/${selectedId}/pay-qr`, { method: 'POST' });
     renderDetailPanel();
@@ -366,8 +359,8 @@ function initRealtimePayment() {
     : `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:8000`;
 
   try {
-    const ws = new WebSocket(`${host}/ws?channel=cashier:tables`);
-    ws.onmessage = e => {
+    const ws = new WebSocket(`${host}/ws/${encodeURIComponent('cashier:tables')}`);
+    ws.onmessage = async e => {
       try {
         const msg = JSON.parse(e.data);
         if (msg.event === 'PAYMENT_SUCCESS') {
@@ -377,7 +370,8 @@ function initRealtimePayment() {
           qr = null;
           bill = null;
           selectedId = null;
-          loadTables();
+          await loadTables();
+          openTable(tables[0]?.id ?? null);
         }
       } catch (err) {
         console.warn('Invalid WS payload:', err);
@@ -392,4 +386,6 @@ function initRealtimePayment() {
 run(async () => {
   await loadTables();
   initRealtimePayment();
+  /* Vào màn là mở sẵn hóa đơn bàn đầu tiên (Bàn 01) — panel phải không trống */
+  openTable(tables[0]?.id ?? null);
 });
