@@ -64,19 +64,23 @@ class PayQrOut(BaseModel):
     table_name: str
     amount: int
     so_phieuban: int
+    hoadon_id: str
     qr_data: str
     qr_url: str
 
 
 class TableOut(BaseModel):
-    """1 dòng của `GET /cashier/tables` — bàn master + tổng tiền phiếu chưa tính."""
+    """1 dòng của `GET /cashier/tables` — bàn master + tiến độ món + tổng tiền."""
 
     id: str
     tenban: str
     trangthai: str | None
-    giobatdau: str | None
+    gio_vao: str | None
     tongtien: int
     so_phieuban: int = 0
+    tong_mon: int = 0        # tổng dòng món chưa tính tiền
+    mon_phuc_vu: int = 0     # món đã phục vụ (da_phuc_vu)
+    mon_da_xong: int = 0     # món bếp xong chờ bưng (da_xong)
 
 
 class CloseTableOut(BaseModel):

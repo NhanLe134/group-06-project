@@ -7,7 +7,7 @@
    - Mở rộng dần: ≥560px grid 2 cột, ≥900px grid 3 cột + khung desktop.
    Dựa trên giao diện prototype (frontend/prototype/js/app.js — renderCustomer,
    renderDraftSheet, renderConfirmModal, renderSuccessOverlay), đổi sang
-   design-system của fe_ofc: primary #0D5C75, font Be Vietnam Pro, icon Phosphor.
+   design-system của fe_ofc: primary #FF5A36, font Be Vietnam Pro, icon Phosphor.
    ===================================================================== */
 
 /* Ghi đè biến icon của mock-data (SVG_BOWL... dùng var(--primary)) sang màu

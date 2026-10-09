@@ -1,6 +1,6 @@
 /* =====================================================================
    cashier.css — Màn hình Thu ngân (US-05: Thanh toán & Đóng bàn)
-   Dùng design-system fe_ofc: primary #0D5C75, font Be Vietnam Pro,
+   Dùng design-system fe_ofc: primary #FF5A36, font Be Vietnam Pro,
    icon Phosphor — đồng bộ với trang Waiter và Customer.
    ===================================================================== */
 
@@ -44,21 +44,20 @@
 }
 .btn-logout:hover { background: #E2E8F0; color: var(--color-danger); }
 
-/* ---------- Layout 2 cột ---------- */
 .cashier-layout {
   flex: 1;
   display: flex;
   gap: 20px;
   width: 100%;
-  max-width: 1280px;
+  max-width: 1360px;
   margin: 0 auto;
   padding: 20px 24px;
   align-items: flex-start;
 }
 
-/* ---------- Cột trái: danh sách bàn ---------- */
+/* ---------- Cột trái: danh sách bàn (cố định 3 thẻ / 1 dòng) ---------- */
 .table-panel {
-  width: 320px;
+  width: 570px;
   flex: none;
   background: var(--color-neutral-card);
   border: 1px solid #E2E8F0;
@@ -69,37 +68,71 @@
 }
 .panel-head {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 18px; border-bottom: 1px solid #E2E8F0;
+  padding: 14px 18px; border-bottom: 1px solid #E2E8F0;
 }
 .panel-head h3 {
-  margin: 0; font-size: 15px; font-weight: 800;
+  margin: 0; font-size: 16px; font-weight: 800;
   display: flex; align-items: center; gap: 8px; color: var(--color-text-main);
 }
 .panel-head h3 i { color: var(--color-primary); }
 .badge { background: var(--color-danger); color: #fff; padding: 2px 9px; border-radius: var(--radius-full); font-size: 12px; font-weight: 800; }
-.table-list { display: flex; flex-direction: column; padding: 8px; }
-.table-item {
-  display: flex; align-items: center; gap: 10px;
-  width: 100%; text-align: left;
-  padding: 13px 14px; margin-bottom: 4px;
-  border: 1.5px solid transparent; border-radius: var(--radius-md);
-  background: transparent; cursor: pointer; transition: all 0.2s;
-  font: inherit; color: inherit;
+.table-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 14px;
 }
-.table-item:hover { background: #F8FAFC; }
-.table-item.active { border-color: var(--color-primary); background: var(--primary-soft); }
-.ti-name { font-weight: 800; font-size: 14.5px; color: var(--color-text-main); }
-.ti-info { flex: 1; display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
-.ti-total { font-size: 12.5px; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
-.ti-arrow { color: #CBD5E1; font-size: 14px; }
-.table-item.empty .ti-name { color: var(--color-text-muted); font-weight: 600; }
+
+/* ---------- Thẻ bàn (gọn gàng, vừa vặn, tối ưu thị giác) ---------- */
+.tc-card {
+  display: flex; flex-direction: column; justify-content: space-between; gap: 8px;
+  width: 100%; min-height: 84px; text-align: left;
+  border: 1.5px solid; border-radius: 12px;
+  padding: 10px 12px;
+  cursor: pointer; font: inherit; color: inherit;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.tc-card:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0, 0, 0, 0.07); }
+.tc-card.active { box-shadow: 0 0 0 2.5px var(--color-primary), 0 6px 14px rgba(0, 0, 0, 0.1); }
+.tc-green { background: #ECFDF5; border-color: #A7F3D0; }
+.tc-red   { background: #FEF2F2; border-color: #FECACA; }
+.tc-amber { background: #FFFBEB; border-color: #FDE68A; }
+
+.tc-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.tc-name {
+  font-size: 14px; font-weight: 800; color: var(--color-text-main);
+  line-height: 1.2; flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.tc-pill {
+  display: inline-flex; align-items: center;
+  padding: 2px 7px; border-radius: var(--radius-full);
+  font-size: 10px; font-weight: 800; white-space: nowrap; flex: none;
+  background: #fff;
+}
+.tc-card .pill-green     { background: #DCFCE7; color: #15803D; border: 1px solid #86EFAC; }
+.tc-card .pill-amber     { background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A; }
+.tc-card .pill-red-line  { background: #fff; color: var(--color-danger); border: 1px solid #FCA5A5; }
+
+.tc-chips { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.tc-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(255, 255, 255, 0.85); border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 6px;
+  padding: 3px 7px; font-size: 11px; font-weight: 700; color: var(--color-text-main);
+  width: fit-content; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.tc-chip i { color: var(--color-danger); font-size: 11px; flex: none; }
+
+
+/* viền màu theo trạng thái bàn */
+                          /* trống — đứt nét */
+    /* đang phục vụ — đỏ nhạt */
+    /* chờ dọn — vàng nhạt */
 
 /* Công tắc mô phỏng lỗi (AC5) */
-.sim-box { padding: 12px 16px; border-top: 1px dashed #E2E8F0; background: #FFFBEB; }
-.sim-toggle { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #A16207; cursor: pointer; }
-.sim-toggle input { width: 16px; height: 16px; accent-color: var(--color-warning); }
+/* (Đã cắt công tắc "Mô phỏng lỗi cổng thanh toán" — AC5/demo-only, không dùng ở quầy thật) */
 
-/* ---------- Cột phải: chi tiết hóa đơn ---------- */
+/* ---------- Cột phải: chi tiết hóa đơn (mở rộng chiếm diện tích còn lại) ---------- */
 .detail-panel {
   flex: 1;
   min-width: 0;
@@ -117,31 +150,72 @@
 .detail-head p { margin: 6px 0 0; font-size: 13px; color: var(--color-text-muted); }
 
 /* ---------- Bảng hóa đơn (đồng bộ style bill của trang Customer) ---------- */
-.bill { border: 1px solid #E2E8F0; border-radius: var(--radius-md); padding: 4px 16px 12px; }
+.bill { border: 1.5px solid #E2E8F0; border-radius: var(--radius-md); padding: 6px 16px 14px; }
 .bill-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .bill-table th {
-  text-align: left; color: var(--color-text-muted); font-size: 10.5px;
-  text-transform: uppercase; letter-spacing: 0.04em;
-  padding: 10px 6px 8px; border-bottom: 1px solid #E2E8F0;
+  text-align: left; color: #475569; font-size: 11px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 12px 8px 10px; border-bottom: 1.5px solid #E2E8F0;
 }
 .bill-table th.num { text-align: center; }
-.bill-table td { padding: 9px 6px; border-bottom: 1px dashed #E2E8F0; color: var(--color-text-main); }
-.bill-table td.num { text-align: center; white-space: nowrap; font-weight: 600; }
+.bill-table td { padding: 10px 8px; border-bottom: 1px dashed #E2E8F0; color: #0F172A; font-weight: 600; }
+.bill-table td.num { text-align: center; white-space: nowrap; font-weight: 700; color: #0F172A; }
+.round-head td {
+  background: transparent !important;
+  color: #EA580C !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  padding: 10px 8px 6px !important;
+  border-top: none !important;
+  border-bottom: 1px dashed #E2E8F0 !important;
+}
+.round-head i {
+  font-size: 14px;
+  color: #EA580C;
+  margin-right: 6px;
+}
 .bill-foot {
   display: flex; justify-content: space-between; align-items: center;
   gap: 8px; flex-wrap: wrap;
-  padding-top: 10px; font-size: 13px; color: var(--color-text-muted);
+  padding-top: 12px; font-size: 13.5px; color: #64748B;
 }
-.bill-total { color: var(--color-primary); font-size: 16px; }
+.bill-total { color: #EA580C; font-size: 16px; font-weight: 800; }
 
 /* ---------- Khung thanh toán ---------- */
-.pay-box { margin-top: 18px; border: 1.5px solid var(--primary-soft); border-radius: var(--radius-md); padding: 16px; }
+.pay-box {
+  margin-top: 18px;
+  border: 1.5px solid #E2E8F0;
+  border-radius: var(--radius-md);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+}
 .pay-box h4 {
   margin: 0 0 6px; font-size: 13px; font-weight: 800;
   text-transform: uppercase; letter-spacing: 0.04em;
-  display: flex; align-items: center; gap: 8px; color: var(--color-primary);
+  display: flex; align-items: center; gap: 8px; color: #EA580C;
 }
-.pay-hint { margin: 0 0 14px; font-size: 12.5px; color: var(--color-text-muted); }
+.pay-box h4 i { color: #EA580C; }
+.pay-hint { margin: 0 0 14px; font-size: 13px; color: var(--color-text-muted); text-align: center; }
+.pay-hint-warn {
+  margin: 0 0 14px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #B45309;
+  background: #FEF3C7;
+  border: 1px solid #FDE68A;
+  padding: 8px 12px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+}
+.pay-hint-warn i { font-size: 16px; color: #D97706; flex: none; }
+
 /* Nút tạo mã QR — nổi bật, có độ nâng khi hover */
 .btn-create {
   width: 100%;
@@ -156,11 +230,12 @@
 .btn-create:hover { transform: translateY(-1px); box-shadow: 0 7px 18px rgba(13, 92, 117, 0.38); }
 .btn-create:active { transform: translateY(0); box-shadow: 0 3px 8px rgba(13, 92, 117, 0.30); }
 
-/* ---------- Thẻ QR thanh toán (nội dung căn giữa) ---------- */
+/* ---------- Thẻ QR thanh toán (nội dung & thẻ căn giữa) ---------- */
 .payer-list { display: flex; justify-content: center; margin-top: 14px; }
 .payer-card {
   width: 100%;
-  max-width: 300px;
+  max-width: 320px;
+  margin: 0 auto 4px auto;
   border: 1.5px solid #E2E8F0; border-radius: var(--radius-md);
   padding: 16px;
   display: flex; flex-direction: column; align-items: center;
@@ -169,24 +244,27 @@
 }
 .payer-card.paid { border-color: #BBF7D0; background: #F0FDF4; }
 .payer-head { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.payer-head b { font-size: 13.5px; display: flex; align-items: center; gap: 5px; color: var(--color-text-main); justify-content: center; }
-.payer-head b i { color: var(--color-primary); }
-.payer-amount { font-weight: 800; font-size: 17px; color: var(--color-primary); font-variant-numeric: tabular-nums; }
+.payer-head b { font-size: 14px; display: flex; align-items: center; gap: 6px; color: #0F172A; justify-content: center; }
+.payer-head b i { color: #EA580C; font-size: 16px; }
+.payer-amount { font-weight: 800; font-size: 18px; color: #EA580C; font-variant-numeric: tabular-nums; }
 .payer-body { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
-.qr-img { width: 140px; height: 140px; border-radius: 8px; border: 1px solid #E2E8F0; background: #fff; }
+.qr-img { width: 150px; height: 150px; border-radius: 8px; border: 1px solid #E2E8F0; background: #fff; }
+.qr-content { margin-top: 10px; font-size: 12px; color: var(--color-text-muted); text-align: center; }
+.qr-content b { color: var(--color-text-main); font-size: 13px; letter-spacing: 0.3px; }
 .qr-fallback {
-  width: 140px; height: 140px; border: 2px dashed #CBD5E1; border-radius: 8px;
+  width: 150px; height: 150px; border: 2px dashed #CBD5E1; border-radius: 8px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 6px; color: var(--color-text-muted); font-size: 11px;
 }
 .qr-fallback i { font-size: 32px; opacity: 0.5; }
 .btn-confirm-pay {
-  width: 100%; min-height: 40px;
-  background: var(--color-success); color: #fff;
-  border: none; border-radius: 8px;
-  font: inherit; font-weight: 700; font-size: 13px;
-  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; min-height: 44px;
+  background: #15803D; color: #fff;
+  border: none; border-radius: 10px;
+  font: inherit; font-weight: 700; font-size: 13.5px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
   transition: background 0.2s;
+  margin-top: 14px;
 }
 .btn-confirm-pay:hover { background: #166534; }
 .pay-done { display: flex; align-items: center; gap: 6px; color: var(--color-success); font-weight: 700; font-size: 13px; }
@@ -219,10 +297,23 @@
   display: inline-block; padding: 3px 10px; border-radius: var(--radius-full);
   font-size: 11px; font-weight: 800; white-space: nowrap;
 }
-.st-pending { background: #FEF3C7; color: var(--color-warning); }
-.st-ready { background: #DCFCE7; color: var(--color-success); }
+.st-pending { background: #FEF3C7; color: #B45309; border: none; }
+.st-ready { background: #DCFCE7; color: #15803D; border: none; }
+.st-served { background: #DCFCE7; color: #15803D; border: none; }
 .st-occupied { background: #FEE2E2; color: var(--color-danger); }
 .st-empty { background: #F1F5F9; color: var(--color-text-muted); }
+
+/* ---------- Nút chuyển đổi Hóa đơn gốc / Xem chi tiết ---------- */
+.btn-view-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--color-neutral-bg); border: 1px solid #CBD5E1;
+  color: var(--color-primary); font-size: 12px; font-weight: 700;
+  padding: 6px 12px; border-radius: var(--radius-md);
+  cursor: pointer; transition: all 0.15s ease;
+}
+.btn-view-toggle:hover {
+  background: #E7F1F5; border-color: var(--color-primary);
+}
 
 /* ---------- Toast ---------- */
 .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 3000; display: flex; flex-direction: column; gap: 10px; max-width: 340px; }
@@ -243,9 +334,8 @@
 /* ---------- Responsive ---------- */
 @media (max-width: 900px) {
   .cashier-layout { flex-direction: column; padding: 16px 14px; }
-  .table-panel { width: 100%; }
+  .table-panel, .detail-panel { width: 100%; min-width: 0; }
   .header-title-center { display: none; }
 }
 
 /* Danh sách rỗng */
-.table-empty { padding: 24px 16px; text-align: center; font-size: 13px; color: var(--color-text-muted); line-height: 1.6; }
