@@ -9,6 +9,7 @@
 > ```json
 > { "error_code": "STRING_CODE", "message": "Mô tả lỗi cho người dùng/dev" }
 > ```
+> Lỗi không lường trước (2026-10-09): **500** `{ "error_code": "INTERNAL_ERROR", "message": "Lỗi máy chủ, vui lòng thử lại." }` — không lộ chi tiết; nguyên nhân + traceback nằm trong log backend (`app/errors.py`, `docs/RUNBOOK.md` Mục 7).
 
 ---
 
@@ -292,7 +293,7 @@ Phát khi `POST /menu/items/{id}/out-of-stock` được gọi — broadcast toà
 | `KDS_ITEMS_CHANGED` | `{ "item_ids": ["..."], "reason": "status \| split \| cancel_out_of_stock \| new_order", "ban"?: "Bàn 06" }` | Sau mỗi thao tác ghi ở trên, **và sau `POST /orders` (khách gửi bếp, `reason = new_order`, có `ban`)** — màn hình KDS tải lại danh sách |
 | `ITEM_READY` | `{ "chitietmon_id": "...", "ban": "Bàn 01", "tenmon": "Phở bò tái lăn", "soluong": 2 }` | Món chuyển sang `da_xong` (US-03 AC2) — màn hình Phục vụ dùng để báo "Ting!" |
 
-> Sự kiện `TICKET_OVERDUE` (Mục 5.1) **chưa triển khai** — chưa có job quét món chờ quá 15 phút.
+> Sự kiện `TICKET_OVERDUE` (Mục 5.1) **không triển khai**: từ 2026-10-09 KDS tự tính món chờ quá 15 phút ngay trên trình duyệt từ `giogoimon` (ADR-NA12, TC-OP-002) — không cần job backend.
 
 ## 7. Đối soát tồn kho & Đóng ca (US-08) — đã triển khai
 

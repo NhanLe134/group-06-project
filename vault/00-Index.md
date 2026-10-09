@@ -45,3 +45,31 @@ Hệ thống Single Source of Truth cho con người và AI Agents (Claude Code 
 2. **Dữ liệu nghiệp vụ quan trọng** (Giá, tồn kho, tổng tiền, quyền truy cập, trạng thái đơn hàng): AI không được phép override nguồn dữ liệu chuẩn (source-of-truth) của hệ thống.
 3. **Trạng thái kỹ thuật**: Tuyệt đối không tự ý khẳng định *"test pass"*, *"deploy thành công"*, hay *"bug đã fix"* nếu chưa có bằng chứng (evidence) thực thi mới nhất.
 4. **Phê duyệt mã nguồn (Merge code)**: Không merge code chỉ dựa vào nhận xét *"looks good"* của AI; bắt buộc phải chạy đầy đủ test/lint/build và có người thật review diff trước khi merge.
+
+---
+
+## ĐIỀU HƯỚNG ARTIFACT THEO THÀNH VIÊN (để báo cáo — giáo trình §16)
+
+> Mỗi thành viên thêm 1 mục cho story mình sở hữu theo cùng mẫu. Link tính từ thư mục `vault/`.
+
+### Nhã — US-03 KDS Bếp & AI Batching (+ US-08 Kiểm kê, trừ kho tự động)
+
+**Live:** KDS staging `https://smart-orderding.vercel.app/pages/kitchen.html` · backend `https://group06-restaurant-api.onrender.com/health`
+
+| Bước báo cáo | Artifact |
+|---|---|
+| Story + AC | [US-03](../docs/04-Backlog/user%20stories/US-03.md) · [US-08](../docs/04-Backlog/user%20stories/US-08.md) |
+| Story Spec | [KDS](06-Engineering/story-spec-us03-kds.md) · [Trừ kho tự động](06-Engineering/story-spec-tru-kho-tu-dong.md) · [Kiểm kê US-08](06-Engineering/story-spec-us08-inventory.md) |
+| Kiến trúc / API / dữ liệu | [architecture.md](06-Engineering/architecture.md) (ADR-ARCH-003, -004) · [api-contract.md](06-Engineering/api-contract.md) Mục 5–8 · [data-model.md](06-Engineering/data-model.md) |
+| Quyết định | [decision_log_Nha.md](08-Decisions/decision_log_Nha.md) (ADR-NA01…11) |
+| Code | KDS `frontend/fe_ofc/pages/kitchen.html`, `assets/js/kds-logic.js`, `assets/js/realtime.js` · backend `backend/app/routers/kds.py`, `services/kds.py`, `services/stock.py`, `routers/ingredients.py`, `services/inventory.py`, `logging_setup.py` |
+| Commit / PR | Commit có Story ID `US-03` (vd. `4cd7adf`, `4cabf1c`, `ba696de`, `b3f8012`); lên `main` qua PR #5, #6 |
+| Test case + kết quả | [test-cases-US03.md](../testing/test_cases/test-cases-US03.md) · [test-cases-US08.md](../testing/test_cases/test-cases-US08.md) · [Báo cáo test](../testing/reports/US-03/README.md) (độ phủ, số đo, mutation check) |
+| Code test | `backend/tests/unit/`, `backend/tests/routers/test_kds.py`, `test_stock.py`, `test_inventory.py`, `test_logging.py`, `backend/tests/pg/` · `frontend/tests/kds-logic.test.js` · `testing/test_scripts/tests/us03-kds.spec.ts`, `us08-inventory.spec.ts`, `us03-smoke.spec.ts` |
+| Bug + regression | [testing/bug-reports/](../testing/bug-reports/) — BUG-US03-001…005, BUG-US08-001 |
+| Traceability | [traceability-matrix.md](../testing/traceability-matrix.md) — mục "Chi tiết truy vết US-03 / US-08" |
+| Vận hành / log | [RUNBOOK](../docs/RUNBOOK.md) Mục 7 (xem log backend) |
+| AI log | [AI_USAGE_LOG.md](../docs/AI_USAGE_LOG.md) (A-01…) |
+| Kịch bản viva | [viva-script-us03.md](06-Engineering/viva-script-us03.md) |
+
+**Còn mở:** AC4 (chờ JWT) · chớp đỏ 15 phút (REQ-08, chờ PO) · Q1–Q6 trừ kho + migration 011 (chờ nhóm duyệt).

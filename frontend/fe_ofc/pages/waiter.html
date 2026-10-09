@@ -24,11 +24,13 @@
         <b>Sơ đồ bàn & Quản lý Phục vụ</b>
       </div>
       <div class="header-right" style="display:flex; align-items:center; gap:16px;">
-        <!-- Nút Chuông Thông Báo (Chứa danh sách Cần bưng) -->
-        <button id="btn-toggle-notif" style="position:relative; background:none; border:none; color:var(--color-text-main); font-size:24px; cursor:pointer;">
-            <i class="ph-bold ph-bell-ringing"></i>
-            <span id="header-notif-badge" style="position:absolute; top:-4px; right:-6px; background:var(--color-danger); color:#fff; font-size:10px; font-weight:800; padding:2px 6px; border-radius:10px; display:none;">0</span>
-        </button>
+        <!-- Đèn báo trạng thái kết nối -->
+        <div id="conn-status" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 14px; color: var(--color-success); padding-right: 8px; border-right: 1px solid var(--color-line);">
+            <span class="dot" style="width: 8px; height: 8px; border-radius: 50%; background: var(--color-success); display: inline-block;"></span>
+            <span class="text">Đang đồng bộ...</span>
+        </div>
+
+
 
         <button class="btn-primary" id="btn-batch-serve" style="border-radius: 8px; padding: 10px 16px; border: none; font-weight: 700; cursor: pointer; display:none;"><i class="ph-bold ph-stack"></i> Gom Món</button>
         <div class="waiter-profile">
@@ -53,7 +55,7 @@
                         <option value="Khu B">Khu B</option>
                     </select>
                 </div>
-                <p style="color: var(--color-text-muted); font-size: 14px; margin-top: 4px;">Click vào bàn để xem chi tiết Order & Cập nhật trạng thái</p>
+                <!-- <p style="color: var(--color-text-muted); font-size: 14px; margin-top: 4px;">Click vào bàn để xem chi tiết Order & Cập nhật trạng thái</p> -->
             </div>
             <div class="status-legend">
                 <span class="legend-item"><span class="dot success"></span>Trống (Sẵn sàng)</span>

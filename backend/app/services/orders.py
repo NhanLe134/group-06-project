@@ -63,6 +63,8 @@ async def _bill_items(db: AsyncSession, phieu_list: list[PhieuBan]) -> list[Orde
     phieu_index = {p.phieuban_id: i + 1 for i, p in enumerate(phieu_list)}  # đợt theo phiếu
     out: list[OrderItemOut] = []
     for mon, tenmon, giaban, gio in rows.all():
+        if mon.trangthai == "da_huy":
+            continue
         so_luong = mon.soluong or 1
         gia = int(giaban or 0)
         out.append(

@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
@@ -6,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
 from app.errors import ApiError
+from app.logging_setup import kv
 from app.models.menu import ThucDon
 from app.schemas.menu import (
     MenuCreate,
@@ -19,6 +21,7 @@ from app.schemas.menu import (
 from app.services import kds as kds_service
 from app.ws.manager import MENU_OOS_CHANNEL, manager
 
+log = logging.getLogger("app.menu")
 router = APIRouter(prefix="/menu", tags=["menu"])
 api_router = APIRouter(prefix="/api/menu", tags=["menu"])
 Db = Annotated[AsyncSession, Depends(get_db)]
@@ -209,6 +212,9 @@ async def delete_menu_item(item_id: str, db: Db) -> None:
 
 
 async def broadcast_availability(db: AsyncSession, mon: MenuItemOut) -> None:
+    log.info("menu_availability %s", kv(
+        dish=mon.id, mon=mon.name, status=mon.status, portions=mon.portions,
+    ))
     await manager.publish(
         MENU_OOS_CHANNEL,
         "ITEM_OOS_BROADCAST",

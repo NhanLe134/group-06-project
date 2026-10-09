@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     # true để bật endpoint demo (POST /kds/demo/orders) khi chưa có luồng đặt món thật.
     demo_mode: bool = False
 
+    # Mức log: DEBUG | INFO | WARNING | ERROR (app/logging_setup.py)
+    log_level: str = "INFO"
+
     jwt_secret: str = "change-me"
     ai_api_key: str = ""
 

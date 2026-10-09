@@ -6,6 +6,8 @@
 > **Người thực hiện (Who checked):** Nhã (owner US-03; AI hỗ trợ viết và chạy test — AI_USAGE_LOG A-93, A-96…A-98, A-105)
 > **Lần chạy:** 2026-10-07; **chạy lại 2026-10-08** sau khi gộp thiết kế DB ADR-N14 · Kết quả: `testing/reports/US-03/`
 > **Màn hình kiểm thử:** `frontend/fe_ofc/pages/kitchen.html` (KDS), `customer.html` (E-Menu), `waiter.html` (Phục vụ)
+> **Giao diện:** KDS dùng chung `assets/css/design-system.css` (Design System của Nhàn, 2026-10-09).
+> **Lưu ý 2026-10-09:** từ `fix(bug-wt-002)` (Trang), **món "Đồ uống" không hiện trên KDS** (phục vụ tự mang ra) — dữ liệu test KDS dùng món ăn.
 > **Yêu cầu liên quan:** `REQ-07`, `REQ-08`, `REQ-09`, `BR-03`, `BR-06`, `NFR-RO-01`, `NFR-RO-03`
 > **Cấu hình bảng:** cùng mẫu 15 cột với `testing/test-cases.md` (Ny). Cột **Mode**: `Automated` / `Manual/E2E` như file tổng; tầng test (Unit / Integration / E2E) ghi ở cột **Comment**. Cột **Testing Result**: `Passed` · `Failed` · `Blocked` (chưa thể chạy vì tính năng/điều kiện chưa có) · `Un-tested`.
 
@@ -14,7 +16,7 @@
 | Mã chiến lược | Nội dung | Test case ở file này |
 |---|---|---|
 | `UT-02` | Kiểm tra tồn kho, từ chối nếu vượt | TC-OP-KDS-010, TC-OP-KDS-015 |
-| `UT-05` | Đồng hồ KDS, chớp đỏ > 15 phút | TC-OP-002 (`Blocked` — chưa làm) |
+| `UT-05` | Đồng hồ KDS, chớp đỏ > 15 phút | TC-OP-002 |
 | `UT-06` | Máy trạng thái chuyển trạng thái món | TC-OP-KDS-005, TC-OP-KDS-007 |
 | `IT-02` | Đơn mới → KDS nhận sự kiện WebSocket < 1 s | TC-OP-001, TC-OP-KDS-013 |
 | `IT-03` | Bếp báo hết → E-Menu/Phục vụ khóa món < 1 s | TC-OP-003, TC-OP-KDS-010 |
@@ -38,12 +40,12 @@ Lệnh chạy (PowerShell): xem `testing/reports/US-03/README.md`.
 
 | TC-ID | Description (Test Scenario) | User Story / Trace | Pre-condition | Test step | Step condition to perform | Data | Priority | Mode | Expected result | Testing Result | Date | Who checked | BUG ID | Comment |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| **TC-OP-001** | KDS nhận đơn mới real-time, không F5 | `US-03` AC1<br>`REQ-07`, `IT-02` | KDS đang mở, trạng thái "Realtime". | 1. Khách gửi bếp `POST /orders`.<br>2. Quan sát cột Chờ nấu. | 1.1 Đơn hợp lệ, món còn hàng. | `Bàn E2E-01`, Bánh flan | High | Automated | Thẻ hiện ở cột Chờ nấu không cần F5, toast "Đơn mới — Bàn E2E-01", có tiếng "ting". Server phát `KDS_ITEMS_CHANGED`. | `Passed` | 2026-10-08 | Nhã | - | E2E `us03-kds.spec.ts`; Integration `test_orders.py::test_gui_bep_phat_su_kien_kds`. Kỳ vọng gốc của Ny có "đồng hồ đếm ngược 00:00": KDS hiện **giờ gọi**, chưa có đồng hồ đếm ngược — thuộc REQ-08, theo dõi ở TC-OP-002. |
+| **TC-OP-001** | KDS nhận đơn mới real-time, không F5 | `US-03` AC1<br>`REQ-07`, `IT-02` | KDS đang mở, trạng thái "Realtime". | 1. Khách gửi bếp `POST /orders`.<br>2. Quan sát cột Chờ nấu. | 1.1 Đơn hợp lệ, món còn hàng. | `Bàn E2E-01`, Bánh flan | High | Automated | Thẻ hiện ở cột Chờ nấu không cần F5, toast "Đơn mới — Bàn E2E-01", có tiếng "ting". Server phát `KDS_ITEMS_CHANGED`. | `Passed` | 2026-10-08 | Nhã | - | E2E `us03-kds.spec.ts`; Integration `test_orders.py::test_gui_bep_phat_su_kien_kds`. Từ 2026-10-09 thẻ có đồng hồ chờ `⏱ mm:ss` (TC-OP-002). |
 | **TC-OP-KDS-013** | Độ trễ gửi bếp → thẻ hiện trên KDS | `US-03`<br>`NFR-RO-01` (< 500 ms), `IT-02` | Như TC-OP-001. | Gửi 5 đơn liên tiếp, đo từ lúc API trả về tới lúc thẻ hiện. | Mạng local. | 5 mẫu | Medium | Automated | Trung vị < 500 ms. | `Passed` — trung vị **217 ms**, lớn nhất 311 ms (mẫu: 311, 208, 215, 230, 217) | 2026-10-08 | Nhã | - | E2E. Mẫu chậm nhất luôn là **đơn đầu tiên** sau khi mở trang. Lần đo 07/10 chỉ lấy 1 mẫu (đúng đơn đầu) nên ra 635–710 ms và ghi nhầm là chưa đạt — đã sửa cách đo. Đo trên máy local, chưa đo dưới tải 50 bàn (k6) như chiến lược §3. |
 | **TC-OP-KDS-001** | AI gom mẻ "Gợi ý nấu chung" | `US-03` AC1<br>`REQ-08` | 2 bàn khác nhau gọi cùng món. | 1. Bàn A gửi 2 Phở.<br>2. Bàn B gửi 1 Phở. | - | `Bàn E2E-02A` 2×, `Bàn E2E-02B` 1× Phở bò | High | Automated | Mẻ "3× Phở bò" nhãn "Gợi ý nấu chung", liệt kê 2 bàn, đứng đầu cột Chờ nấu; mẻ nhiều suất đứng trước. | `Passed` | 2026-10-08 | Nhã | BUG-US03-004 | Unit `kds-logic.test.js` (aiBatching) + E2E. **Lần chạy 08/10 trước khi sửa: `Failed`** (gom mọi món thành "4× Món" sau ADR-N14). |
 | **TC-OP-KDS-002** | Không gom mẻ sai | `US-03` AC1 | - | Gom với: cùng 1 bàn; món không ở Chờ nấu; món bếp đã báo hết; danh sách rỗng; 2 món khác nhau. | - | - | Medium | Automated | Không tạo mẻ trong mọi trường hợp. | `Passed` | 2026-10-08 | Nhã | - | Unit `kds-logic.test.js` |
 | **TC-OP-KDS-003** | FIFO, ẩn món đã phục vụ/đã hủy | `US-03` AC1 | Có món ở nhiều trạng thái. | `GET /kds/items` | - | - | Medium | Automated | Món cũ nhất trước; không trả `da_phuc_vu`, `da_huy`. | `Passed` | 2026-10-08 | Nhã | - | Integration `test_kds.py::test_list_items_*` |
-| **TC-OP-KDS-004** | Bấm "Xong" → lưu DB + báo Phục vụ | `US-03` AC2<br>`REQ-07` | KDS và trang Phục vụ cùng mở. | 1. Gửi bếp 1 Gỏi cuốn.<br>2. Bếp bấm **Xong**. | - | `Bàn E2E-03`, Gỏi cuốn | High | Automated | Thẻ sang cột Đã nấu; DB `trangthai = da_xong`; trang Phục vụ hiện thông báo "Bàn E2E-03 … Gỏi cuốn" (`ITEM_READY`). | `Passed` | 2026-10-08 | Nhã | - | E2E + Integration `test_update_status_valid_transitions`. Trang Phục vụ (Trang) chỉ có thẻ thông báo; sơ đồ bàn còn dữ liệu mẫu. |
+| **TC-OP-KDS-004** | Bấm "Xong" → lưu DB + báo Phục vụ | `US-03` AC2<br>`REQ-07` | KDS và trang Phục vụ cùng mở. | 1. Gửi bếp 1 Gỏi cuốn.<br>2. Bếp bấm **Xong**. | - | `Bàn E2E-03`, Gỏi cuốn | High | Automated | Thẻ sang cột Đã nấu; DB `trangthai = da_xong`; trang Phục vụ hiện thông báo "Bàn E2E-03 … Gỏi cuốn" (`ITEM_READY`). | `Passed` | 2026-10-08 | Nhã | - | E2E + Integration `test_update_status_valid_transitions`. Từ 2026-10-09 trang Phục vụ (Trang, US-10) **gom thông báo theo bàn 10 giây** rồi mới hiện → E2E chờ tối đa 15 s. |
 | **TC-OP-KDS-005** | Chuyển trạng thái sai / bấm 2 lần | `US-03` AC2<br>`UT-06`, §11.3 double click | Thẻ đã ở Đã nấu. | Gửi "Xong" lần 2; nhảy lùi 2 bước; đổi món đã hủy. | - | - | High | Automated | 409 `INVALID_STATUS_TRANSITION`, dữ liệu không đổi. | `Passed` | 2026-10-08 | Nhã | - | Unit `test_kds_rules.py`; Integration `test_double_click_done_second_request_is_409` |
 | **TC-OP-KDS-006** | Nấu/Xong từng phần (tách suất) | `US-03` AC2 | Món 10 suất. | Tách 4 suất sang Đang nấu. | Số tách < số hiện có. | 4/10 | Medium | Automated | Dòng gốc còn 6, dòng mới 4 cùng phiếu; tách ≥ số hiện có → 422. | `Passed` | 2026-10-08 | Nhã | - | Integration `test_kds.py::test_split_*` |
 | **TC-OP-KDS-007** | Hoàn tác (lùi 1 bước) | `US-03` AC2<br>`UT-06` | Thẻ ở Đã nấu. | Bấm **Hoàn tác**. | - | - | Low | Automated | Về Đang nấu. | `Passed` | 2026-10-08 | Nhã | - | Unit `test_allowed_transitions_forward_and_one_step_back` |
@@ -59,18 +61,19 @@ Lệnh chạy (PowerShell): xem `testing/reports/US-03/README.md`.
 | **TC-OP-KDS-016** | Smoke trên staging (chỉ đọc) | `US-03`<br>Giáo trình §12 | Bản Vercel + Render đang chạy. | Gọi `/health`, `/menu`; mở KDS online. | Không ghi dữ liệu. | - | High | Automated | 200; `/menu` có `portions`; KDS hiện "Bếp KDS" + "Realtime". | `Passed` (2026-10-07) | 2026-10-07 | Nhã | - | E2E smoke `us03-smoke.spec.ts`. Chạy lại sau khi staging deploy bản có sửa BUG-US03-004/005. |
 | **TC-OP-KDS-017** | Địa chỉ WebSocket đúng khi deploy | `US-03` | Trang chạy trên Vercel (https). | Tính địa chỉ WS từ `APP_CONFIG.API_BASE_URL`. | - | - | Medium | Automated | `wss://group06-restaurant-api.onrender.com`. | `Passed` | 2026-10-08 | Nhã | BUG-US03-003 | Unit `kds-logic.test.js` (wsBaseFrom) |
 | **TC-OP-KDS-018** | KDS đọc đúng dữ liệu API sau khi đổi thiết kế DB | `US-03` AC1, AC3<br>ADR-N14 | API trả `mon_id`, `phieuban_id`. | Đổi KdsItem sang thẻ; gom mẻ 2 món khác nhau. | - | - | High | Automated | Đúng mã món, mã phiếu; 2 món khác nhau không gom chung; vẫn đọc tên trường cũ. | `Passed` | 2026-10-08 | Nhã | BUG-US03-004 | Unit `kds-logic.test.js` (fromApi) |
+| **TC-OP-KDS-019** | Log backend cho luồng KDS + lỗi 500 | `US-03`<br>Giáo trình §12 (logging), viva §16.3 | Backend đang chạy. | 1. Gửi bếp, bếp bấm Xong, báo hết.<br>2. Gửi đơn vượt tồn.<br>3. Giả lập lỗi DB ở `GET /kds/items`. | - | Ghi chú khách "Không đá — dị ứng lạnh" | Medium | Automated | (1) Có log `order_sent_to_kitchen`, `stock_reserved`, `kds_status`, `menu_availability`, `request`.<br>(2) `stock_rejected` + `api_error status=409`.<br>(3) Client nhận 500 `INTERNAL_ERROR` chung, không lộ chi tiết; log ERROR `unhandled_error` có traceback. Log không chứa ghi chú khách. | `Passed` | 2026-10-09 | Nhã | - | Integration `test_logging.py` (3 test). Thử bỏ bộ bắt lỗi 500 → test fail. Cách xem log: `docs/RUNBOOK.md` Mục 7. |
 | **TC-OP-KDS-011** | Phục vụ vào KDS bị chặn 403 | `US-03` AC4<br>`NFR-RO-03` | Tài khoản role WAITER. | Mở `/kds`. | JWT role WAITER. | - | High | Manual/E2E | 403, chuyển về `/pos`. | `Blocked` | 2026-10-08 | Nhã | - | Chờ story Auth/JWT (AI_USAGE_LOG A-84). Test để `skip` có lý do. |
-| **TC-OP-002** | Thẻ quá 15 phút chớp đỏ, đẩy lên đầu | `REQ-08`<br>`UT-05` | Thẻ chờ > 15 phút. | Theo dõi KDS. | - | - | Medium | Automated | Thẻ chớp đỏ, lên đầu. | `Blocked` | 2026-10-08 | Nhã | - | **Chưa làm**: REQ-08 có nhưng không nằm trong 5 AC của US-03 → chờ PO quyết. |
+| **TC-OP-002** | Thẻ quá 15 phút chớp đỏ, đẩy lên đầu | `REQ-08`<br>`UT-05` | Món ở Chờ nấu / Đang nấu. | 1. Gửi bếp 1 Gỏi cuốn.<br>2. Tua đồng hồ trình duyệt 15:10. | Đúng 15:00 chưa tính là quá. | `Bàn E2E-08` | Medium | Automated | Mỗi thẻ / dòng trong mẻ hiện đồng hồ chờ `⏱ mm:ss` chạy từng giây; quá 15 phút: viền đỏ + nền nhấp nháy + nhãn "Chờ quá 15 phút", khối đó lên đầu cột. Bật giảm chuyển động → không nhấp nháy, giữ viền + nhãn. | `Passed` | 2026-10-09 | Nhã | - | Unit `kds-logic.test.js` (waitLabel, isOverdue biên 15:00, overdueFirst) + E2E `us03-kds.spec.ts` (`page.clock`). Làm theo yêu cầu của nhóm (tin nhắn design system của Nhàn, A-125). |
 
 ## Tổng kết lần chạy 2026-10-08
 
 | Tầng | Số test | Kết quả |
 |---|---|---|
 | Unit backend (`tests/unit`) | 18 | 18 pass |
-| Unit frontend (Vitest) | 11 | 11 pass |
-| Integration (`test_kds.py` 23, `test_stock.py` 11, `test_orders.py` 1) | 35 | 35 pass |
+| Unit frontend (Vitest) | 14 | 14 pass |
+| Integration (`test_kds.py` 23, `test_stock.py` 11, `test_logging.py` 3, `test_orders.py` 1) | 38 | 38 pass |
 | Integration Postgres (`tests/pg`) | 3 | 3 pass |
-| E2E local (US-03) | 8 | 6 pass, 2 skip (`Blocked`) |
+| E2E local (US-03) | 8 | 7 pass, 1 skip (AC4 `Blocked`) |
 | Smoke staging | 2 | 2 pass (07/10) |
 
-Test case: 21 `Passed`, 0 `Failed`, 2 `Blocked`. Bằng chứng, độ phủ code, tỉ lệ tầng: `testing/reports/US-03/README.md`.
+Test case: 23 `Passed`, 0 `Failed`, 1 `Blocked` (AC4 chờ JWT). 2026-10-09: thêm TC-OP-KDS-019 (log); TC-OP-002 từ `Blocked` → `Passed`. Bằng chứng, độ phủ code, tỉ lệ tầng: `testing/reports/US-03/README.md`.

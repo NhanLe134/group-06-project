@@ -3,27 +3,61 @@ let tables = [];
 async function loadTables() {
     if (tables.length === 0) {
         const grid = document.getElementById('table-grid');
-        if (grid) grid.innerHTML = '<div style="grid-column: 1 / -1; padding: 64px 24px; text-align: center;"><i class="ph-duotone ph-spinner-gap" style="font-size: 48px; color: var(--color-primary); margin-bottom: 16px; animation: spin 1s linear infinite;"></i><h3 style="margin:0; font-size: 18px; color: #1E293B; font-weight: 800;">Đang kết nối hệ thống...</h3><p style="margin: 8px 0 0 0; font-size: 14px; color: #64748B;">Vui lòng chờ trong giây lát (có thể mất tới 50s nếu máy chủ đang khởi động lại).</p><style>@keyframes spin { 100% { transform: rotate(360deg); } }</style></div>';
+        if (grid) grid.innerHTML = '<div style="grid-column: 1 / -1; padding: 64px 24px; text-align: center;"><h3 style="margin:0; font-size: 16px; color: #1E293B; font-weight: 800;">Đang lấy dữ liệu<span class="animated-dots"></span></h3><p style="margin: 8px 0 0 0; font-size: 13px; color: #64748B;">Vui lòng chờ trong giây lát.</p><style>.animated-dots::after { content: ""; animation: ellipsis 1.5s infinite; } @keyframes ellipsis { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } 100% { content: ""; } }</style></div>';
     }
     try {
         const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/waiter/tables`);
         if (!res.ok) throw new Error('Lỗi tải sơ đồ bàn');
         tables = await res.json();
         renderTables();
-        
+
         // Sync URL with Drawer on initial load
         const urlParams = new URLSearchParams(window.location.search);
         const tableIdParam = urlParams.get('table');
         if (tableIdParam && !document.getElementById('table-drawer').classList.contains('active')) {
             openTableDrawer(tableIdParam, true);
         }
+        
+        updateConnectionStatus(true);
     } catch (err) {
         console.error(err);
         const grid = document.getElementById('table-grid');
         if (grid) grid.innerHTML = '<div style="grid-column: 1 / -1; padding: 64px 24px; text-align: center;"><i class="ph-duotone ph-warning-circle" style="font-size: 48px; color: #E11D48; margin-bottom: 16px;"></i><h3 style="margin:0; font-size: 18px; color: #1E293B; font-weight: 800;">Không thể tải Sơ đồ bàn</h3><p style="margin: 8px 0 0 0; font-size: 14px; color: #64748B;">Máy chủ không phản hồi. Vui lòng kiểm tra lại mạng hoặc báo lại quản lý.</p></div>';
         showToast('Lỗi kết nối', 'Không thể tải Sơ đồ bàn từ Server', 'danger');
+        updateConnectionStatus(false);
     }
 }
+
+// Logic điều khiển UI Trạng thái kết nối
+function updateConnectionStatus(isOk) {
+    const connStatus = document.getElementById('conn-status');
+    
+    if (!connStatus) return;
+    
+    const dot = connStatus.querySelector('.dot');
+    const text = connStatus.querySelector('.text');
+    
+    if (!navigator.onLine || !isOk) {
+        connStatus.style.color = 'var(--color-danger)';
+        dot.style.background = 'var(--color-danger)';
+        text.textContent = 'Mất kết nối';
+    } else {
+        connStatus.style.color = 'var(--color-success)';
+        dot.style.background = 'var(--color-success)';
+        text.textContent = 'Realtime - Đã đồng bộ';
+    }
+}
+
+window.addEventListener('online', () => {
+    updateConnectionStatus(true);
+    // Tự động tải lại khi có mạng
+    if (tables.length > 0) {
+        const grid = document.getElementById('table-grid');
+        if (grid) grid.innerHTML = '<div style="grid-column: 1 / -1; padding: 64px 24px; text-align: center;"><h3 style="margin:0; font-size: 16px; color: #1E293B; font-weight: 800;">Đang đồng bộ lại<span class="animated-dots"></span></h3><p style="margin: 8px 0 0 0; font-size: 13px; color: #64748B;">Đang tải lại dữ liệu mới nhất.</p><style>.animated-dots::after { content: ""; animation: ellipsis 1.5s infinite; } @keyframes ellipsis { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } 100% { content: ""; } }</style></div>';
+    }
+    loadTables();
+});
+window.addEventListener('offline', () => updateConnectionStatus(false));
 
 const tableGrid = document.getElementById('table-grid');
 const voidModal = document.getElementById('void-modal');
@@ -71,10 +105,11 @@ function renderTables() {
 
         // Logic check xem có món nào cần "Bưng" (Trạng thái Ready)
         const hasReadyItem = t.items.some(i => i.status === 'ready');
-        const alertBadge = hasReadyItem ? `<div class="action-required-badge"><i class="ph-bold ph-bell-ringing"></i> CẦN PHỤC VỤ</div>` : '';
+        const alertBadge = hasReadyItem ? `<div class="action-required-badge"><i class="ph-bold ph-bell-ringing"></i> CẦN LÊN MÓN</div>` : '';
 
         let progressHtml = '';
         let tableStatusText = '';
+        let badgeColor = 'var(--color-danger)';
         
         if (t.status === 'occupied') {
             const totalItems = t.items.length;
@@ -83,12 +118,16 @@ function renderTables() {
             
             if (totalItems === 0) {
                 tableStatusText = 'Đang chọn món';
-            } else if (servedItems === 0) {
-                tableStatusText = 'Chờ lên món';
-            } else if (servedItems > 0 && servedItems < totalItems) {
-                tableStatusText = 'Đang phục vụ';
-            } else {
+                badgeColor = '#64748B';
+            } else if (hasReadyItem) {
+                tableStatusText = 'Cần lên món';
+                badgeColor = 'var(--color-danger)';
+            } else if (servedItems === totalItems) {
                 tableStatusText = 'Đã đủ món';
+                badgeColor = 'var(--color-success)';
+            } else {
+                tableStatusText = 'Bếp đang làm';
+                badgeColor = 'var(--color-warning)';
             }
 
             progressHtml = `
@@ -104,8 +143,10 @@ function renderTables() {
             `;
         } else if (t.status === 'cleaning') {
             tableStatusText = 'Cần dọn dẹp';
+            badgeColor = 'var(--color-warning)';
         } else {
             tableStatusText = 'Trống';
+            badgeColor = 'var(--color-success)';
         }
 
         const detailsHtml = `
@@ -118,7 +159,7 @@ function renderTables() {
             ${alertBadge}
             <div class="table-header-row">
                 <h3 class="table-name">${t.name}</h3>
-                <span class="table-status-badge" style="color: var(--color-${t.status === 'empty' ? 'success' : (t.status === 'occupied' ? 'danger' : 'warning')})">${tableStatusText}</span>
+                <span class="table-status-badge" style="color: ${badgeColor};">${tableStatusText}</span>
             </div>
             ${detailsHtml}
             ${progressHtml}
@@ -214,7 +255,7 @@ function renderOrderItems(table) {
         
         let actionBtn = '';
         if (item.status === 'ready') {
-            actionBtn = `<button class="btn-serve-item" title="Xác nhận" onclick="markItemServed('${table.id}', '${item.id}')">Phục vụ</button>`;
+            actionBtn = `<button class="btn-serve-item" title="Xác nhận" onclick="event.stopPropagation(); markItemServed('${table.id}', '${item.id}')">Phục vụ</button>`;
         }
         
         let cancelBtn = '';
@@ -222,7 +263,7 @@ function renderOrderItems(table) {
             if (item.status === 'cooking' && item.qty <= 1) {
                 cancelBtn = `<button class="btn-void-item" title="Không thể hủy món đang nấu có số lượng 1" disabled style="opacity: 0.3; cursor: not-allowed;"><i class="ph-bold ph-trash"></i></button>`;
             } else {
-                cancelBtn = `<button class="btn-void-item" title="Điều chỉnh/Hủy món" onclick="requestVoid('${table.id}', '${item.id}', '${item.name}', '${item.status}', ${item.qty})"><i class="ph-bold ph-trash"></i></button>`;
+                cancelBtn = `<button class="btn-void-item" title="Điều chỉnh/Hủy món" onclick="event.stopPropagation(); requestVoid('${table.id}', '${item.id}', '${item.name}', '${item.status}', ${item.qty})"><i class="ph-bold ph-trash"></i></button>`;
             }
         } else {
             cancelBtn = `<div style="width: 36px"></div>`; 
@@ -255,17 +296,35 @@ function renderOrderItems(table) {
 
 // 3. NGHIỆP VỤ: ĐÃ PHỤC VỤ (SERVED)
 window.markItemServed = async function(tableId, itemId) {
+    // Optimistic Update
+    const table = tables.find(t => t.id === tableId);
+    if (table) {
+        const item = table.items.find(i => i.id === itemId);
+        if (item) item.status = 'served';
+        if (document.getElementById('table-drawer').classList.contains('active')) {
+            renderOrderItems(table);
+        }
+        renderTables();
+    }
+
     try {
         const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/waiter/items/${itemId}/serve`, { method: 'PATCH' });
         if (!res.ok) throw new Error('Lỗi cập nhật');
-        await loadTables();
         
-        if (document.getElementById('table-drawer').classList.contains('active')) {
-            const table = tables.find(t => t.id === tableId);
-            if (table) renderOrderItems(table);
-        }
+        loadTables().then(() => {
+            if (document.getElementById('table-drawer').classList.contains('active')) {
+                const freshTable = tables.find(t => t.id === tableId);
+                if (freshTable) renderOrderItems(freshTable);
+            }
+        });
     } catch (e) {
         showToast('Lỗi', 'Không thể xác nhận phục vụ', 'danger');
+        loadTables().then(() => {
+            if (document.getElementById('table-drawer').classList.contains('active')) {
+                const freshTable = tables.find(t => t.id === tableId);
+                if (freshTable) renderOrderItems(freshTable);
+            }
+        });
     }
 }
 
@@ -306,6 +365,24 @@ window.requestVoid = function(tableId, itemId, itemName, itemStatus, itemQty) {
             return;
         }
         
+        // Đóng modal ngay lập tức cho mượt
+        voidModal.style.display = 'none';
+
+        // Optimistic UI Update: Cập nhật dữ liệu tạm & render lại ngay lập tức
+        const table = tables.find(t => t.id === tableId);
+        if (table) {
+            if (qty === 0) {
+                table.items = table.items.filter(i => i.id !== itemId);
+            } else {
+                const item = table.items.find(i => i.id === itemId);
+                if (item) item.qty = qty;
+            }
+            if (document.getElementById('table-drawer').classList.contains('active')) {
+                renderOrderItems(table);
+            }
+            renderTables();
+        }
+        
         try {
             const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/waiter/items/${itemId}/void`, {
                 method: 'POST',
@@ -316,16 +393,24 @@ window.requestVoid = function(tableId, itemId, itemName, itemStatus, itemQty) {
                 throw new Error('Không thể cập nhật món');
             }
             
-            voidModal.style.display = 'none';
-            await loadTables();
-            
-            if (document.getElementById('table-drawer').classList.contains('active')) {
-                const table = tables.find(t => t.id === tableId);
-                if (table) renderOrderItems(table);
-            }
             showToast('Thành công', qty === 0 ? 'Đã hủy món.' : `Đã điều chỉnh thành ${qty} phần.`, 'success');
+            
+            // Đồng bộ lại ngầm từ Server
+            loadTables().then(() => {
+                if (document.getElementById('table-drawer').classList.contains('active')) {
+                    const freshTable = tables.find(t => t.id === tableId);
+                    if (freshTable) renderOrderItems(freshTable);
+                }
+            });
         } catch (e) {
             showToast('Lỗi', e.message, 'danger');
+            // Rollback UI nếu lỗi
+            loadTables().then(() => {
+                if (document.getElementById('table-drawer').classList.contains('active')) {
+                    const freshTable = tables.find(t => t.id === tableId);
+                    if (freshTable) renderOrderItems(freshTable);
+                }
+            });
         }
     };
     
@@ -442,6 +527,7 @@ function renderTasks() {
                 hasBatched = true;
             }
             let tablesText = list.map(entry => entry.tableName).join(', ');
+            let totalQty = list.reduce((sum, entry) => sum + (entry.item.qty || 1), 0);
             
             html += `
             <div class="notif-card" style="margin-top: 0; background: #FFFBEB; border-color: #E2E8F0; border-left-color: var(--color-warning);">
@@ -452,49 +538,78 @@ function renderTasks() {
                     <span class="notif-time">Mới nhất</span>
                 </div>
                 <div class="notif-desc" style="margin-bottom: 12px;">
-                    <p style="margin:0; font-size: 16px; color: var(--color-text-main);"><b>${list.length}x ${itemName}</b></p>
+                    <p style="margin:0; font-size: 16px; color: var(--color-text-main);"><b>${totalQty}x ${itemName}</b></p>
                     <p style="margin:4px 0 0 0; font-size:13px; color: #64748B; display: flex; align-items: center; gap: 4px;"><i class="ph-bold ph-map-pin"></i> Giao đến: <b style="color: var(--color-text-main);">${tablesText}</b></p>
                 </div>
-                <button class="btn-serve" style="background: #B45309; color: #fff;" onclick="serveBatch('${itemName}')"><i class="ph-bold ph-check"></i> Đã lấy xong (${list.length})</button>
+                <button class="btn-serve" style="background: #B45309; color: #fff;" onclick="event.stopPropagation(); serveBatch('${itemName}')"><i class="ph-bold ph-check"></i> Đã lấy xong (${totalQty})</button>
             </div>
             `;
             delete grouped[itemName]; // Xóa để không bị render lại ở dưới
         }
     });
 
-    // 4. Render nhóm 2: Phục vụ lẻ & Lấy nước
+    // 4. Render nhóm 2: Phục vụ lẻ & Lấy nước -> Gộp theo bàn
     let hasSingles = false;
+    
+    // Gộp các món lẻ theo Bàn
+    let singlesByTable = {};
     Object.keys(grouped).forEach(itemName => {
         const group = grouped[itemName];
-        const list = group.items;
+        group.items.forEach(entry => {
+            if (!singlesByTable[entry.tableId]) {
+                singlesByTable[entry.tableId] = { tableId: entry.tableId, tableName: entry.tableName, items: [] };
+            }
+            singlesByTable[entry.tableId].items.push({ itemName: itemName, isDrink: group.isDrink, item: entry.item });
+        });
+    });
+
+    Object.values(singlesByTable).forEach(tableData => {
         if (!hasSingles) {
             html += `<h4 style="font-size: 12px; font-weight: 800; color: #64748B; margin: ${hasBatched ? '16px' : '0'} 0 12px 0; text-transform: uppercase; letter-spacing: 0.05em;"><i class="ph-bold ph-tray"></i> Cần phục vụ</h4>`;
             hasSingles = true;
         }
         
-        list.forEach(entry => {
-            const isDrink = group.isDrink;
-            const icon = isDrink ? '<i class="ph-bold ph-coffee"></i> CẦN LẤY NƯỚC' : '<i class="ph-bold ph-cooking-pot"></i> CẦN BƯNG MÓN';
-            const titleColor = isDrink ? '#0284C7' : 'var(--color-success)';
-            const bgColor = isDrink ? '#F0F9FF' : '#ffffff';
-            const borderColor = isDrink ? '#38BDF8' : 'var(--color-success)';
-            
-            html += `
-            <div class="notif-card" style="margin-top: 8px; background: ${bgColor}; border-color: #E2E8F0; border-left-color: ${borderColor};">
-                <div class="notif-header" style="margin-bottom: 8px;">
-                    <span class="notif-table" style="color: ${titleColor}; display: flex; align-items: center; gap: 6px;">
-                        ${icon}
-                    </span>
-                    <span class="notif-time">Vừa xong</span>
-                </div>
-                <div class="notif-desc" style="margin-bottom: 12px;">
-                    <p style="margin:0; font-size: 16px; color: var(--color-text-main);"><b>1x ${itemName}</b></p>
-                    <p style="margin:4px 0 0 0; font-size:13px; color: #64748B;"><i class="ph-bold ph-map-pin"></i> Bàn: <b style="color: var(--color-text-main);">${entry.tableName}</b></p>
-                </div>
-                <button class="btn-serve" style="background: ${titleColor}; color: #fff;" onclick="markItemServed('${entry.tableId}', '${entry.item.id}')"><i class="ph-bold ph-check"></i> Đã hoàn tất</button>
+        const allDrinks = tableData.items.every(i => i.isDrink);
+        const hasDrinks = tableData.items.some(i => i.isDrink);
+        
+        let icon = '<i class="ph-bold ph-cooking-pot"></i> CẦN BƯNG MÓN';
+        let titleColor = 'var(--color-success)';
+        let bgColor = '#ffffff';
+        let borderColor = 'var(--color-success)';
+
+        if (allDrinks) {
+            icon = '<i class="ph-bold ph-bottle"></i> CẦN LẤY NƯỚC';
+            titleColor = '#0284C7';
+            bgColor = '#F0F9FF';
+            borderColor = '#38BDF8';
+        } else if (hasDrinks) {
+            icon = '<i class="ph-bold ph-tray"></i> ĐỒ ĂN & NƯỚC';
+            titleColor = 'var(--color-primary)';
+            borderColor = 'var(--color-primary)';
+        }
+        
+        let itemsHtml = tableData.items.map(i => {
+            return `<p style="margin:0 0 4px 0; font-size: 16px; color: var(--color-text-main);"><b>${i.item.qty || 1}x ${i.itemName}</b></p>`;
+        }).join('');
+        
+        let itemIdsArrayStr = '[' + tableData.items.map(i => `'${i.item.id}'`).join(', ') + ']';
+        let serveAction = `event.stopPropagation(); ${itemIdsArrayStr}.forEach(id => markItemServed('${tableData.tableId}', id))`;
+        
+        html += `
+        <div class="notif-card" style="margin-top: 8px; background: ${bgColor}; border-color: #E2E8F0; border-left-color: ${borderColor};">
+            <div class="notif-header" style="margin-bottom: 8px;">
+                <span class="notif-table" style="color: ${titleColor}; display: flex; align-items: center; gap: 6px;">
+                    ${icon}
+                </span>
+                <span class="notif-time">Vừa xong</span>
             </div>
-            `;
-        });
+            <div class="notif-desc" style="margin-bottom: 12px;">
+                ${itemsHtml}
+                <p style="margin:4px 0 0 0; font-size:13px; color: #64748B;"><i class="ph-bold ph-map-pin"></i> Bàn: <b style="color: var(--color-text-main);">${tableData.tableName}</b></p>
+            </div>
+            <button class="btn-serve" style="background: ${titleColor}; color: #fff;" onclick="${serveAction}"><i class="ph-bold ph-check"></i> Đã hoàn tất</button>
+        </div>
+        `;
     });
 
     // 5. Render nhóm 3: Dọn dẹp bàn
@@ -666,9 +781,22 @@ function handleItemReadyEvent({ ban, tenmon, soluong }) {
     batchingTimers[ban].items.push({ tenmon, soluong: Number(soluong) || 1 });
 }
 
+function handleTableCleaningEvent({ ban, ban_id }) {
+    // Lọc theo khu vực
+    const table = tables.find(t => t.id === ban_id || t.name === ban);
+    if (table && currentZone !== 'all' && table.zone !== currentZone) {
+        return; 
+    }
+    
+    showToast('Dọn dẹp', `Khách bàn <b>${ban}</b> đã thanh toán rời đi. Cần dọn dẹp!`, 'warning');
+    if (typeof playTing === 'function') playTing();
+    loadTables(); // Reload lại bảng để cập nhật giao diện
+}
+
 if (typeof subscribeChannel === 'function') {
     subscribeChannel('kds:tickets', msg => {
         if (msg.event === 'ITEM_READY') handleItemReadyEvent(msg.payload || {});
+        if (msg.event === 'TABLE_CLEANING') handleTableCleaningEvent(msg.payload || {});
     });
 }
 

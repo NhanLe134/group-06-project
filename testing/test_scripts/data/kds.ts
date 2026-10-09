@@ -28,6 +28,7 @@ export const KDS_TABLES = {
   NO_INGREDIENT: 'Bàn E2E-05',
   OFFLINE: 'Bàn E2E-06',
   OFFLINE_MISSED: 'Bàn E2E-07',
+  OVERDUE: 'Bàn E2E-08',
 } as const;
 
 /** Tài khoản do e2e_server tạo (khác data/users.ts — bộ đó dùng cho bản staging). */

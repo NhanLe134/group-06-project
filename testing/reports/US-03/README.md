@@ -3,6 +3,9 @@
 > Owner: Nhã · Lần chạy cuối: **2026-10-08** trên `develop` (sau khi gộp thiết kế DB ADR-N14 của Nhàn) · Bằng chứng cho giáo trình (bảng artifact QA: "Test cases + test result + bug report") và theo `testing/test-strategy.md` của Ny.
 > Lần chạy 2026-10-07 xem lịch sử git của file này.
 
+> **Bổ sung 2026-10-09 (2):** KDS dùng chung `design-system.css`; làm REQ-08 đồng hồ chờ + chớp đỏ > 15 phút → TC-OP-002 `Passed` (Vitest 14/14, Playwright 9 pass + 1 skip AC4). `playwright-results.json` là lần chạy mới nhất.
+> **Bổ sung 2026-10-09:** log backend (giáo trình §12 bước 4) + 3 test `backend/tests/routers/test_logging.py` (TC-OP-KDS-019) — backend 114 passed, ruff sạch. Cách xem log: `docs/RUNBOOK.md` Mục 7.
+
 ## 1. Kết quả
 
 | Tầng | Bộ test | Số test | Kết quả | File kết quả |
@@ -82,7 +85,7 @@ Sau khi khôi phục / sửa code, tất cả pass.
 ## 7. Chưa làm / còn rủi ro
 
 - AC4 và các test 401/403 (chờ JWT).
-- Edge case giáo trình §11.3 chưa có: bàn phím / focus / trình đọc màn hình trên KDS; lỗi máy chủ 5xx, 429.
+- Edge case giáo trình §11.3 chưa có: trình đọc màn hình trên KDS; **phản ứng của giao diện** KDS khi server trả 5xx/429 (phía backend: lỗi 500 đã có xử lý + log + test — TC-OP-KDS-019).
 - Chưa đo tải 50 bàn; E2E và test Postgres chưa chạy trong CI (CI chỉ chạy ruff, pytest, vitest).
 - Test được viết **sau** code (giáo trình §10 bước 7 yêu cầu viết cùng task) — trừ test trừ kho (có spec trước) và các regression test.
 - Smoke staging cần chạy lại sau khi bản online deploy bản có sửa BUG-US03-004/005.
