@@ -1,0 +1,182 @@
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:25] "GET /pages/customer.html HTTP/1.1" 200 -
+
+Running 13 tests using 1 worker
+
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:28] "GET /pages/customer.html?table=B%C3%A0n%20E2E-01 HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:28] "GET /assets/css/design-system.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:28] "GET /assets/css/customer.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:28] "GET /assets/css/voice.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:28] "GET /assets/js/api.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:28] "GET /assets/js/config.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:28] "GET /assets/js/realtime.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:28] "GET /assets/js/utils.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:28] "GET /assets/js/mock-data.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:28] "GET /assets/js/DuLieuChung.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:28] "GET /assets/js/ThucDon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:28] "GET /assets/js/GioHang.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:28] "GET /assets/js/GhiChuMon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:28] "GET /assets/js/GuiBep.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:28] "GET /assets/js/HoaDon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:28] "GET /assets/js/customer.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:28] "GET /assets/js/voice.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:29] code 404, message File not found
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:29] "GET /favicon.ico HTTP/1.1" 404 -
+  ok  1 [local-e2e] › tests\us01-emenu.spec.ts:24:7 › US-01 — E-Menu & Order Draft › TC-GO-001 (AC1): thêm món → Draft có món với số lượng 1, chưa gửi bếp (2.7s)
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:31] "GET /pages/customer.html?table=B%C3%A0n%20E2E-01 HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:31] "GET /assets/css/design-system.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:31] "GET /assets/css/customer.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:31] "GET /assets/css/voice.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:31] "GET /assets/js/config.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:31] "GET /assets/js/api.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:31] "GET /assets/js/realtime.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:31] "GET /assets/js/utils.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:31] "GET /assets/js/mock-data.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:31] "GET /assets/js/DuLieuChung.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:31] "GET /assets/js/ThucDon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:31] "GET /assets/js/GioHang.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:31] "GET /assets/js/GhiChuMon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:31] "GET /assets/js/GuiBep.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:31] "GET /assets/js/HoaDon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:31] "GET /assets/js/customer.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:31] "GET /assets/js/voice.js HTTP/1.1" 200 -
+  ok  2 [local-e2e] › tests\us01-emenu.spec.ts:36:7 › US-01 — E-Menu & Order Draft › TC-US01-006 (AC6): bấm "+" 2 lần → bộ đếm − 2 + trên thẻ (2.6s)
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:33] "GET /pages/customer.html?table=B%C3%A0n%20E2E-01 HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:33] "GET /assets/css/design-system.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:33] "GET /assets/css/customer.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:33] "GET /assets/css/voice.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:33] "GET /assets/js/config.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:33] "GET /assets/js/api.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:33] "GET /assets/js/realtime.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:33] "GET /assets/js/mock-data.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:33] "GET /assets/js/utils.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:33] "GET /assets/js/DuLieuChung.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:33] "GET /assets/js/ThucDon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:33] "GET /assets/js/GioHang.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:33] "GET /assets/js/GhiChuMon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:33] "GET /assets/js/GuiBep.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:33] "GET /assets/js/HoaDon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:33] "GET /assets/js/customer.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:33] "GET /assets/js/voice.js HTTP/1.1" 200 -
+  ok  3 [local-e2e] › tests\us01-emenu.spec.ts:45:7 › US-01 — E-Menu & Order Draft › TC-GO-002 (AC4): explicit confirmation → gửi bếp thành công, popup có "Mã đơn:", Draft làm trống (3.7s)
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:37] "GET /pages/customer.html?table=B%C3%A0n%20E2E-06 HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:37] "GET /assets/css/design-system.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:37] "GET /assets/css/customer.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:37] "GET /assets/css/voice.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:37] "GET /assets/js/config.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:37] "GET /assets/js/api.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:37] "GET /assets/js/realtime.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:37] "GET /assets/js/mock-data.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:37] "GET /assets/js/utils.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:37] "GET /assets/js/DuLieuChung.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:37] "GET /assets/js/ThucDon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:37] "GET /assets/js/GhiChuMon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:37] "GET /assets/js/GioHang.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:37] "GET /assets/js/GuiBep.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:37] "GET /assets/js/HoaDon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:37] "GET /assets/js/customer.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:37] "GET /assets/js/voice.js HTTP/1.1" 200 -
+  ok  4 [local-e2e] › tests\us01-emenu.spec.ts:66:7 › US-01 — E-Menu & Order Draft › TC-US01-004 (AC5): mất mạng → banner đỏ, menu GIỮ NGUYÊN; "Thử lại" → tải lại thành công (3.0s)
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:40] "GET /pages/customer.html?table=B%C3%A0n%20E2E-07 HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:40] "GET /assets/css/design-system.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:40] "GET /assets/css/customer.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:40] "GET /assets/css/voice.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:40] "GET /assets/js/config.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:40] "GET /assets/js/api.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:40] "GET /assets/js/realtime.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:40] "GET /assets/js/mock-data.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:40] "GET /assets/js/utils.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:40] "GET /assets/js/DuLieuChung.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:40] "GET /assets/js/ThucDon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:40] "GET /assets/js/GioHang.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:40] "GET /assets/js/GhiChuMon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:40] "GET /assets/js/GuiBep.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:40] "GET /assets/js/HoaDon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:40] "GET /assets/js/customer.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:40] "GET /assets/js/voice.js HTTP/1.1" 200 -
+  ok  5 [local-e2e] › tests\us01-emenu.spec.ts:91:7 › US-01 — E-Menu & Order Draft › TC-US01-011 (AC4): giỏ trống → không mở modal gửi bếp (2.6s)
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:43] "GET /pages/cashier.html HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:43] "GET /assets/css/design-system.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:43] "GET /assets/css/cashier.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:43] "GET /assets/js/config.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:43] "GET /assets/js/api.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:43] "GET /assets/js/utils.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:43] "GET /assets/js/cashier.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:45] "GET /pages/cashier.html HTTP/1.1" 304 -
+  ok  6 [local-e2e] › tests\us05-cashier.spec.ts:45:7 › US-05 — Thu ngân thanh toán SePay › TC-US05-001 + 009 + 010 (AC1/AC5/AC2): guard món chưa phục vụ → tạo QR định danh → đóng bàn (3.3s)
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:46] "GET /pages/cashier.html HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:46] "GET /assets/css/design-system.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:46] "GET /assets/js/config.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:46] "GET /assets/css/cashier.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:47] "GET /assets/js/api.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:47] "GET /assets/js/utils.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:47] "GET /assets/js/cashier.js HTTP/1.1" 200 -
+  ok  7 [local-e2e] › tests\us05-cashier.spec.ts:73:7 › US-05 — Thu ngân thanh toán SePay › TC-US05-011 + AC3 (TC-US05-007): demo-sim → Toast "Thanh toán SePay thành công!", bàn về chờ dọn (2.9s)
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:51] "GET /pages/customer.html?table=B%C3%A0n%20E2E-02A HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:51] "GET /assets/css/design-system.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:51] "GET /assets/css/customer.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:51] "GET /assets/css/voice.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:51] "GET /assets/js/config.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:51] "GET /assets/js/realtime.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:51] "GET /assets/js/api.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:51] "GET /assets/js/mock-data.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:51] "GET /assets/js/utils.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:51] "GET /assets/js/DuLieuChung.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:51] "GET /assets/js/ThucDon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:51] "GET /assets/js/GioHang.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:51] "GET /assets/js/GhiChuMon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:51] "GET /assets/js/HoaDon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:51] "GET /assets/js/GuiBep.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:51] "GET /assets/js/customer.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:51] "GET /assets/js/voice.js HTTP/1.1" 200 -
+  ok  8 [local-e2e] › tests\us09-bill.spec.ts:37:7 › US-09 — Hóa đơn tạm tính › TC-US09-001 + 007 (AC1/AC6): 2 đợt gọi → 2 nhóm "Đợt N", nút thanh toán khóa khi còn món (4.0s)
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:53] "GET /pages/customer.html?table=B%C3%A0n%20E2E-02B HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:53] "GET /assets/css/design-system.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:53] "GET /assets/css/customer.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:53] "GET /assets/css/voice.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:53] "GET /assets/js/config.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:53] "GET /assets/js/api.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:53] "GET /assets/js/realtime.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:53] "GET /assets/js/mock-data.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:53] "GET /assets/js/utils.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:53] "GET /assets/js/DuLieuChung.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:53] "GET /assets/js/ThucDon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:53] "GET /assets/js/GioHang.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:53] "GET /assets/js/GhiChuMon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:53] "GET /assets/js/GuiBep.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:53] "GET /assets/js/HoaDon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:53] "GET /assets/js/customer.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:53] "GET /assets/js/voice.js HTTP/1.1" 200 -
+  ok  9 [local-e2e] › tests\us09-bill.spec.ts:58:7 › US-09 — Hóa đơn tạm tính › TC-US09-004 (AC3): phục vụ đủ → nút mở khóa, bấm → hướng dẫn ra quầy (2.7s)
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:56] "GET /pages/customer.html?table=B%C3%A0n%20E2E-06 HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:56] "GET /assets/css/design-system.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:56] "GET /assets/css/voice.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:56] "GET /assets/css/customer.css HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:56] "GET /assets/js/config.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:56] "GET /assets/js/api.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:56] "GET /assets/js/realtime.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:56] "GET /assets/js/mock-data.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:56] "GET /assets/js/utils.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:56] "GET /assets/js/DuLieuChung.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:56] "GET /assets/js/ThucDon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:56] "GET /assets/js/GioHang.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:56] "GET /assets/js/GhiChuMon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:56] "GET /assets/js/GuiBep.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:56] "GET /assets/js/HoaDon.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:56] "GET /assets/js/customer.js HTTP/1.1" 200 -
+[WebServer] 127.0.0.1 - - [09/Oct/2026 20:02:56] "GET /assets/js/voice.js HTTP/1.1" 200 -
+[WebServer] Exception in callback _ProactorBasePipeTransport._call_connection_lost()
+[WebServer] handle: <Handle _ProactorBasePipeTransport._call_connection_lost()>
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Users\This PC\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\asyncio\events.py", line 89, in _run
+[WebServer]     self._context.run(self._callback, *self._args)
+[WebServer]     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[WebServer]   File "C:\Users\This PC\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\asyncio\proactor_events.py", line 166, in _call_connection_lost
+[WebServer]     self._sock.shutdown(socket.SHUT_RDWR)
+[WebServer]     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+[WebServer] ConnectionResetError: [WinError 10054] An existing connection was forcibly closed by the remote host
+  ok 10 [local-e2e] › tests\us09-bill.spec.ts:74:7 › US-09 — Hóa đơn tạm tính › TC-US09-006 (AC5): bàn chưa có đơn → hóa đơn rỗng, nút Disabled (2.3s)
+  ok 11 [staging-smoke] › tests\us010509-smoke.spec.ts:15:7 › US-01/05/09 — Smoke trên staging (chỉ đọc) › backend staging sống và trả thực đơn + danh sách bàn (7.7s)
+  ok 12 [staging-smoke] › tests\us010509-smoke.spec.ts:29:7 › US-01/05/09 — Smoke trên staging (chỉ đọc) › E-Menu staging mở được và render món (US-01) (6.9s)
+  ok 13 [staging-smoke] › tests\us010509-smoke.spec.ts:34:7 › US-01/05/09 — Smoke trên staging (chỉ đọc) › Màn Thu ngân staging mở được và có danh sách bàn (US-05) (5.3s)
+
+  13 passed (58.7s)
