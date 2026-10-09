@@ -17,7 +17,7 @@
 
 | Tổng TC | Passed | Failed | Blocked | Un-tested | Pass rate* |
 |---:|---:|---:|---:|---:|---:|
-| **87** | **66** | **0** | **2** | **19** | **97,1%** |
+| **116** | **86** | **0** | **2** | **28** | **97,7%** |
 
 \* Pass rate = Passed / (Passed + Failed + Blocked) = 66 / 68. Các testcase `Un-tested` không nằm trong mẫu số. Hai testcase `Blocked` được giữ riêng vì chưa thể thực thi trong điều kiện hiện tại.
 
@@ -25,15 +25,16 @@
 
 | User Story | Phạm vi / nguồn testcase | Tổng | Passed | Failed | Blocked | Un-tested | Pass rate* | Người kiểm tra |
 |---|---|---:|---:|---:|---:|---:|---:|---|
-| US-01 — E-Menu & Order Draft | TC-GO-001–005, [`test-cases.md`](test-cases.md) | 5 | 0 | 0 | 0 | 5 | — | Nhàn |
+| US-01 — E-Menu & Order Draft | 15 TC trong [`test_cases/test-cases-US01.md`](test_cases/test-cases-US01.md) (viết lại 09/10 theo AC1–AC9) | 15 | 7 | 0 | 0 | 8 | 100% | Nhàn |
 | US-02 — AI Voice/Text Ordering | TC-GO-006–010 và TC-US02-MAN-001–016; [`test-cases-US02.md`](test_cases/test-cases-US02.md) | 21 | 16 | 0 | 0 | 5 | 100% | Ny |
 | US-03 — KDS & AI Batching | 23 TC trong [`test-cases-US03.md`](test_cases/test-cases-US03.md) | 23 | 21 | 0 | 2 | 0 | 91,3% | Nhã |
 | US-04 — Tablet Phục vụ | TC-OP-006–009, [`test-cases.md`](test-cases.md) | 4 | 0 | 0 | 0 | 4 | — | Trang |
-| US-05 — Split Bill | TC-GO-011–012, [`test-cases.md`](test-cases.md) | 2 | 0 | 0 | 0 | 2 | — | Nhàn |
+| US-05 — Thu ngân SePay (Split Bill đã cắt — ADR-N08) | 12 TC trong [`test_cases/test-cases-US05.md`](test_cases/test-cases-US05.md) (viết lại 09/10 theo SePay ADR-N15/N16) | 12 | 8 | 0 | 0 | 4 | 100% | Nhàn |
+| US-09 — Hóa đơn tạm tính | 9 TC trong [`test_cases/test-cases-US09.md`](test_cases/test-cases-US09.md) (mới 09/10) | 9 | 5 | 0 | 0 | 4 | 100% | Nhàn |
 | US-06 — Dashboard Doanh thu | TC-MA-001, [`test-cases.md`](test-cases.md) | 1 | 0 | 0 | 0 | 1 | — | Trang, Nhã |
 | US-07 — Menu CMS | TC-MA-002–003 và TC-MA-CMS-001–020; [`test-cases-US07.md`](test_cases/test-cases-US07.md) | 22 | 20 | 0 | 0 | 2 | 100% | Ny |
 | US-08 — Đối soát tồn kho & Đóng ca | 9 TC trong [`test-cases-US08.md`](test_cases/test-cases-US08.md) | 9 | 9 | 0 | 0 | 0 | 100% | Nhã |
-| **Tổng cộng** | **87 TC-ID duy nhất** | **87** | **66** | **0** | **2** | **19** | **97,1%** | — |
+| **Tổng cộng** | **87 TC-ID duy nhất** | **116** | **86** | **0** | **2** | **28** | **97,7%** | — |
 
 \* Cùng công thức ở phần tổng quan; `—` nghĩa là chưa có testcase nào được chạy cho User Story đó.
 
@@ -41,7 +42,7 @@
 
 | Epic | User Story | Tổng | Passed | Failed | Blocked | Un-tested |
 |---|---|---:|---:|---:|---:|---:|
-| Guest Ordering Experience | US-01, US-02, US-05 | 28 | 16 | 0 | 0 | 12 |
+| Guest Ordering Experience | US-01, US-02, US-05, US-09 | 47 | 29 | 0 | 0 | 18 |
 | Kitchen & Table Operations | US-03, US-04 | 27 | 21 | 0 | 2 | 4 |
 | Restaurant Management & CMS | US-06, US-07, US-08 | 32 | 29 | 0 | 0 | 3 |
 | **Tổng cộng** | **US-01–US-08** | **87** | **66** | **0** | **2** | **19** |

@@ -1,0 +1,607 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "D:\\MIS3032\\group-06-project\\testing\\test_scripts\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "-c",
+      "playwright.us010509.config.ts"
+    ],
+    "configFile": "D:\\MIS3032\\group-06-project\\testing\\test_scripts\\playwright.us010509.config.ts",
+    "rootDir": "D:/MIS3032/group-06-project/testing/test_scripts/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/MIS3032/group-06-project/testing/test_scripts/reports/us010509/results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "local-e2e",
+        "name": "local-e2e",
+        "testDir": "D:/MIS3032/group-06-project/testing/test_scripts/tests",
+        "testIgnore": [
+          "/smoke/"
+        ],
+        "testMatch": [
+          "/us0[159]-.*\\.spec\\.ts/"
+        ],
+        "timeout": 45000
+      },
+      {
+        "outputDir": "D:/MIS3032/group-06-project/testing/test_scripts/reports/us010509/results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "staging-smoke",
+        "name": "staging-smoke",
+        "testDir": "D:/MIS3032/group-06-project/testing/test_scripts/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "/us010509-smoke\\.spec\\.ts/"
+        ],
+        "timeout": 45000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "./reports/us010509/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "us01-emenu.spec.ts",
+      "file": "us01-emenu.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "US-01 — E-Menu & Order Draft",
+          "file": "us01-emenu.spec.ts",
+          "line": 23,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-GO-001 (AC1): thêm món → Draft có món với số lượng 1, chưa gửi bếp",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "local-e2e",
+                  "projectName": "local-e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2710,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-09T13:02:26.854Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8d69376c716ca6ddcd1d-d55a1e4ec9b9c9cbbb4d",
+              "file": "us01-emenu.spec.ts",
+              "line": 24,
+              "column": 7
+            },
+            {
+              "title": "TC-US01-006 (AC6): bấm \"+\" 2 lần → bộ đếm − 2 + trên thẻ",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "local-e2e",
+                  "projectName": "local-e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2609,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-09T13:02:30.627Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8d69376c716ca6ddcd1d-f41f405758b5b50f2ac0",
+              "file": "us01-emenu.spec.ts",
+              "line": 36,
+              "column": 7
+            },
+            {
+              "title": "TC-GO-002 (AC4): explicit confirmation → gửi bếp thành công, popup có \"Mã đơn:\", Draft làm trống",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "local-e2e",
+                  "projectName": "local-e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3729,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-09T13:02:33.293Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8d69376c716ca6ddcd1d-55526e4c0f255451cb2c",
+              "file": "us01-emenu.spec.ts",
+              "line": 45,
+              "column": 7
+            },
+            {
+              "title": "TC-US01-004 (AC5): mất mạng → banner đỏ, menu GIỮ NGUYÊN; \"Thử lại\" → tải lại thành công",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "local-e2e",
+                  "projectName": "local-e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3024,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-09T13:02:37.075Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8d69376c716ca6ddcd1d-ef6490bf562080bdf3bc",
+              "file": "us01-emenu.spec.ts",
+              "line": 66,
+              "column": 7
+            },
+            {
+              "title": "TC-US01-011 (AC4): giỏ trống → không mở modal gửi bếp",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "local-e2e",
+                  "projectName": "local-e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2634,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-09T13:02:40.149Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8d69376c716ca6ddcd1d-cf3a1e52c11d3e00d0f4",
+              "file": "us01-emenu.spec.ts",
+              "line": 91,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "us05-cashier.spec.ts",
+      "file": "us05-cashier.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "US-05 — Thu ngân thanh toán SePay",
+          "file": "us05-cashier.spec.ts",
+          "line": 44,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-US05-001 + 009 + 010 (AC1/AC5/AC2): guard món chưa phục vụ → tạo QR định danh → đóng bàn",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "local-e2e",
+                  "projectName": "local-e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3267,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-09T13:02:42.860Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e47607ecfc5d94c743e3-323f0d3848594c919215",
+              "file": "us05-cashier.spec.ts",
+              "line": 45,
+              "column": 7
+            },
+            {
+              "title": "TC-US05-011 + AC3 (TC-US05-007): demo-sim → Toast \"Thanh toán SePay thành công!\", bàn về chờ dọn",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "local-e2e",
+                  "projectName": "local-e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2936,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-09T13:02:46.176Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e47607ecfc5d94c743e3-c9b806af233879fb190a",
+              "file": "us05-cashier.spec.ts",
+              "line": 73,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "us09-bill.spec.ts",
+      "file": "us09-bill.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "US-09 — Hóa đơn tạm tính",
+          "file": "us09-bill.spec.ts",
+          "line": 36,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC-US09-001 + 007 (AC1/AC6): 2 đợt gọi → 2 nhóm \"Đợt N\", nút thanh toán khóa khi còn món",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "local-e2e",
+                  "projectName": "local-e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3996,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-09T13:02:49.184Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a814ef6b6971b476c98f-2503e18b9b8c1f644284",
+              "file": "us09-bill.spec.ts",
+              "line": 37,
+              "column": 7
+            },
+            {
+              "title": "TC-US09-004 (AC3): phục vụ đủ → nút mở khóa, bấm → hướng dẫn ra quầy",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "local-e2e",
+                  "projectName": "local-e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2737,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-09T13:02:53.250Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a814ef6b6971b476c98f-2e2c9afd55ed86381b4d",
+              "file": "us09-bill.spec.ts",
+              "line": 58,
+              "column": 7
+            },
+            {
+              "title": "TC-US09-006 (AC5): bàn chưa có đơn → hóa đơn rỗng, nút Disabled",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "local-e2e",
+                  "projectName": "local-e2e",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2339,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-09T13:02:56.037Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a814ef6b6971b476c98f-dad8159164d57d3ce3d7",
+              "file": "us09-bill.spec.ts",
+              "line": 74,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "us010509-smoke.spec.ts",
+      "file": "us010509-smoke.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "US-01/05/09 — Smoke trên staging (chỉ đọc)",
+          "file": "us010509-smoke.spec.ts",
+          "line": 12,
+          "column": 6,
+          "specs": [
+            {
+              "title": "backend staging sống và trả thực đơn + danh sách bàn",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "staging-smoke",
+                  "projectName": "staging-smoke",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7723,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-09T13:02:59.939Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "79f14f42a68827b01671-5859d7704e1175b18f64",
+              "file": "us010509-smoke.spec.ts",
+              "line": 15,
+              "column": 7
+            },
+            {
+              "title": "E-Menu staging mở được và render món (US-01)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "staging-smoke",
+                  "projectName": "staging-smoke",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6908,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-09T13:03:07.724Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "79f14f42a68827b01671-d99ac7d800c9ee25d169",
+              "file": "us010509-smoke.spec.ts",
+              "line": 29,
+              "column": 7
+            },
+            {
+              "title": "Màn Thu ngân staging mở được và có danh sách bàn (US-05)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "staging-smoke",
+                  "projectName": "staging-smoke",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5285,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-09T13:03:15.201Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "79f14f42a68827b01671-333605c78299d0c03471",
+              "file": "us010509-smoke.spec.ts",
+              "line": 34,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-09T13:02:23.364Z",
+    "duration": 58707.256,
+    "expected": 13,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

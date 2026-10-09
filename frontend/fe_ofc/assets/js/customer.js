@@ -40,13 +40,21 @@ setText('#success-table', tableName);
 renderCategories();
 renderStickyBar();
 renderMenuSkeleton();
-loadMenu().catch(e => {
-  $('#menu-grid').innerHTML = `
-    <div class="menu-empty">
-      <i class="ph-duotone ph-wifi-slash"></i>
-      <p>${esc(e.message)}</p>
-      <button class="btn-primary" style="margin-top:12px;" onclick="loadMenu()">Tải lại thực đơn</button>
-    </div>`;
+/* US-01 AC5: mất mạng/API lỗi → banner đỏ + "Thử lại"; DANH SÁCH MÓN GIỮ NGUYÊN,
+   Order Draft bảo toàn (draft là state riêng, không đụng tới). */
+const netBanner = $('#net-banner');
+function showNetBanner() {
+  setText('#net-banner-msg',
+    'Lỗi kết nối. Vui lòng kiểm tra mạng và thử lại; danh sách món chưa thay đổi.');
+  if (netBanner) netBanner.hidden = false;
+}
+function hideNetBanner() { if (netBanner) netBanner.hidden = true; }
+loadMenu()
+  .then(hideNetBanner)
+  .catch(() => showNetBanner());
+$('#btn-net-retry')?.addEventListener('click', () => {
+  hideNetBanner();
+  loadMenu().then(hideNetBanner).catch(() => showNetBanner());
 });
 
 /* US-03 AC3: Bếp/Quản lý báo Hết hàng / Còn hàng → tải lại menu ngay, không cần F5.
