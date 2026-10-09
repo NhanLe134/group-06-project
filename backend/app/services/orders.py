@@ -101,9 +101,7 @@ async def current_order(db: AsyncSession, table_name: str) -> OrderCurrentOut:
     )
 
 
-async def create_order(
-    db: AsyncSession, data: OrderCreateIn
-) -> tuple[OrderCurrentOut, list[ThucDon]]:
+async def create_order(db: AsyncSession, data: OrderCreateIn) -> tuple[OrderCurrentOut, list[ThucDon]]:
     """US-01 — gửi bếp: mỗi lần gọi = 1 phiếu bàn mới + các dòng chi tiết phiếu.
 
     Trả thêm các món vừa đổi còn/hết hàng do trừ kho để router phát realtime.
@@ -112,10 +110,7 @@ async def create_order(
 
     # Kiểm tra món hợp lệ + còn bán (REQ-09/BR-03) ngay tại server
     ids = [it.thucdon_id for it in data.items]
-    menu_by_id = {
-        mon.id: mon
-        for mon in (await db.execute(select(ThucDon).where(ThucDon.id.in_(ids)))).scalars().all()
-    }
+    menu_by_id = {mon.id: mon for mon in (await db.execute(select(ThucDon).where(ThucDon.id.in_(ids)))).scalars().all()}
     for it in data.items:
         mon = menu_by_id.get(it.thucdon_id)
         if mon is None:
@@ -164,9 +159,7 @@ async def list_cashier_tables(db: AsyncSession) -> list[dict]:
                 "id": ban.ban_id,
                 "tenban": ban.tenban,
                 "trangthai": str(ban.trangthai or BAN_SAN_SANG),
-                "gio_vao": (
-                    phieu_list[0].giogoimon.isoformat() if phieu_list else None
-                ),
+                "gio_vao": (phieu_list[0].giogoimon.isoformat() if phieu_list else None),
                 "tongtien": sum(i.thanhtien for i in items),
                 "so_phieuban": len(phieu_list),
                 "tong_mon": len(items),
@@ -200,9 +193,7 @@ async def get_draft_hoadon(db: AsyncSession, ban_id: str) -> HoaDon | None:
     return rows.scalars().first()
 
 
-async def get_or_create_draft_hoadon(
-    db: AsyncSession, ban: Ban, so_phieuban: int, tongtien: int
-) -> HoaDon:
+async def get_or_create_draft_hoadon(db: AsyncSession, ban: Ban, so_phieuban: int, tongtien: int) -> HoaDon:
     """Lấy hóa đơn nháp của bàn, chưa có thì tạo (QR tạo lại không sinh hóa đơn trùng)."""
     hoadon = await get_draft_hoadon(db, ban.ban_id)
     if hoadon is not None:
@@ -253,9 +244,7 @@ async def build_pay_qr(db: AsyncSession, ban_id: str) -> PayQrOut:
     bank = settings.sepay_bank_code or "MBBank"
     acc = settings.sepay_account_no or "0123456789"
 
-    sepay_qr_url = (
-        f"https://qr.sepay.vn/img?bank={bank}&acc={acc}&amount={amount}&des={quote(des)}"
-    )
+    sepay_qr_url = f"https://qr.sepay.vn/img?bank={bank}&acc={acc}&amount={amount}&des={quote(des)}"
 
     return PayQrOut(
         ban_id=ban.ban_id,
@@ -303,9 +292,7 @@ async def close_table(db: AsyncSession, ban_id: str, nhanvien_id: str | None = N
         "hoadon_id": hoadon.hoadon_id,
         "tongtien": tongtien,
         "so_phieuban": len(phieu_list),
-        "message": (
-            f"Đã thanh toán {ban.tenban}: {len(phieu_list)} phiếu, {tongtien}₫. Bàn chờ dọn."
-        ),
+        "message": (f"Đã thanh toán {ban.tenban}: {len(phieu_list)} phiếu, {tongtien}₫. Bàn chờ dọn."),
     }
 
 

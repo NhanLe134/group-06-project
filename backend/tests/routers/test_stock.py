@@ -25,9 +25,7 @@ def published(monkeypatch: pytest.MonkeyPatch) -> list[tuple[str, str, dict]]:
 
 
 async def _ingredient(client: AsyncClient, name: str, stock: float, unit: str = "kg") -> str:
-    resp = await client.post(
-        "/inventory/ingredients", json={"name": name, "unit": unit, "stock": stock}
-    )
+    resp = await client.post("/inventory/ingredients", json={"name": name, "unit": unit, "stock": stock})
     assert resp.status_code == 201
     return resp.json()["id"]
 
@@ -58,9 +56,7 @@ async def _recipe(client: AsyncClient, mon: ThucDon, **lines: float) -> dict:
 
 
 async def _order(client: AsyncClient, mon: ThucDon, qty: int, table: str = "Bàn 01"):
-    return await client.post(
-        "/orders", json={"table_name": table, "items": [{"thucdon_id": mon.id, "soluong": qty}]}
-    )
+    return await client.post("/orders", json={"table_name": table, "items": [{"thucdon_id": mon.id, "soluong": qty}]})
 
 
 async def _stock(client: AsyncClient, ingredient_id: str) -> float:
@@ -72,9 +68,7 @@ async def _menu(client: AsyncClient, mon: ThucDon) -> dict:
     return next(m for m in (await client.get("/menu")).json() if m["id"] == mon.id)
 
 
-async def test_order_deducts_ingredients_and_reports_portions(
-    client: AsyncClient, db_session: AsyncSession, published
-):
+async def test_order_deducts_ingredients_and_reports_portions(client: AsyncClient, db_session: AsyncSession, published):
     """AC1: Bò xào cần 0.2 kg bò, kho 1 kg; gửi bếp 2 phần → kho còn 0.6 kg, còn 3 phần."""
     bo = await _ingredient(client, "Thịt bò", 1)
     mon = await _dish(db_session, "Bò xào")
@@ -126,9 +120,7 @@ async def test_running_out_locks_every_dish_sharing_the_ingredient(
     assert all(ch == "menu:oos" for ch, ev, _ in published if ev == "ITEM_OOS_BROADCAST")
 
 
-async def test_kitchen_cancel_returns_stock(
-    client: AsyncClient, db_session: AsyncSession, published
-):
+async def test_kitchen_cancel_returns_stock(client: AsyncClient, db_session: AsyncSession, published):
     """AC4: bếp báo hết rồi xóa món chờ nấu → cộng trả nguyên liệu (món nấu)
     và soluongton (đồ uống)."""
     bo = await _ingredient(client, "Thịt bò", 1)
@@ -159,9 +151,7 @@ async def test_kitchen_cancel_returns_stock(
     assert (await _menu(client, banh))["stock"] == 10
 
 
-async def test_drink_count_goes_down_on_order(
-    client: AsyncClient, db_session: AsyncSession, published
-):
+async def test_drink_count_goes_down_on_order(client: AsyncClient, db_session: AsyncSession, published):
     """AC5: đồ uống soluongton = 24, gửi bếp 5 lon → còn 19; gửi quá số còn → 409."""
     coca = await _dish(db_session, "Coca", phanloai="Đồ uống", soluongton=24)
 
@@ -173,9 +163,7 @@ async def test_drink_count_goes_down_on_order(
     assert resp.status_code == 409 and resp.json()["details"][0]["con_lai"] == 19
 
 
-async def test_reopen_rejected_while_ingredient_is_empty(
-    client: AsyncClient, db_session: AsyncSession, published
-):
+async def test_reopen_rejected_while_ingredient_is_empty(client: AsyncClient, db_session: AsyncSession, published):
     """Mục 3: hết nguyên liệu thì "Mở bán lại" bị từ chối cho tới khi nhập thêm hàng."""
     bo = await _ingredient(client, "Thịt bò", 0.1)
     mon = await _dish(db_session, "Bò xào")
@@ -190,9 +178,7 @@ async def test_reopen_rejected_while_ingredient_is_empty(
     assert any(p["menu_item_id"] == mon.id for _, ev, p in published if ev == "ITEM_OOS_BROADCAST")
 
 
-async def test_delete_ingredient_in_use_rejected(
-    client: AsyncClient, db_session: AsyncSession, published
-):
+async def test_delete_ingredient_in_use_rejected(client: AsyncClient, db_session: AsyncSession, published):
     """AC7: nguyên liệu đang có trong công thức thì không xóa được; chưa dùng thì xóa được."""
     bo = await _ingredient(client, "Thịt bò", 1)
     hanh = await _ingredient(client, "Hành lá", 1)
@@ -204,9 +190,7 @@ async def test_delete_ingredient_in_use_rejected(
     assert (await client.delete(f"/inventory/ingredients/{hanh}")).status_code == 204
 
 
-async def test_recipe_validation_and_replace(
-    client: AsyncClient, db_session: AsyncSession, published
-):
+async def test_recipe_validation_and_replace(client: AsyncClient, db_session: AsyncSession, published):
     """Công thức: trùng nguyên liệu → 422, nguyên liệu không tồn tại → 404, PUT thay toàn bộ."""
     bo = await _ingredient(client, "Thịt bò", 1)
     can = await _ingredient(client, "Cần tây", 3)
@@ -256,9 +240,7 @@ async def test_each_dish_counts_by_quantity_or_recipe_regardless_of_category(
     assert (await _menu(client, che))["portions"] == 7
 
 
-async def test_boundary_inputs_rejected_and_stock_untouched(
-    client: AsyncClient, db_session: AsyncSession, published
-):
+async def test_boundary_inputs_rejected_and_stock_untouched(client: AsyncClient, db_session: AsyncSession, published):
     """TC-OP-KDS-015 (§11.3 boundary/invalid): số lượng 0, tồn âm, định lượng 0 → 422;
     kho không bị trừ."""
     bo = await _ingredient(client, "Thịt bò", 1)
@@ -266,20 +248,14 @@ async def test_boundary_inputs_rejected_and_stock_untouched(
     await _recipe(client, mon, **{bo: 0.2})
 
     assert (await _order(client, mon, 0)).status_code == 422
-    resp = await client.post(
-        "/inventory/ingredients", json={"name": "Tôm", "unit": "kg", "stock": -1}
-    )
+    resp = await client.post("/inventory/ingredients", json={"name": "Tôm", "unit": "kg", "stock": -1})
     assert resp.status_code == 422
-    resp = await client.put(
-        f"/menu/items/{mon.id}/recipe", json={"lines": [{"ingredient_id": bo, "quantity": 0}]}
-    )
+    resp = await client.put(f"/menu/items/{mon.id}/recipe", json={"lines": [{"ingredient_id": bo, "quantity": 0}]})
     assert resp.status_code == 422
     assert await _stock(client, bo) == pytest.approx(1.0)
 
 
-async def test_exact_last_portion_then_next_order_rejected(
-    client: AsyncClient, db_session: AsyncSession, published
-):
+async def test_exact_last_portion_then_next_order_rejected(client: AsyncClient, db_session: AsyncSession, published):
     """TC-OP-005 (tuần tự): đủ đúng 1 phần cuối → bán được; đơn tiếp theo 409, kho không âm.
     Bản chạy đồng thời trên Postgres: tests/pg/test_race_last_portion.py."""
     bo = await _ingredient(client, "Thịt bò", 0.2)

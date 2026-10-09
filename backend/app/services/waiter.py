@@ -48,9 +48,7 @@ async def get_all_tables(db: AsyncSession) -> list[WaiterTableOut]:
         # Nếu bàn đang có khách, tìm phiếu bàn chưa thanh toán (hoadon_id is NULL)
         if status == "occupied":
             pb_result = await db.execute(
-                select(PhieuBan).where(
-                    and_(PhieuBan.ban_id == ban.ban_id, PhieuBan.hoadon_id.is_(None))
-                )
+                select(PhieuBan).where(and_(PhieuBan.ban_id == ban.ban_id, PhieuBan.hoadon_id.is_(None)))
             )
             phieu_bans = pb_result.scalars().all()
 
@@ -125,11 +123,7 @@ async def get_all_tables(db: AsyncSession) -> list[WaiterTableOut]:
 
 
 async def mark_item_served(db: AsyncSession, item_id: str) -> None:
-    ct = (
-        (await db.execute(select(ChiTietPhieu).where(ChiTietPhieu.chitietphieu_id == item_id)))
-        .scalars()
-        .first()
-    )
+    ct = (await db.execute(select(ChiTietPhieu).where(ChiTietPhieu.chitietphieu_id == item_id))).scalars().first()
     if not ct:
         raise ApiError(404, "NOT_FOUND", "Không tìm thấy món ăn này")
     if ct.trangthai != "da_xong":
@@ -151,11 +145,7 @@ async def clean_table(db: AsyncSession, ban_id: str) -> None:
 
 
 async def void_item(db: AsyncSession, item_id: str, new_quantity: int = 0) -> None:
-    ct = (
-        (await db.execute(select(ChiTietPhieu).where(ChiTietPhieu.chitietphieu_id == item_id)))
-        .scalars()
-        .first()
-    )
+    ct = (await db.execute(select(ChiTietPhieu).where(ChiTietPhieu.chitietphieu_id == item_id))).scalars().first()
     if not ct:
         raise ApiError(404, "NOT_FOUND", "Không tìm thấy món ăn này")
 

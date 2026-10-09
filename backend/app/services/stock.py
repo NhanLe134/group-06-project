@@ -45,10 +45,7 @@ async def _lock_dishes(db: AsyncSession, ids: Iterable[str]) -> dict[str, ThucDo
     if not ids:
         return {}
     rows = await db.execute(
-        select(ThucDon)
-        .where(ThucDon.id.in_(ids))
-        .with_for_update(of=ThucDon)
-        .execution_options(populate_existing=True)
+        select(ThucDon).where(ThucDon.id.in_(ids)).with_for_update(of=ThucDon).execution_options(populate_existing=True)
     )
     return {mon.id: mon for mon in rows.scalars().all()}
 
@@ -58,10 +55,7 @@ async def _lock_ingredients(db: AsyncSession, ids: Iterable[str]) -> dict[str, T
     if not ids:
         return {}
     rows = await db.execute(
-        select(TonKho)
-        .where(TonKho.id.in_(ids))
-        .with_for_update()
-        .execution_options(populate_existing=True)
+        select(TonKho).where(TonKho.id.in_(ids)).with_for_update().execution_options(populate_existing=True)
     )
     return {nl.id: nl for nl in rows.scalars().all()}
 
@@ -71,11 +65,7 @@ async def _watch(db: AsyncSession, dishes: Iterable[ThucDon], tonkho_ids: set[st
     watch: Watch = {mon.id: (mon, mon.het_hang) for mon in dishes}
     if tonkho_ids:
         rows = await db.execute(
-            select(ThucDon).where(
-                ThucDon.id.in_(
-                    select(CongThuc.thucdon_id).where(CongThuc.tonkho_id.in_(tonkho_ids))
-                )
-            )
+            select(ThucDon).where(ThucDon.id.in_(select(CongThuc.thucdon_id).where(CongThuc.tonkho_id.in_(tonkho_ids))))
         )
         for mon in rows.scalars().all():
             watch.setdefault(mon.id, (mon, mon.het_hang))
@@ -142,9 +132,13 @@ async def reserve(db: AsyncSession, lines: Iterable[tuple[str, int]]) -> Watch:
             mon.soluongton -= soluong
     for tid, n in need.items():
         nguyenlieu[tid].tonhethong = (nguyenlieu[tid].tonhethong or 0) - n
-    log.info("stock_reserved %s", kv(
-        dishes=",".join(qty), ingredients=",".join(f"{t}:-{n}" for t, n in need.items()) or "-",
-    ))
+    log.info(
+        "stock_reserved %s",
+        kv(
+            dishes=",".join(qty),
+            ingredients=",".join(f"{t}:-{n}" for t, n in need.items()) or "-",
+        ),
+    )
     return watch
 
 
@@ -202,9 +196,7 @@ async def list_ingredients(db: AsyncSession) -> list[IngredientOut]:
 
 
 async def create_ingredient(db: AsyncSession, body: IngredientIn) -> IngredientOut:
-    nl = TonKho(
-        tennguyenlieu=body.name.strip(), donvitinh=body.unit.strip(), tonhethong=_dec(body.stock)
-    )
+    nl = TonKho(tennguyenlieu=body.name.strip(), donvitinh=body.unit.strip(), tonhethong=_dec(body.stock))
     db.add(nl)
     await db.commit()
     return _ingredient_out(nl, [])
@@ -233,8 +225,7 @@ async def delete_ingredient(db: AsyncSession, ingredient_id: str) -> None:
         raise ApiError(
             409,
             "INGREDIENT_IN_USE",
-            f"Nguyên liệu đang có trong công thức của: {', '.join(used)}. "
-            "Hãy gỡ khỏi công thức trước.",
+            f"Nguyên liệu đang có trong công thức của: {', '.join(used)}. Hãy gỡ khỏi công thức trước.",
             used,
         )
     await db.delete(nl)
@@ -273,15 +264,11 @@ async def get_recipe(db: AsyncSession, thucdon_id: str) -> RecipeOut:
     return _recipe_out(await _get_dish(db, thucdon_id))
 
 
-async def set_recipe(
-    db: AsyncSession, thucdon_id: str, body: RecipeIn
-) -> tuple[RecipeOut, list[ThucDon]]:
+async def set_recipe(db: AsyncSession, thucdon_id: str, body: RecipeIn) -> tuple[RecipeOut, list[ThucDon]]:
     """Thay toàn bộ công thức của món."""
     ids = [line.ingredient_id for line in body.lines]
     if len(ids) != len(set(ids)):
-        raise ApiError(
-            422, "DUPLICATE_INGREDIENT", "Mỗi nguyên liệu chỉ nhập 1 lần trong công thức."
-        )
+        raise ApiError(422, "DUPLICATE_INGREDIENT", "Mỗi nguyên liệu chỉ nhập 1 lần trong công thức.")
     mon = await _get_dish(db, thucdon_id)
     nguyenlieu = await _lock_ingredients(db, ids)
     missing = [i for i in ids if i not in nguyenlieu]
@@ -291,8 +278,6 @@ async def set_recipe(
     mon.congthuc.clear()
     await db.flush()  # xóa dòng cũ trước khi thêm, tránh trùng UNIQUE(thucdon_id, tonkho_id)
     for line in body.lines:
-        mon.congthuc.append(
-            CongThuc(nguyenlieu=nguyenlieu[line.ingredient_id], dinhluong=_dec(line.quantity))
-        )
+        mon.congthuc.append(CongThuc(nguyenlieu=nguyenlieu[line.ingredient_id], dinhluong=_dec(line.quantity)))
     await db.commit()
     return _recipe_out(mon), flipped(watch)

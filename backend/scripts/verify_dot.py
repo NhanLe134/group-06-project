@@ -16,9 +16,7 @@ print(f"   Dùng 2 món còn bán: {avail[0]['name']} + {avail[1]['name']}")
 
 def post_round(items):
     body = json.dumps({"table_name": "Bàn 01", "items": items}, ensure_ascii=False).encode("utf-8")
-    req = urllib.request.Request(
-        BASE + "/orders", data=body, headers={"Content-Type": "application/json"}
-    )
+    req = urllib.request.Request(BASE + "/orders", data=body, headers={"Content-Type": "application/json"})
     return json.load(urllib.request.urlopen(req))
 
 
@@ -36,9 +34,7 @@ print(f"3) Gửi đợt 2: tổng dòng hóa đơn tạm tính: {len(o2['items']
 for i in o2["items"]:
     print(f"   - {i['tenmon']} → đợt {i['dot']}")
 
-cur = json.load(
-    urllib.request.urlopen(BASE + "/orders/current?table_name=" + urllib.parse.quote("Bàn 01"))
-)
+cur = json.load(urllib.request.urlopen(BASE + "/orders/current?table_name=" + urllib.parse.quote("Bàn 01")))
 print(f"4) Hóa đơn tạm tính Bàn 01: tổng {cur['tongtien']}₫ | all_served: {cur['all_served']}")
 
 tables = json.load(urllib.request.urlopen(BASE + "/cashier/tables"))
@@ -48,26 +44,13 @@ print(
     f" | tổng {t01['tongtien']}₫ | {t01['so_phieuban']} phiếu"
 )
 
-qr = json.load(
-    urllib.request.urlopen(
-        urllib.request.Request(BASE + f"/tables/{t01['id']}/pay-qr", method="POST")
-    )
-)
-print(
-    f"6) QR thanh toán: {qr['amount']}₫ | {qr['so_phieuban']} phiếu | QR ok: {qr['qr_url'].startswith('https://')}"
-)
+qr = json.load(urllib.request.urlopen(urllib.request.Request(BASE + f"/tables/{t01['id']}/pay-qr", method="POST")))
+print(f"6) QR thanh toán: {qr['amount']}₫ | {qr['so_phieuban']} phiếu | QR ok: {qr['qr_url'].startswith('https://')}")
 
-closed = json.load(
-    urllib.request.urlopen(
-        urllib.request.Request(BASE + f"/tables/{t01['id']}/close", method="POST")
-    )
-)
+closed = json.load(urllib.request.urlopen(urllib.request.Request(BASE + f"/tables/{t01['id']}/close", method="POST")))
 print(f"7) Thanh toán & đóng bàn: {closed['message']}")
 print(f"   hoadon sinh: {closed['hoadon_id']} | tổng: {closed['tongtien']}₫")
 
 tables2 = json.load(urllib.request.urlopen(BASE + "/cashier/tables"))
 t01b = next(t for t in tables2 if t["tenban"] == "Bàn 01")
-print(
-    f"8) Sau đóng bàn — Bàn 01: trangthai {t01b['trangthai']} (3=chờ dọn)"
-    f" | tổng phiếu mở: {t01b['so_phieuban']}"
-)
+print(f"8) Sau đóng bàn — Bàn 01: trangthai {t01b['trangthai']} (3=chờ dọn) | tổng phiếu mở: {t01b['so_phieuban']}")

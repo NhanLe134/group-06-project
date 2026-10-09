@@ -25,12 +25,18 @@ Db = Annotated[AsyncSession, Depends(get_db)]
 async def _notify(items: list[KdsItemOut], reason: str) -> None:
     """Báo mọi màn hình KDS tải lại; món vừa xong thì báo thêm cho Phục vụ (AC2)."""
     for i in items:
-        log.info("kds_%s %s", reason, kv(
-            item=i.id, ban=i.ban, mon=i.tenmon, soluong=i.soluong, trangthai=i.trangthai,
-        ))
-    await manager.publish(
-        KDS_CHANNEL, "KDS_ITEMS_CHANGED", {"item_ids": [str(i.id) for i in items], "reason": reason}
-    )
+        log.info(
+            "kds_%s %s",
+            reason,
+            kv(
+                item=i.id,
+                ban=i.ban,
+                mon=i.tenmon,
+                soluong=i.soluong,
+                trangthai=i.trangthai,
+            ),
+        )
+    await manager.publish(KDS_CHANNEL, "KDS_ITEMS_CHANGED", {"item_ids": [str(i.id) for i in items], "reason": reason})
     for i in items:
         if i.trangthai == service.DA_XONG:
             await manager.publish(
@@ -102,9 +108,7 @@ async def create_demo_orders(db: Db) -> list[KdsItemOut]:
         phieu = PhieuBan(ban_id=ban.ban_id, giogoimon=func.now(), hoadon_id=None)
         db.add(phieu)
         await db.flush()
-        item = ChiTietPhieu(
-            phieuban_id=phieu.phieuban_id, mon_id=mon.id, soluong=soluong, ghichu=ghichu
-        )
+        item = ChiTietPhieu(phieuban_id=phieu.phieuban_id, mon_id=mon.id, soluong=soluong, ghichu=ghichu)
         db.add(item)
         created.append(item)
     await db.commit()
