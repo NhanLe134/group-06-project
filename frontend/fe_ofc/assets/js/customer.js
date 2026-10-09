@@ -67,3 +67,22 @@ if (typeof subscribeChannel === 'function') {
       .catch(() => { /* giữ menu hiện tại nếu tải lại lỗi */ });
   });
 }
+
+/* ---------- WAITER BACK BUTTON (Ẩn/Hiện dựa vào URL role=waiter) ---------- */
+{
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('role') === 'waiter') {
+    const topbarInner = document.querySelector('.cust-topbar-inner');
+    if (topbarInner) {
+      topbarInner.insertAdjacentHTML('afterbegin', `
+        <button onclick="window.location.href='waiter.html?table=${encodeURIComponent(tableName)}'" 
+                style="display: flex; align-items: center; gap: 4px; background: #FFFBEB; color: #B45309; border: 1px solid #FCD34D; padding: 6px 12px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 13px; margin-right: auto; font-family: inherit; z-index: 10;">
+          <i class="ph-bold ph-arrow-left"></i> Phục vụ
+        </button>
+      `);
+      // Ẩn logo để nhường chỗ cho nút Quay về trên màn hình nhỏ
+      const logo = document.querySelector('.brand-logo');
+      if (logo) logo.style.display = 'none';
+    }
+  }
+}

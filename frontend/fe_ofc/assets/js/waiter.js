@@ -173,8 +173,9 @@ function renderTables() {
 }
 
 // 2. MỞ CHI TIẾT BÀN (DRAWER UI)
-function openTableDrawer(tableId, skipPushState = false) {
-    const table = tables.find(t => t.id === tableId);
+function openTableDrawer(tableIdOrName, skipPushState = false) {
+    // Có thể truyền UUID hoặc truyền Tên bàn (ví dụ "Bàn 06")
+    const table = tables.find(t => t.id === tableIdOrName || t.name === tableIdOrName);
     if (!table) return;
 
     drawerTitle.innerHTML = `${table.name}`;
@@ -198,7 +199,7 @@ function openTableDrawer(tableId, skipPushState = false) {
     if (table.status === 'empty') {
         drawerEmptyState.style.display = 'block';
         drawerOrderSection.style.display = 'none';
-        drawerFooter.innerHTML = '';
+        drawerFooter.innerHTML = `<button class="btn-primary" style="width: 100%; border-radius: 12px; padding: 14px; font-size: 16px; border: none; font-weight: 700; cursor: pointer;" onclick="window.location.href='customer.html?table=${encodeURIComponent(table.name)}&role=waiter'"><i class="ph-bold ph-plus-circle"></i> Mở App Gọi Món</button>`;
     } else if (table.status === 'cleaning') {
         drawerEmptyState.style.display = 'none';
         drawerOrderSection.style.display = 'none';
@@ -207,7 +208,7 @@ function openTableDrawer(tableId, skipPushState = false) {
         drawerEmptyState.style.display = 'none';
         drawerOrderSection.style.display = 'block';
         renderOrderItems(table);
-        drawerFooter.innerHTML = '';
+        drawerFooter.innerHTML = `<button class="btn-primary" style="width: 100%; border-radius: 12px; padding: 14px; font-size: 16px; border: none; font-weight: 700; cursor: pointer;" onclick="window.location.href='customer.html?table=${encodeURIComponent(table.name)}&role=waiter'"><i class="ph-bold ph-plus-circle"></i> Gọi thêm món</button>`;
     }
 
     drawerOverlay.classList.add('active');
@@ -331,14 +332,21 @@ window.markItemServed = async function(tableId, itemId) {
 // 4. NGHIỆP VỤ: HOÀN TẤT DỌN BÀN
 window.markTableClean = async function(tableId) {
     try {
-        const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/waiter/tables/${tableId}/clean`, { method: 'PATCH' });
+        // Đóng Drawer và hiện Toast ngay lập tức cho mượt (Optimistic UI)
+        closeTableDrawer();
+        
+        // Gọi API chuẩn từ Backend (orders.py) thay vì patch riêng của waiter
+        const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/tables/${tableId}/cleaned`, { method: 'POST' });
         if (!res.ok) throw new Error('Lỗi cập nhật');
         
-        closeTableDrawer();
-        await loadTables();
         showToast('Đã dọn dẹp', `Bàn đã sẵn sàng đón khách mới.`, 'success');
+        
+        // Tải lại sơ đồ bàn để cập nhật giao diện thành Trống (màu Xanh)
+        await loadTables();
     } catch (e) {
-        showToast('Lỗi', 'Không thể cập nhật dọn bàn', 'danger');
+        showToast('Lỗi', 'Không thể cập nhật dọn bàn. Hãy thử lại!', 'danger');
+        // Nếu lỗi, mở lại hoặc load lại để đồng bộ
+        await loadTables();
     }
 }
 
@@ -516,126 +524,134 @@ function renderTasks() {
 
     let html = '';
 
-    // 3. Render nhóm 1: Gợi ý Gom đơn (Gom >= 2)
+    // 3. Render nhóm 1: Gợi ý Gom đơn (Gom >= 2) - Dạng thanh trượt ngang
+    let batchedHtml = '';
     let hasBatched = false;
     Object.keys(grouped).forEach(itemName => {
         const group = grouped[itemName];
         const list = group.items;
         if (list.length > 1) {
-            if (!hasBatched) {
-                html += '<h4 style="font-size: 12px; font-weight: 800; color: #64748B; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.05em;"><i class="ph-bold ph-lightning"></i> Gợi ý tiện đường</h4>';
-                hasBatched = true;
-            }
-            let tablesText = list.map(entry => entry.tableName).join(', ');
+            hasBatched = true;
+            let qtyByTable = {};
+            list.forEach(entry => {
+                let shortTable = entry.tableName.replace('Bàn ', 'B.'); // Rút gọn chữ Bàn thành B. cho gọn
+                qtyByTable[shortTable] = (qtyByTable[shortTable] || 0) + (entry.item.qty || 1);
+            });
+            let tablesText = Object.entries(qtyByTable).map(([tbl, q]) => `${tbl} (${q})`).join(', ');
             let totalQty = list.reduce((sum, entry) => sum + (entry.item.qty || 1), 0);
             
-            html += `
-            <div class="notif-card" style="margin-top: 0; background: #FFFBEB; border-color: #E2E8F0; border-left-color: var(--color-warning);">
-                <div class="notif-header" style="margin-bottom: 8px;">
-                    <span class="notif-table" style="color: #B45309; display: flex; align-items: center; gap: 6px;">
-                        <i class="ph-fill ph-stack"></i> GOM MÓN
-                    </span>
-                    <span class="notif-time">Mới nhất</span>
-                </div>
-                <div class="notif-desc" style="margin-bottom: 12px;">
-                    <p style="margin:0; font-size: 16px; color: var(--color-text-main);"><b>${totalQty}x ${itemName}</b></p>
-                    <p style="margin:4px 0 0 0; font-size:13px; color: #64748B; display: flex; align-items: center; gap: 4px;"><i class="ph-bold ph-map-pin"></i> Giao đến: <b style="color: var(--color-text-main);">${tablesText}</b></p>
-                </div>
-                <button class="btn-serve" style="background: #B45309; color: #fff;" onclick="event.stopPropagation(); serveBatch('${itemName}')"><i class="ph-bold ph-check"></i> Đã lấy xong (${totalQty})</button>
+            batchedHtml += `
+            <div style="flex: 0 0 auto; background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 12px; padding: 12px; min-width: 150px; max-width: 180px; display: flex; flex-direction: column; gap: 8px;">
+                <span style="color: #B45309; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 4px;"><i class="ph-fill ph-stack"></i> GOM MÓN</span>
+                <span style="font-size: 15px; font-weight: 600; color: var(--color-text-main); line-height: 1.2;">${totalQty}x ${itemName}</span>
+                <span style="font-size: 12px; color: #64748B; line-height: 1.3;"><i class="ph-bold ph-map-pin"></i> ${tablesText}</span>
+                <button style="background: #B45309; color: #fff; border: none; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: auto;" onclick="event.stopPropagation(); serveBatch('${itemName}')">Lấy xong (${totalQty})</button>
             </div>
             `;
-            delete grouped[itemName]; // Xóa để không bị render lại ở dưới
+            // KHÔNG xóa khỏi grouped để nó vẫn hiện trong danh sách Từng bàn ở dưới
         }
     });
 
-    // 4. Render nhóm 2: Phục vụ lẻ & Lấy nước -> Gộp theo bàn
-    let hasSingles = false;
-    
-    // Gộp các món lẻ theo Bàn
-    let singlesByTable = {};
+    if (hasBatched) {
+        html += `
+        <div style="margin-bottom: 20px;">
+            <h4 style="font-size: 12px; font-weight: 800; color: #64748B; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 0.05em;"><i class="ph-bold ph-lightning"></i> Tiện đường (Gom món)</h4>
+            <div style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; padding-top: 4px;">
+                ${batchedHtml}
+            </div>
+        </div>
+        `;
+    }
+
+    // 4. Render nhóm 2: Timeline Mới nhất (Bao gồm Phục vụ lẻ + Dọn dẹp)
+    let allTimeline = [];
+
+    // Gộp các món lẻ theo Bàn VÀ theo loại (Nước riêng, Đồ ăn riêng)
+    let singlesByTableAndType = {};
     Object.keys(grouped).forEach(itemName => {
         const group = grouped[itemName];
         group.items.forEach(entry => {
-            if (!singlesByTable[entry.tableId]) {
-                singlesByTable[entry.tableId] = { tableId: entry.tableId, tableName: entry.tableName, items: [] };
+            const key = entry.tableId + (group.isDrink ? '_drink' : '_food');
+            if (!singlesByTableAndType[key]) {
+                singlesByTableAndType[key] = { 
+                    tableId: entry.tableId, 
+                    tableName: entry.tableName, 
+                    isDrink: group.isDrink, 
+                    items: [] 
+                };
             }
-            singlesByTable[entry.tableId].items.push({ itemName: itemName, isDrink: group.isDrink, item: entry.item });
+            singlesByTableAndType[key].items.push({ itemName: itemName, item: entry.item });
         });
     });
 
-    Object.values(singlesByTable).forEach(tableData => {
-        if (!hasSingles) {
-            html += `<h4 style="font-size: 12px; font-weight: 800; color: #64748B; margin: ${hasBatched ? '16px' : '0'} 0 12px 0; text-transform: uppercase; letter-spacing: 0.05em;"><i class="ph-bold ph-tray"></i> Cần phục vụ</h4>`;
-            hasSingles = true;
-        }
-        
-        const allDrinks = tableData.items.every(i => i.isDrink);
-        const hasDrinks = tableData.items.some(i => i.isDrink);
-        
-        let icon = '<i class="ph-bold ph-cooking-pot"></i> CẦN BƯNG MÓN';
-        let titleColor = 'var(--color-success)';
-        let bgColor = '#ffffff';
-        let borderColor = 'var(--color-success)';
-
-        if (allDrinks) {
-            icon = '<i class="ph-bold ph-bottle"></i> CẦN LẤY NƯỚC';
-            titleColor = '#0284C7';
-            bgColor = '#F0F9FF';
-            borderColor = '#38BDF8';
-        } else if (hasDrinks) {
-            icon = '<i class="ph-bold ph-tray"></i> ĐỒ ĂN & NƯỚC';
-            titleColor = 'var(--color-primary)';
-            borderColor = 'var(--color-primary)';
-        }
-        
-        let itemsHtml = tableData.items.map(i => {
-            return `<p style="margin:0 0 4px 0; font-size: 16px; color: var(--color-text-main);"><b>${i.item.qty || 1}x ${i.itemName}</b></p>`;
-        }).join('');
-        
-        let itemIdsArrayStr = '[' + tableData.items.map(i => `'${i.item.id}'`).join(', ') + ']';
-        let serveAction = `event.stopPropagation(); ${itemIdsArrayStr}.forEach(id => markItemServed('${tableData.tableId}', id))`;
-        
-        html += `
-        <div class="notif-card" style="margin-top: 8px; background: ${bgColor}; border-color: #E2E8F0; border-left-color: ${borderColor};">
-            <div class="notif-header" style="margin-bottom: 8px;">
-                <span class="notif-table" style="color: ${titleColor}; display: flex; align-items: center; gap: 6px;">
-                    ${icon}
-                </span>
-                <span class="notif-time">Vừa xong</span>
-            </div>
-            <div class="notif-desc" style="margin-bottom: 12px;">
-                ${itemsHtml}
-                <p style="margin:4px 0 0 0; font-size:13px; color: #64748B;"><i class="ph-bold ph-map-pin"></i> Bàn: <b style="color: var(--color-text-main);">${tableData.tableName}</b></p>
-            </div>
-            <button class="btn-serve" style="background: ${titleColor}; color: #fff;" onclick="${serveAction}"><i class="ph-bold ph-check"></i> Đã hoàn tất</button>
-        </div>
-        `;
+    Object.values(singlesByTableAndType).forEach(tableData => {
+        allTimeline.push({ type: 'serve', tableData: tableData });
     });
 
-    // 5. Render nhóm 3: Dọn dẹp bàn
-    let hasCleaning = false;
     cleaningTasks.forEach(t => {
-        if (!hasCleaning) {
-            html += `<h4 style="font-size: 12px; font-weight: 800; color: #64748B; margin: ${(hasBatched || hasSingles) ? '16px' : '0'} 0 12px 0; text-transform: uppercase; letter-spacing: 0.05em;"><i class="ph-bold ph-broom"></i> Cần dọn dẹp</h4>`;
-            hasCleaning = true;
-        }
-        
-        html += `
-        <div class="notif-card" style="margin-top: 8px; background: #FEF2F2; border-color: #E2E8F0; border-left-color: var(--color-danger);">
-            <div class="notif-header" style="margin-bottom: 8px;">
-                <span class="notif-table" style="color: var(--color-danger); display: flex; align-items: center; gap: 6px;">
-                    <i class="ph-bold ph-broom"></i> DỌN DẸP BÀN
-                </span>
-                <span class="notif-time">Vừa xong</span>
-            </div>
-            <div class="notif-desc" style="margin-bottom: 12px;">
-                <p style="margin:0; font-size: 16px; color: var(--color-text-main);">Khách đã thanh toán rời đi</p>
-                <p style="margin:4px 0 0 0; font-size:13px; color: #64748B;"><i class="ph-bold ph-map-pin"></i> Vị trí: <b style="color: var(--color-text-main);">${t.name}</b></p>
-            </div>
-            <button class="btn-serve" style="background: var(--color-danger); color: #fff;" onclick="markTableClean('${t.id}')"><i class="ph-bold ph-check"></i> Đã dọn xong</button>
-        </div>
-        `;
+        allTimeline.push({ type: 'clean', data: t });
     });
+
+    if (allTimeline.length > 0) {
+        html += `<h4 style="font-size: 12px; font-weight: 800; color: #64748B; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.05em;"><i class="ph-bold ph-clock-counter-clockwise"></i> Thông báo mới nhất</h4>`;
+        
+        allTimeline.forEach(task => {
+            if (task.type === 'serve') {
+                const tableData = task.tableData;
+                const isDrink = tableData.isDrink;
+                
+                let icon = isDrink ? '<i class="ph-bold ph-bottle"></i> CẦN LẤY NƯỚC' : '<i class="ph-bold ph-cooking-pot"></i> CẦN BƯNG MÓN';
+                let titleColor = isDrink ? '#0284C7' : 'var(--color-success)';
+                let bgColor = isDrink ? '#F0F9FF' : '#ffffff';
+                let borderColor = isDrink ? '#38BDF8' : 'var(--color-success)';
+                
+                let qtyByItem = {};
+                tableData.items.forEach(i => {
+                    qtyByItem[i.itemName] = (qtyByItem[i.itemName] || 0) + (i.item.qty || 1);
+                });
+                
+                let itemsHtml = Object.entries(qtyByItem).map(([name, qty]) => {
+                    return `<p style="margin:0 0 4px 0; font-size: 15px; font-weight: 600; color: var(--color-text-main);">${qty}x ${name}</p>`;
+                }).join('');
+                
+                let itemIdsArrayStr = '[' + tableData.items.map(i => `'${i.item.id}'`).join(', ') + ']';
+                let serveAction = `event.stopPropagation(); ${itemIdsArrayStr}.forEach(id => markItemServed('${tableData.tableId}', id))`;
+                
+                html += `
+                <div class="notif-card" style="margin-bottom: 8px; background: ${bgColor}; border-color: #E2E8F0; border-left-color: ${borderColor};">
+                    <div class="notif-header" style="margin-bottom: 8px;">
+                        <span class="notif-table" style="color: ${titleColor}; display: flex; align-items: center; gap: 6px;">
+                            ${icon}
+                        </span>
+                        <span class="notif-time">Vừa xong</span>
+                    </div>
+                    <div class="notif-desc" style="margin-bottom: 12px;">
+                        ${itemsHtml}
+                        <p style="margin:4px 0 0 0; font-size:13px; color: #64748B;"><i class="ph-bold ph-map-pin"></i> <span style="font-weight: 600; color: var(--color-text-main);">${tableData.tableName}</span></p>
+                    </div>
+                    <button class="btn-serve" style="background: ${titleColor}; color: #fff;" onclick="${serveAction}"><i class="ph-bold ph-check"></i> Đã hoàn tất</button>
+                </div>
+                `;
+            } else if (task.type === 'clean') {
+                const t = task.data;
+                html += `
+                <div class="notif-card" style="margin-bottom: 8px; background: #FEF2F2; border-color: #E2E8F0; border-left-color: var(--color-danger);">
+                    <div class="notif-header" style="margin-bottom: 8px;">
+                        <span class="notif-table" style="color: var(--color-danger); display: flex; align-items: center; gap: 6px;">
+                            <i class="ph-bold ph-broom"></i> DỌN DẸP BÀN
+                        </span>
+                        <span class="notif-time">Vừa xong</span>
+                    </div>
+                    <div class="notif-desc" style="margin-bottom: 12px;">
+                        <p style="margin:0; font-size: 15px; font-weight: 600; color: var(--color-text-main);">Khách đã thanh toán rời đi</p>
+                        <p style="margin:4px 0 0 0; font-size:13px; color: #64748B;"><i class="ph-bold ph-map-pin"></i> <span style="font-weight: 600; color: var(--color-text-main);">${t.name}</span></p>
+                    </div>
+                    <button class="btn-serve" style="background: var(--color-danger); color: #fff;" onclick="markTableClean('${t.id}')"><i class="ph-bold ph-check"></i> Đã dọn xong</button>
+                </div>
+                `;
+            }
+        });
+    }
 
     container.innerHTML = html;
     
@@ -760,8 +776,6 @@ function pushReadyNotifBatch(ban) {
     `;
     notifList.prepend(card);
     notifCount++; notifCountBadge.innerText = notifCount;
-
-    showToast('KDS Alert', `${escHtml(ban)}: <b>${totalItems} món</b> đã sẵn sàng. Mời bưng món!`, 'success');
     if (typeof playTing === 'function') playTing();
 }
 
@@ -787,8 +801,6 @@ function handleTableCleaningEvent({ ban, ban_id }) {
     if (table && currentZone !== 'all' && table.zone !== currentZone) {
         return; 
     }
-    
-    showToast('Dọn dẹp', `Khách bàn <b>${ban}</b> đã thanh toán rời đi. Cần dọn dẹp!`, 'warning');
     if (typeof playTing === 'function') playTing();
     loadTables(); // Reload lại bảng để cập nhật giao diện
 }
