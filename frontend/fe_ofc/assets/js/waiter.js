@@ -118,16 +118,16 @@ function renderTables() {
             
             if (totalItems === 0) {
                 tableStatusText = 'Đang chọn món';
-                badgeColor = '#64748B';
+                badgeClass = 'badge-danger';
             } else if (hasReadyItem) {
                 tableStatusText = 'Cần lên món';
-                badgeColor = 'var(--color-danger)';
+                badgeClass = 'badge-danger';
             } else if (servedItems === totalItems) {
                 tableStatusText = 'Đã đủ món';
-                badgeColor = 'var(--color-success)';
+                badgeClass = 'badge-success';
             } else {
                 tableStatusText = 'Bếp đang làm';
-                badgeColor = 'var(--color-warning)';
+                badgeClass = 'badge-warning';
             }
 
             progressHtml = `
@@ -143,10 +143,10 @@ function renderTables() {
             `;
         } else if (t.status === 'cleaning') {
             tableStatusText = 'Cần dọn dẹp';
-            badgeColor = 'var(--color-warning)';
+            badgeClass = 'badge-warning';
         } else {
             tableStatusText = 'Trống';
-            badgeColor = 'var(--color-success)';
+            badgeClass = 'badge-success';
         }
 
         const detailsHtml = `
@@ -159,7 +159,7 @@ function renderTables() {
             ${alertBadge}
             <div class="table-header-row">
                 <h3 class="table-name">${t.name}</h3>
-                <span class="table-status-badge" style="color: ${badgeColor};">${tableStatusText}</span>
+                <span class="badge ${badgeClass}">${tableStatusText}</span>
             </div>
             ${detailsHtml}
             ${progressHtml}
@@ -182,16 +182,16 @@ function openTableDrawer(tableIdOrName, skipPushState = false) {
     
     // Header Status Badge
     if (table.status === 'occupied') {
+        drawerBadge.className = 'badge badge-danger';
         drawerBadge.innerText = 'Đang dùng bữa';
-        drawerBadge.style.background = 'var(--color-danger)';
         drawerSubtitle.innerHTML = `<i class="ph-bold ph-users"></i> ${table.capacity} Khách • Đã ngồi ${table.time}`;
     } else if (table.status === 'cleaning') {
+        drawerBadge.className = 'badge badge-warning';
         drawerBadge.innerText = 'Cần dọn';
-        drawerBadge.style.background = 'var(--color-warning)';
         drawerSubtitle.innerHTML = `<i class="ph-bold ph-clock"></i> Khách vừa thanh toán rời đi`;
     } else {
+        drawerBadge.className = 'badge badge-success';
         drawerBadge.innerText = 'Trống';
-        drawerBadge.style.background = 'var(--color-success)';
         drawerSubtitle.innerHTML = `<i class="ph-bold ph-users"></i> ${table.capacity} Khách`;
     }
 
@@ -199,16 +199,16 @@ function openTableDrawer(tableIdOrName, skipPushState = false) {
     if (table.status === 'empty') {
         drawerEmptyState.style.display = 'block';
         drawerOrderSection.style.display = 'none';
-        drawerFooter.innerHTML = `<button class="btn-primary" style="width: 100%; border-radius: 12px; padding: 14px; font-size: 16px; border: none; font-weight: 700; cursor: pointer;" onclick="window.location.href='customer.html?table=${encodeURIComponent(table.name)}&role=waiter'"><i class="ph-bold ph-plus-circle"></i> Mở App Gọi Món</button>`;
+        drawerFooter.innerHTML = `<button class="btn-primary" style="width: 100%;" onclick="window.location.href='customer.html?table=${encodeURIComponent(table.name)}&role=waiter'"><i class="ph-bold ph-plus-circle"></i> Mở App Gọi Món</button>`;
     } else if (table.status === 'cleaning') {
         drawerEmptyState.style.display = 'none';
         drawerOrderSection.style.display = 'none';
-        drawerFooter.innerHTML = `<button class="btn-clean-lg" onclick="markTableClean('${table.id}')"><i class="ph-bold ph-check-circle"></i> Xác nhận Đã dọn xong</button>`;
+        drawerFooter.innerHTML = `<button class="btn-primary" style="width: 100%;" onclick="markTableClean('${table.id}')"><i class="ph-bold ph-check-circle"></i> Xác nhận Đã dọn xong</button>`;
     } else {
         drawerEmptyState.style.display = 'none';
         drawerOrderSection.style.display = 'block';
         renderOrderItems(table);
-        drawerFooter.innerHTML = `<button class="btn-primary" style="width: 100%; border-radius: 12px; padding: 14px; font-size: 16px; border: none; font-weight: 700; cursor: pointer;" onclick="window.location.href='customer.html?table=${encodeURIComponent(table.name)}&role=waiter'"><i class="ph-bold ph-plus-circle"></i> Gọi thêm món</button>`;
+        drawerFooter.innerHTML = `<button class="btn-primary" style="width: 100%;" onclick="window.location.href='customer.html?table=${encodeURIComponent(table.name)}&role=waiter'"><i class="ph-bold ph-plus-circle"></i> Gọi thêm món</button>`;
     }
 
     drawerOverlay.classList.add('active');
@@ -545,7 +545,7 @@ function renderTasks() {
                 <span style="color: #B45309; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 4px;"><i class="ph-fill ph-stack"></i> GOM MÓN</span>
                 <span style="font-size: 15px; font-weight: 600; color: var(--color-text-main); line-height: 1.2;">${totalQty}x ${itemName}</span>
                 <span style="font-size: 12px; color: #64748B; line-height: 1.3;"><i class="ph-bold ph-map-pin"></i> ${tablesText}</span>
-                <button style="background: #B45309; color: #fff; border: none; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: auto;" onclick="event.stopPropagation(); serveBatch('${itemName}')">Lấy xong (${totalQty})</button>
+                <button class="btn-primary" style="width: 100%; margin-top: auto;" onclick="event.stopPropagation(); serveBatch('${itemName}')">Lấy xong (${totalQty})</button>
             </div>
             `;
             // KHÔNG xóa khỏi grouped để nó vẫn hiện trong danh sách Từng bàn ở dưới
@@ -629,7 +629,7 @@ function renderTasks() {
                         ${itemsHtml}
                         <p style="margin:4px 0 0 0; font-size:13px; color: #64748B;"><i class="ph-bold ph-map-pin"></i> <span style="font-weight: 600; color: var(--color-text-main);">${tableData.tableName}</span></p>
                     </div>
-                    <button class="btn-serve" style="background: ${titleColor}; color: #fff;" onclick="${serveAction}"><i class="ph-bold ph-check"></i> Đã hoàn tất</button>
+                    <button class="btn-primary" style="width: 100%;" onclick="${serveAction}"><i class="ph-bold ph-check"></i> Đã hoàn tất</button>
                 </div>
                 `;
             } else if (task.type === 'clean') {
@@ -646,7 +646,7 @@ function renderTasks() {
                         <p style="margin:0; font-size: 15px; font-weight: 600; color: var(--color-text-main);">Khách đã thanh toán rời đi</p>
                         <p style="margin:4px 0 0 0; font-size:13px; color: #64748B;"><i class="ph-bold ph-map-pin"></i> <span style="font-weight: 600; color: var(--color-text-main);">${t.name}</span></p>
                     </div>
-                    <button class="btn-serve" style="background: var(--color-danger); color: #fff;" onclick="markTableClean('${t.id}')"><i class="ph-bold ph-check"></i> Đã dọn xong</button>
+                    <button class="btn-primary" style="width: 100%;" onclick="markTableClean('${t.id}')"><i class="ph-bold ph-check"></i> Đã dọn xong</button>
                 </div>
                 `;
             }
