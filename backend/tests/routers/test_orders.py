@@ -77,6 +77,7 @@ async def test_gui_dot_2_cong_vao_hoa_don_cu(client, menu_ids):
     hoadon_1 = res1.json()["hoadon_id"]
 
     import time
+
     time.sleep(1.1)  # SQLite CURRENT_TIMESTAMP chính xác tới giây — đảm bảo đợt 2 lệch mốc giờ
 
     res2 = await client.post(
@@ -85,9 +86,9 @@ async def test_gui_dot_2_cong_vao_hoa_don_cu(client, menu_ids):
     )
     assert res2.status_code == 200
     data2 = res2.json()
-    assert data2["hoadon_id"] == hoadon_1            # giữ nguyên hóa đơn cũ
-    assert len(data2["items"]) == 2                  # món đợt 1 + đợt 2
-    assert data2["tongtien"] == 130000 + 4 * 5000    # tính lại toàn bộ
+    assert data2["hoadon_id"] == hoadon_1  # giữ nguyên hóa đơn cũ
+    assert len(data2["items"]) == 2  # món đợt 1 + đợt 2
+    assert data2["tongtien"] == 130000 + 4 * 5000  # tính lại toàn bộ
     assert [i["dot"] for i in data2["items"]] == [1, 2]  # ADR-N13: gán đợt theo mốc gọi
 
 
@@ -154,7 +155,7 @@ async def test_cashier_tables_va_qr_va_dong_ban(client, menu_ids):
     assert tables.status_code == 200
     rows = tables.json()
     ban06 = next(r for r in rows if r["tenban"] == "Bàn 06")
-    assert ban06["trangthai"] == "2"                       # đang phục vụ
+    assert ban06["trangthai"] == "2"  # đang phục vụ
     assert ban06["tongtien"] == 130000
     assert ban06["so_phieuban"] == 1
 
@@ -167,12 +168,12 @@ async def test_cashier_tables_va_qr_va_dong_ban(client, menu_ids):
     closed = await client.post(f"/tables/{ban06['id']}/close")
     assert closed.status_code == 200
     assert closed.json()["tongtien"] == 130000
-    assert closed.json()["hoadon_id"]                       # hoadon sinh khi thanh toán
+    assert closed.json()["hoadon_id"]  # hoadon sinh khi thanh toán
 
     tables2 = (await client.get("/cashier/tables")).json()
     ban06_sau = next(r for r in tables2 if r["tenban"] == "Bàn 06")
-    assert ban06_sau["trangthai"] == "3"                   # chờ dọn
-    assert ban06_sau["tongtien"] == 0                      # phiếu đã gắn vào hóa đơn
+    assert ban06_sau["trangthai"] == "3"  # chờ dọn
+    assert ban06_sau["tongtien"] == 0  # phiếu đã gắn vào hóa đơn
 
 
 async def test_dong_ban_khi_dang_phuc_vu(client, menu_ids):

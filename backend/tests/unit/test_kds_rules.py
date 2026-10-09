@@ -23,8 +23,13 @@ def _item(trangthai: str | None) -> ChiTietPhieu:
 
 @pytest.mark.parametrize(
     ("current", "target"),
-    [(CHO_NAU, DANG_NAU), (CHO_NAU, DA_XONG), (DANG_NAU, DA_XONG), (DANG_NAU, CHO_NAU),
-     (DA_XONG, DANG_NAU)],
+    [
+        (CHO_NAU, DANG_NAU),
+        (CHO_NAU, DA_XONG),
+        (DANG_NAU, DA_XONG),
+        (DANG_NAU, CHO_NAU),
+        (DA_XONG, DANG_NAU),
+    ],
 )
 def test_allowed_transitions_forward_and_one_step_back(current, target):
     """TC-OP-KDS-004/007: tiến tới, hoặc lùi 1 bước để hoàn tác."""

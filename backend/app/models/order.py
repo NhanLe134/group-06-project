@@ -30,9 +30,7 @@ class Ban(Base):
 
     __tablename__ = "ban"
 
-    ban_id: Mapped[str] = mapped_column(
-        String(30), primary_key=True, server_default=FetchedValue()
-    )
+    ban_id: Mapped[str] = mapped_column(String(30), primary_key=True, server_default=FetchedValue())
     tenban: Mapped[str] = mapped_column(String)
     # 1 = sẵn sàng, 2 = đang phục vụ, 3 = chờ dọn (lưu số để giảm dữ liệu)
     trangthai: Mapped[int | None] = mapped_column(SmallInteger, server_default="1")
@@ -46,9 +44,7 @@ class HoaDon(Base):
     hoadon_id: Mapped[str] = mapped_column(
         String(30), primary_key=True, server_default=FetchedValue()
     )
-    ban_id: Mapped[str | None] = mapped_column(
-        String(30), ForeignKey("ban.ban_id"), default=None
-    )
+    ban_id: Mapped[str | None] = mapped_column(String(30), ForeignKey("ban.ban_id"), default=None)
     # Thu ngân xác nhận thu tiền (RBAC sau này); NULL = chưa gán
     nhanvien_id: Mapped[str | None] = mapped_column(
         String(30), ForeignKey("nguoidung.id"), default=None
@@ -74,12 +70,8 @@ class PhieuBan(Base):
     phieuban_id: Mapped[str] = mapped_column(
         String(30), primary_key=True, server_default=FetchedValue()
     )
-    ban_id: Mapped[str | None] = mapped_column(
-        String(30), ForeignKey("ban.ban_id"), default=None
-    )
-    giogoimon: Mapped[datetime] = mapped_column(
-        DateTime(timezone=False), server_default=func.now()
-    )
+    ban_id: Mapped[str | None] = mapped_column(String(30), ForeignKey("ban.ban_id"), default=None)
+    giogoimon: Mapped[datetime] = mapped_column(DateTime(timezone=False), server_default=func.now())
     hoadon_id: Mapped[str | None] = mapped_column(
         ForeignKey("hoadon.hoadon_id", ondelete="CASCADE"), default=None
     )

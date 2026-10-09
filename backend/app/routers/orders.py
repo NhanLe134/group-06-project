@@ -32,15 +32,25 @@ async def create_order(data: OrderCreateIn, db: Db) -> OrderCurrentOut:
         KDS_CHANNEL,
         "KDS_ITEMS_CHANGED",
         {
-            "item_ids": [
-                i.id for i in order.items if i.trangthai == "cho_nau"
-            ],
+            "item_ids": [i.id for i in order.items if i.trangthai == "cho_nau"],
             "reason": "new_order",
             "ban": order.table_name,
         },
     )
     # Món vừa hết hàng do trừ kho → khóa trên E-Menu/KDS ngay (US-03 AC3)
     await broadcast_flipped(db, flipped)
+    
+    # Báo đồ uống cho Waiter (các món mới gọi đợt này có trạng thái da_xong)
+    if order.items:
+        max_dot = max((i.dot for i in order.items if i.dot is not None), default=0)
+        new_drinks = [i for i in order.items if i.dot == max_dot and i.trangthai == "da_xong"]
+        for d in new_drinks:
+            await manager.publish(
+                "kds:tickets",
+                "ITEM_READY",
+                {"ban": order.table_name, "tenmon": d.tenmon, "soluong": d.soluong}
+            )
+            
     return order
 
 

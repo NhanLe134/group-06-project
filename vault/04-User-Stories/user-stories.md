@@ -231,22 +231,10 @@ Then giao diện hiển thị lỗi kết nối có thể phục hồi và lưu 
   - **Khi:** Waiter bấm nút "Đã phục vụ" (Mark as Served) trên giao diện Tablet,
   - **Thì:** Trạng thái `order_items.status` chuyển thành `served` (`data-model.md`); thông báo món hoàn thành tự động biến mất; sơ đồ Table Map cập nhật trạng thái Bàn 06 hiển thị màu Đỏ (`occupied` - Đang ăn) nếu đây là món đầu tiên được phục vụ của phiên bàn (`REQ-06`).
 
-- **AC3 (Edge Case — Khách từ chối nhận món / Hủy món sau khi gửi bếp)**
-  - **Cho trước:** Món ăn đã gửi xuống bếp hoặc đã nấu xong (`status` là `cooking` hoặc `done`), nhưng khách yêu cầu hủy/từ chối nhận món (khách đổi ý, đợi quá lâu),
-  - **Khi:** Waiter bấm nút "Hủy món" (Void Item) trên màn hình chi tiết đơn của Bàn 06,
-  - **Thì:** Hệ thống chặn hủy trực tiếp và hiển thị Popup bắt buộc: (1) Nhập lý do hủy món (`reason`), (2) Nhập mã PIN bảo mật của Quản lý (`REQ-10`, `BR-02`, `api-contract.md`); Waiter không thể tự phê duyệt thao tác này.
-
-- **AC4 (Business Rule — Xác thực PIN Manager & Ghi Log kiểm toán Void)**
-  - **Cho trước:** Popup yêu cầu mã PIN Manager đang hiển thị sau khi kích hoạt hủy món (AC3),
-  - **Khi:** Quản lý nhà hàng trực tiếp nhập mã PIN hợp lệ và bấm "Xác nhận hủy",
-  - **Thì:** Hệ thống gửi request `POST /orders/items/{id}/void` kèm `pin_code` và `reason` (`api-contract.md`); API xác thực thành công trả về `200 OK`: (1) Cập nhật `order_items.status = void`, (2) Tự động ghi 1 bản ghi kiểm toán bất biến vào bảng `void_refund_logs` (`order_item_id`, `reason`, `approved_by`, `approved_at`) chống gian lận (`NFR-RO-03`); món được gỡ khỏi hóa đơn thanh toán của khách.
-
-- **AC5 (Fallback / Error Handling — Nhập sai PIN Quản lý hoặc Món không thể hủy)**
-  - **Cho trước:** Người thao tác nhập mã PIN Quản lý không chính xác, hoặc món ăn đã ở trạng thái `served` / `void`,
-  - **Khi:** Hệ thống gửi yêu cầu đến backend để xử lý,
-  - **Thì:** Backend từ chối thao tác và trả về mã lỗi tương ứng:
-    + Nếu sai mã PIN: Trả lỗi `403 Forbidden` (`INVALID_MANAGER_PIN`), hiển thị cảnh báo "Mã PIN Quản lý không chính xác; vui lòng kiểm tra lại" và tạm khóa chức năng sau 3 lần thử sai liên tiếp.
-    + Nếu món đã phục vụ (`status = served`): Trả lỗi `400 Bad Request` (`ORDER_ITEM_NOT_VOIDABLE`), hiển thị thông báo "Món đã bưng ra bàn, không thể hủy qua luồng tự động".
+- **AC3 (Edge Case — Hủy món / Điều chỉnh số lượng món theo quy trình thực tế)**
+  - **Cho trước:** Món ăn đang ở trạng thái `pending` hoặc `ready` (Nếu đang `cooking` mà số lượng là 1 thì chặn hủy để tránh lãng phí, trừ khi thay đổi số lượng > 1),
+  - **Khi:** Waiter bấm nút "Điều chỉnh/Hủy món" (Void Item) trên màn hình chi tiết bàn,
+  - **Thì:** Hệ thống hiển thị Popup điều chỉnh số lượng. Theo quy trình nhà hàng (giao tiếp miệng với bếp trước khi thao tác), hệ thống cho phép Waiter trực tiếp thay đổi số lượng hoặc Hủy toàn bộ món (Hard Delete) mà KHÔNG cần nhập mã PIN Quản lý hay lưu Audit Log (Bỏ qua BR-02/REQ-10 để tối ưu tốc độ vận hành thực tế).
 
 **Out of Scope:**
 - Không tích hợp hệ thống định vị GPS nhân viên trong khuôn viên nhà hàng (vượt quá phạm vi MVP).
