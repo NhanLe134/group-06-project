@@ -71,9 +71,11 @@
 - **AC7 (UX — Danh sách nhóm theo phân loại + scroll-spy — ADR-N09)**
   - **Then** Món hiển thị nhóm theo thứ tự `Món chính` ➔ `Set lẩu` ➔ `Đồ uống`; chip nhóm đang xem nền cam, chip khác nền trắng; bấm chip cuộn tới nhóm; tìm kiếm lọc trong nhóm và ẩn nhóm trống.
 
+- **AC8 (UX — Ghi chú từng món trong giỏ — ADR-N01)**
+  - **Then** Mở trình ghi chú cho món trong giỏ: chip gợi ý nhanh (`Không hành`, `Ít cay`, `Không đá`...) chạm để nối/bỏ nội dung; gõ tự do; Lưu gắn ghi chú vào dòng món (hiển thị cả trên Hóa đơn — US-09 AC1); Xóa ghi chú để làm trống.
 
-- **AC6 (UX — Hóa đơn nhóm theo đợt gọi — ADR-N13)**
-  - **Then** Hóa đơn có tiêu đề nhóm "Đợt N — gọi lúc HH:MM · X món" cho từng lần gọi bếp; món nằm dưới tiêu đề nhóm của mình.
+- **AC9 (Business Rule — Hai tầng hiển thị hết bán / hết tồn — ADR-N11)**
+  - **Then** (1) Bếp/quản lý **tắt bán** (`trangthaiban = false`) → món **ẨN hẳn** khỏi E-Menu (`listed = false`); (2) món **còn bán nhưng hết tồn** (`soluongton = 0`) → vẫn hiện nhưng xám "Hết hàng", nút "+" disabled; món đang trong Draft xử lý theo AC3.
 
 **Out of Scope:**
 - Gọi món bằng giọng nói AI (Voice-to-order, Clarification) — thuộc US-02.
@@ -134,34 +136,47 @@ Trải nghiệm rảnh tay có rủi ro nhận diện sai do môi trường ồn
 
 ## US-05 - Thanh toán hóa đơn qua QR (Toàn bộ)
 
-**User Story:** *As a* Khách hàng tại bàn (Customer), *I want* thanh toán toàn bộ hóa đơn trực tiếp bằng quét mã QR MoMo/VNPAY qua màn hình Thu ngân, *so that* tôi được thanh toán nhanh gọn, đúng tiền, không phải đợi cộng tiền thủ công.
+**User Story:** *As a* Khách hàng tại bàn (Customer) và Thu ngân, *I want* khách thanh toán toàn bộ hóa đơn bằng quét mã VietQR ngân hàng (SePay) và hệ thống tự động gạch nợ khi tiền vào tài khoản, *so that* thanh toán nhanh gọn, đúng tiền, không phải cộng tiền thủ công hay kiểm tra app ngân hàng bằng tay.
 
 **Context:**
-- `REQ-04` (FR): Thanh toán bằng quét mã QR MoMo/VNPAY tại bàn (`BR-RO-06`).
+- `REQ-04` (FR): Thanh toán bằng quét mã QR tại bàn (`BR-RO-06`) — triển khai **SePay VietQR** (ADR-N15).
 - `NFR-RO-03`: Phân quyền (RBAC) — Thu ngân thực hiện thanh toán cho bàn trong ca của mình.
 - **Phạm vi (ADR-N08):** Chia Bill (`REQ-03`) đã cắt khỏi MVP ngày 2026-10-03 — chỉ thanh toán toàn bộ tại quầy Thu ngân.
 
 **Acceptance Criteria:**
 
 - **AC1 (Happy Path — Tạo QR thanh toán toàn bộ)**
-  - **When** Thu ngân bấm "Tạo mã thanh toán" cho bàn đang ăn,
-  - **Then** Hiển thị 1 mã QR động tương ứng tổng tiền hóa đơn để khách quét (`REQ-04`).
+  - **When** Thu ngân bấm "Tạo mã thanh toán" cho bàn đang ăn đã hoàn thành phục vụ (AC5),
+  - **Then** Hiển thị mã QR VietQR theo tổng tiền; nội dung CK định danh `Ban {số bàn} - {hoadon_id}` hiển thị dưới QR (hóa đơn nháp `chua_thanh_toan` — ADR-N16, tạo lại không trùng).
 
-- **AC2 (Happy Path — Xác nhận thanh toán → paid)**
-  - **When** Webhook cổng thanh toán xác nhận (mock: Thu ngân bấm "Xác nhận đã nhận tiền"),
-  - **Then** Trạng thái `paid` + thông báo "Thanh toán thành công! Cảm ơn quý khách", nút "Đóng bàn" xuất hiện.
+- **AC2 (Happy Path — Webhook SePay tự động gạch nợ → paid)**
+  - **When** SePay gửi Webhook biến động số dư về `POST /sepay/webhook` (ADR-N15),
+  - **Then** Đối soát **ưu tiên khớp `hoadon_id`** (fallback tên bàn không dấu → số tiền), chốt hóa đơn `da_thanh_toan`, gắn `hoadon_id` vào phiếu (ADR-N14 giữ nguyên), bàn về "chờ dọn"; nút "Xác nhận đã nhận tiền & Đóng bàn" vẫn còn cho tiền mặt.
 
-- **AC3 (Fallback — Cổng thanh toán lỗi)**
-  - **Then** Toast vàng "Không thể khởi tạo mã QR thanh toán. Vui lòng kiểm tra lại mạng hoặc thử lại"; giữ nguyên hóa đơn, được "Thử lại" không lặp đơn.
+- **AC3 (Realtime — Thông báo Thu ngân — ADR-N15)**
+  - **Then** WebSocket `PAYMENT_SUCCESS` kênh `cashier:tables` → Thu ngân nổ Toast thành công, danh sách bàn tự làm mới, thẻ QR tự đóng.
+
+- **AC4 (Fallback — Cổng thanh toán lỗi)**
+  - **Then** Toast "Không thể khởi tạo mã QR thanh toán. Vui lòng kiểm tra lại mạng hoặc thử lại"; giữ nguyên hóa đơn, "Thử lại" không lặp đơn (hóa đơn nháp tái sử dụng — ADR-N16).
+
+- **AC5 (Business Rule — Chỉ tạo QR khi tất cả món đã hoàn thành)**
+  - **Given** Còn món khác `Đã phục vụ`/`Đã hủy`,
+  - **When** Bấm "Tạo mã thanh toán",
+  - **Then** Chặn + cảnh báo "còn N món chưa hoàn thành", không sinh QR (đồng bộ US-09 AC2).
+
+- **AC6 (Công cụ kiểm thử — Mô phỏng Webhook — ADR-N15)**
+  - **When** Gọi `POST /sepay/demo-sim/{ban_id}`,
+  - **Then** Backend tự sinh payload Webhook đúng định dạng nội dung CK của QR thật, chạy đủ luồng AC2→AC3 — không cần chuyển khoản thật.
 
 **Out of Scope:**
 - Chia Bill theo người/món (`REQ-03`) — cắt theo ADR-N08; Visa/Mastercard; hóa đơn VAT.
 
 **Dependencies:**
-- API Cổng thanh toán MoMo/VNPAY (Sandbox Gateway); WebSocket sự kiện xác nhận thanh toán.
+- Tài khoản SePay kết nối ngân hàng của quán (VietQR + Webhook biến động số dư, cấu hình `SEPAY_*`).
+- WebSocket kênh `cashier:tables` — sự kiện `PAYMENT_SUCCESS`.
 
 **Estimate:** 1 point
-**Design link:** [Figma SCR-CASHIER-MAIN, CMP-CASHIER-TABLE-CARD, CMP-CASHIER-PAY-PANEL, CMP-SIM-TOGGLE, SCR-BILL-QR](docs/05-Design/figma-handoff.md)
+**Design link:** [Figma SCR-CASHIER-MAIN, CMP-CASHIER-TABLE-CARD, CMP-CASHIER-PAY-PANEL, SCR-BILL-QR](docs/05-Design/figma-handoff.md)
 
 ## US-03 - Bếp nhận Order và Báo hoàn thành trên KDS
 
@@ -351,19 +366,19 @@ Quy trình chốt ca kho rất quan trọng để tránh thất thoát và chu�
 **Context:**
 - `BR-05`: Đơn sau khi gửi không thể tự hủy — Hóa đơn KHÔNG có nút hủy/xóa đơn.
 - US-07 (Price Snapshot): giá ghi nhận tại thời điểm đặt; biến động giá sau không ảnh hưởng đơn đã gửi.
-- US-04: Trạng thái `Đã phục vụ` / `Chưa phục vụ` lấy từ sự kiện Waiter bấm "Đã phục vụ".
+- US-04: Trạng thái phục vụ theo 4 mốc `Chờ nấu`/`Đang nấu`/`Chờ phục vụ` (từ KDS) và `Đã phục vụ` (Waiter bấm).
 - **Phạm vi (ADR-N04, ADR-N05):** Timeline "Đơn đã gửi" đã cắt khỏi màn khách; Hóa đơn mở qua nút "Xem hóa đơn" ở tiêu đề E-Menu, kèm nút "Yêu cầu thanh toán".
 
 **Acceptance Criteria:**
 
 - **AC1 (Happy Path — Mở Hóa đơn từ E-Menu)**
   - **When** Khách bấm nút "Xem hóa đơn" ở góc phải tiêu đề "E-Menu — Bàn 06",
-  - **Then** Mở trang Hóa đơn toàn màn hình: bảng Tên món (kèm ghi chú) / SL / Thành tiền / Trạng thái phục vụ + tổng; giá snapshot `CATALOG` tại thời điểm đặt.
+  - **Then** Mở trang Hóa đơn toàn màn hình: bảng Tên món (kèm ghi chú) / SL / Thành tiền / Trạng thái phục vụ theo 4 mốc `Chờ nấu` → `Đang nấu` → `Chờ phục vụ` → `Đã phục vụ` + tổng; giá snapshot `CATALOG` tại thời điểm đặt.
 
 - **AC2 (Yêu cầu thanh toán khi còn món chưa phục vụ)**
-  - **Given** Tồn tại món có trạng thái khác `Đã phục vụ`,
-  - **When** Khách bấm "Yêu cầu thanh toán",
-  - **Then** Hiển thị cảnh báo (icon vàng): "Bạn còn món chờ phục vụ. Vui lòng đợi nhân viên bưng món ra đủ, kiểm tra lại hóa đơn rồi hãy yêu cầu thanh toán nhé. Nếu cần hỗ trợ gấp, xin gọi nhân viên!"
+  - **Given** Tồn tại món có trạng thái khác `Đã phục vụ` (và khác `Đã hủy`),
+  - **Then** Nút "Yêu cầu thanh toán" khóa sẵn kèm hộp cảnh báo vàng hiện ngay khi mở hóa đơn; khi khách vẫn bấm,
+  - **When** hiển thị cảnh báo (icon vàng): "Bạn còn món chờ phục vụ. Vui lòng đợi nhân viên bưng món ra đủ, kiểm tra lại hóa đơn rồi hãy yêu cầu thanh toán nhé. Nếu cần hỗ trợ gấp, xin gọi nhân viên!"
 
 - **AC3 (Yêu cầu thanh toán khi đã phục vụ đủ)**
   - **Given** Toàn bộ món đã `Đã phục vụ`,
@@ -374,11 +389,14 @@ Quy trình chốt ca kho rất quan trọng để tránh thất thoát và chu�
 
 - **AC5 (Edge Case — Bàn chưa có đơn)** — trang hóa đơn hiện trạng thái rỗng, nút "Yêu cầu thanh toán" Disabled.
 
+- **AC6 (UX — Hóa đơn nhóm theo đợt gọi — ADR-N13)**
+  - **Then** Hóa đơn có tiêu đề nhóm "Đợt N — gọi lúc HH:MM · X món" cho từng lần gọi bếp; món nằm dưới tiêu đề nhóm của mình.
+
 **Out of Scope:**
 - Timeline trạng thái trên màn khách (ADR-004) — đã cắt theo ADR-N04; QR thanh toán / chia bill — US-05.
 
 **Dependencies:**
-- API: `GET /orders?tableId=B06`.
+- API: `GET /orders/current?table_name=Bàn 06` (ADR-N14).
 - Story phụ thuộc: US-01 (sinh đơn), US-04 (sự kiện "Đã phục vụ").
 - Component: BillView (full-screen), ProvisionalBill, PaymentRequestModal.
 

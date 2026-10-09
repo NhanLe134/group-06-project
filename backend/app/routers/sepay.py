@@ -152,7 +152,14 @@ async def sepay_webhook(
 
 @router.post("/demo-sim/{ban_id}")
 async def sepay_demo_simulation(ban_id: str, db: Db) -> dict[str, Any]:
-    """Endpoint mô phỏng thanh toán SePay thành công (dành cho test/demo local)."""
+    """Endpoint mô phỏng thanh toán SePay thành công (dành cho test/demo local).
+
+    CHỈ bật khi DEMO_MODE=true (như POST /kds/demo/orders) — nếu không, bất kỳ ai
+    gọi được endpoint này cũng có thể đóng bàn trên production.
+    """
+    if not settings.demo_mode:
+        raise ApiError(404, "NOT_FOUND", "Chức năng demo đang tắt.")
+
     ban = await db.get(Ban, ban_id)
     if ban is None:
         raise ApiError(404, "TABLE_NOT_FOUND", "Không tìm thấy bàn.")
@@ -164,7 +171,8 @@ async def sepay_demo_simulation(ban_id: str, db: Db) -> dict[str, Any]:
     items = await service._bill_items(db, phieu_list)
     amount = sum(i.thanhtien for i in items)
 
-    # Giả lập payload Webhook từ SePay (cùng format nội dung với QR thật)
+    # Giả lập payload Webhook từ SePay (cùng format nội dung với QR thật);
+    # tự ký header Apikey vì đây là lời gọi nội bộ, không đi qua SePay
     draft = await service.get_draft_hoadon(db, ban.ban_id)
     sim_data = SepayWebhookIn(
         gateway="MBBank",
@@ -173,4 +181,5 @@ async def sepay_demo_simulation(ban_id: str, db: Db) -> dict[str, Any]:
         ),
         transferAmount=amount,
     )
-    return await sepay_webhook(sim_data, db)
+    auth = f"Apikey {settings.sepay_webhook_api_key}" if settings.sepay_webhook_api_key else None
+    return await sepay_webhook(sim_data, db, authorization=auth)

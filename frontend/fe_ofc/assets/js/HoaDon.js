@@ -10,11 +10,11 @@
    Nghiệp vụ: BR-05 — hóa đơn không có nút hủy/xóa đơn.
    ===================================================================== */
 
-/* 3 trạng thái khách thấy (ADR-N14): cho_nau/dang_nau → Chờ nấu,
+/* 4 trạng thái khách thấy: cho_nau → Chờ nấu, dang_nau → Đang nấu,
    da_xong → Chờ phục vụ, da_phuc_vu → Đã phục vụ */
 const TRANGTHAI_LABEL = {
   cho_nau: 'Chờ nấu',
-  dang_nau: 'Chờ nấu',
+  dang_nau: 'Đang nấu',
   da_xong: 'Chờ phục vụ',
   da_phuc_vu: 'Đã phục vụ',
 };

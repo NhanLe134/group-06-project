@@ -143,13 +143,22 @@ async def test_order_current_chua_co_don_bao_404(client):
     assert res.status_code == 404
 
 
-async def test_cashier_tables_va_qr_va_dong_ban(client, menu_ids):
+async def test_cashier_tables_va_qr_va_dong_ban(client, menu_ids, db_session):
     """US-05: danh sách bàn → tạo QR → xác nhận tiền & đóng bàn."""
     pho_id, _ = menu_ids
     await client.post(
         "/orders",
         json={"table_name": "Bàn 06", "items": [{"thucdon_id": str(pho_id), "soluong": 2}]},
     )
+
+    # US-05 AC5: phải phục vụ xong mọi món rồi mới tạo được QR (giả lập Waiter — US-04)
+    from app.models.order import ChiTietPhieu
+
+    current = await client.get("/orders/current", params={"table_name": "Bàn 06"})
+    for it in current.json()["items"]:
+        mon = await db_session.get(ChiTietPhieu, it["id"])
+        mon.trangthai = "da_phuc_vu"
+    await db_session.commit()
 
     tables = await client.get("/cashier/tables")
     assert tables.status_code == 200
@@ -174,6 +183,41 @@ async def test_cashier_tables_va_qr_va_dong_ban(client, menu_ids):
     ban06_sau = next(r for r in tables2 if r["tenban"] == "Bàn 06")
     assert ban06_sau["trangthai"] == "3"  # chờ dọn
     assert ban06_sau["tongtien"] == 0  # phiếu đã gắn vào hóa đơn
+
+
+async def test_pay_qr_chan_khi_con_mon_chua_phuc_vu(client, menu_ids, db_session):
+    """US-05 AC5 (TC-US05-009): còn món chưa phục vụ → 409 ORDER_NOT_READY, không sinh QR.
+
+    Ràng buộc này phải có ở backend (không chỉ FE) để test được ở tầng integration
+    và chặn mọi client gọi thẳng API.
+    """
+    pho_id, _ = menu_ids
+    await client.post(
+        "/orders",
+        json={"table_name": "Bàn 06", "items": [{"thucdon_id": str(pho_id), "soluong": 1}]},
+    )
+
+    from app.models.order import ChiTietPhieu
+
+    current = await client.get("/orders/current", params={"table_name": "Bàn 06"})
+    ban06_items = current.json()["items"]
+
+    # Chưa phục vụ gì → chặn
+    tables = (await client.get("/cashier/tables")).json()
+    ban06 = next(r for r in tables if r["tenban"] == "Bàn 06")
+    blocked = await client.post(f"/tables/{ban06['id']}/pay-qr")
+    assert blocked.status_code == 409
+    assert blocked.json()["error_code"] == "ORDER_NOT_READY"
+    assert "chưa hoàn thành" in blocked.json()["message"]
+
+    # Phục vụ hết → mở khóa
+    for it in ban06_items:
+        mon = await db_session.get(ChiTietPhieu, it["id"])
+        mon.trangthai = "da_phuc_vu"
+    await db_session.commit()
+    qr = await client.post(f"/tables/{ban06['id']}/pay-qr")
+    assert qr.status_code == 200
+    assert qr.json()["qr_url"].startswith("https://")
 
 
 async def test_dong_ban_khi_dang_phuc_vu(client, menu_ids):

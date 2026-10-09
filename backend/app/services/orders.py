@@ -232,6 +232,16 @@ async def build_pay_qr(db: AsyncSession, ban_id: str) -> PayQrOut:
     items = await _bill_items(db, phieu_list)
     amount = sum(i.thanhtien for i in items)
 
+    # US-05 AC5: chỉ tạo QR khi mọi món đã hoàn thành (Đã phục vụ / Đã hủy) —
+    # đồng bộ ràng buộc phía khách (US-09 AC2); trả 409 để FE toast đúng spec
+    unfinished = [i for i in items if i.trangthai not in (DA_PHUC_VU, "da_huy")]
+    if unfinished:
+        raise ApiError(
+            409,
+            "ORDER_NOT_READY",
+            f"Bàn '{ban.tenban}' còn {len(unfinished)} món chưa hoàn thành, không thể tạo QR.",
+        )
+
     # Hóa đơn nháp 'chua_thanh_toan' — khách/quầy nhận diện bill qua hoadon_id trong nội dung CK
     hoadon = await get_or_create_draft_hoadon(db, ban, len(phieu_list), amount)
     await db.commit()

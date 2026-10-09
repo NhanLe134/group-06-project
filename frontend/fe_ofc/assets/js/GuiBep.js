@@ -21,8 +21,17 @@ function closeConfirm() { $('#confirm-modal').style.display = 'none'; }
 
 async function sendToKitchen() {
   if (!draft.length || draftHasOos()) return;
+
+  /* 1. Lập tức đóng popup xác nhận để tránh click trùng */
+  closeConfirm();
+
+  /* 2. Hiển thị popup hiệu ứng load trong lúc gửi dữ liệu xuống backend */
+  const sendingModal = $('#sending-modal');
+  if (sendingModal) sendingModal.style.display = 'grid';
+
+  let res = null; /* khai báo ngoài try — dùng ở popup thành công bên dưới */
   try {
-    await apiFetch('/orders', {
+    res = await apiFetch('/orders', {
       method: 'POST',
       body: JSON.stringify({
         table_name: tableName,
@@ -34,17 +43,21 @@ async function sendToKitchen() {
       }),
     });
   } catch (e) {
-    closeConfirm();
+    if (sendingModal) sendingModal.style.display = 'none';
     showApiError(e);
     return;
   }
+
+  /* 3. Tắt popup loading, reset giỏ nháp và mở popup thông báo thành công */
+  if (sendingModal) sendingModal.style.display = 'none';
   draft = [];
-  closeConfirm();
   closeDraft();
   renderStickyBar();
   renderMenu();   /* ADR-N06: giỏ đã trống → bộ đếm trên thẻ món về lại nút "+" cho vòng gọi mới */
   /* success-code / success-total / success-table là tùy chọn — popup vẫn phải mở dù phần tử bị xóa */
-  setText('#success-code', `Hóa đơn của ${tableName}`);
+  /* US-01 AC4: hệ thống sinh mã đơn → hiển thị mã phiếu vừa tạo (ADR-N14) */
+  setText('#success-code',
+    res?.phieuban_id ? `Mã đơn: ${res.phieuban_id}` : `Hóa đơn của ${tableName}`);
   setText('#success-total', fmtVND(draftTotal()));
   setText('#success-table', tableName);
   $('#success-modal').style.display = 'grid';
