@@ -18,8 +18,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.db import get_db
 from app.errors import ApiError
+from app.models import HoaDon
 from app.models.order import Ban
 from app.services import orders as service
+from app.services.orders import HOADON_CHUA_TT
 from app.ws.manager import CASHIER_CHANNEL, manager
 
 router = APIRouter(prefix="/sepay", tags=["sepay"])
@@ -59,9 +61,20 @@ def _fold(s: str) -> str:
 async def _find_table_by_sepay_content(
     db: AsyncSession, content: str | None, amount: int
 ) -> Ban | None:
-    """Tìm bàn theo nội dung chuyển khoản (VD: 'Ban 06'/'DH_BAN06' -> Bàn 06) hoặc số tiền."""
+    """Tìm bàn theo nội dung chuyển khoản (VD: 'Ban 06 - HD-...' -> Bàn 06) hoặc số tiền."""
     bans = (await db.execute(select(Ban))).scalars().all()
     normalized_content = _fold(content or "")
+
+    # 0. ƯU TIÊN: khớp hoadon_id trong nội dung (QR chứa 'Ban 06 - HD-...') —
+    # chính xác từng hóa đơn, không nhầm khi 2 bàn trùng tổng tiền (ADR-N16)
+    drafts = (
+        await db.execute(select(HoaDon).where(HoaDon.trangthai == HOADON_CHUA_TT))
+    ).scalars().all()
+    for hd in drafts:
+        if hd.hoadon_id and hd.hoadon_id.upper() in normalized_content:
+            ban = await db.get(Ban, hd.ban_id)
+            if ban is not None:
+                return ban
 
     # 1. Tìm theo mã tên bàn trùng trong nội dung (không phân biệt dấu)
     for ban in bans:
@@ -152,9 +165,12 @@ async def sepay_demo_simulation(ban_id: str, db: Db) -> dict[str, Any]:
     amount = sum(i.thanhtien for i in items)
 
     # Giả lập payload Webhook từ SePay (cùng format nội dung với QR thật)
+    draft = await service.get_draft_hoadon(db, ban.ban_id)
     sim_data = SepayWebhookIn(
         gateway="MBBank",
-        content=service.build_transfer_content(ban.tenban),
+        content=service.build_transfer_content(
+            ban.tenban, draft.hoadon_id if draft else None
+        ),
         transferAmount=amount,
     )
     return await sepay_webhook(sim_data, db)

@@ -27,6 +27,8 @@ from app.services import stock
 DA_PHUC_VU = "da_phuc_vu"
 DA_XONG = "da_xong"
 BAN_SAN_SANG, BAN_DANG_PHUC_VU, BAN_CHO_DON = 1, 2, 3
+# Hóa đơn nháp sinh lúc TẠO QR (ADR-N16); chỉ chốt 'da_thanh_toan' khi thu tiền
+HOADON_CHUA_TT = "chua_thanh_toan"
 
 
 async def get_ban(db: AsyncSession, tenban: str) -> Ban:
@@ -172,15 +174,50 @@ async def list_cashier_tables(db: AsyncSession) -> list[dict]:
     return out
 
 
-def build_transfer_content(tenban: str) -> str:
-    """Nội dung chuyển khoản SePay: 'Ban 06' (số bàn trong tên bàn).
+def build_transfer_content(tenban: str, hoadon_id: str | None = None) -> str:
+    """Nội dung chuyển khoản SePay: 'Ban 06 - HD-20261009-0001'.
 
-    Không đưa hoadon_id vào — hoadon chỉ sinh KHI thanh toán (ADR-N14),
-    lúc khách quét QR thì chưa tồn tại. Webhook khớp bàn theo chuỗi này
-    (so khớp không phân biệt dấu — xem sepay._find_table_by_sepay_content).
+    Số bàn giúp khách/quầy nhận ra bill; hoadon_id (hóa đơn nháp sinh lúc
+    tạo QR — ADR-N16) giúp webhook khớp CHÍNH XÁC từng hóa đơn, không nhầm
+    khi 2 bàn trùng tổng tiền. So khớp không phân biệt dấu — xem
+    sepay._find_table_by_sepay_content.
     """
     m = re.search(r"\d+", tenban)
-    return f"Ban {m.group()}" if m else f"DH_{tenban.replace(' ', '')}"
+    so_ban = m.group() if m else tenban.replace(" ", "")
+    return f"Ban {so_ban} - {hoadon_id}" if hoadon_id else f"Ban {so_ban}"
+
+
+async def get_draft_hoadon(db: AsyncSession, ban_id: str) -> HoaDon | None:
+    """Hóa đơn nháp 'chua_thanh_toan' mới nhất của bàn (sinh lúc tạo QR — ADR-N16)."""
+    rows = await db.execute(
+        select(HoaDon)
+        .where(HoaDon.ban_id == ban_id, HoaDon.trangthai == HOADON_CHUA_TT)
+        .order_by(HoaDon.hoadon_id.desc())  # id theo sequence tăng dần → mới nhất trước
+    )
+    return rows.scalars().first()
+
+
+async def get_or_create_draft_hoadon(
+    db: AsyncSession, ban: Ban, so_phieuban: int, tongtien: int
+) -> HoaDon:
+    """Lấy hóa đơn nháp của bàn, chưa có thì tạo (QR tạo lại không sinh hóa đơn trùng)."""
+    hoadon = await get_draft_hoadon(db, ban.ban_id)
+    if hoadon is not None:
+        # Cập nhật số tiền/phiếu mới nhất để khớp nếu khách gọi thêm món sau khi tạo QR
+        hoadon.so_phieuban = so_phieuban
+        hoadon.tongtien = tongtien
+        db.add(hoadon)
+        return hoadon
+    hoadon = HoaDon(
+        ban_id=ban.ban_id,
+        so_phieuban=so_phieuban,
+        tongtien=tongtien,
+        trangthai=HOADON_CHUA_TT,
+        thoigianthanhtoan=None,
+    )
+    db.add(hoadon)
+    await db.flush()
+    return hoadon
 
 
 async def build_pay_qr(db: AsyncSession, ban_id: str) -> PayQrOut:
@@ -194,8 +231,12 @@ async def build_pay_qr(db: AsyncSession, ban_id: str) -> PayQrOut:
     items = await _bill_items(db, phieu_list)
     amount = sum(i.thanhtien for i in items)
 
-    # Nội dung chuyển khoản SePay: Ban 06 (số bàn — khớp webhook)
-    des = build_transfer_content(ban.tenban)
+    # Hóa đơn nháp 'chua_thanh_toan' — khách/quầy nhận diện bill qua hoadon_id trong nội dung CK
+    hoadon = await get_or_create_draft_hoadon(db, ban, len(phieu_list), amount)
+    await db.commit()
+
+    # Nội dung chuyển khoản SePay: Ban 06 - HD-20261009-0001 (khớp chính xác từng bill)
+    des = build_transfer_content(ban.tenban, hoadon.hoadon_id)
     bank = settings.sepay_bank_code or "MBBank"
     acc = settings.sepay_account_no or "0123456789"
 
@@ -208,6 +249,7 @@ async def build_pay_qr(db: AsyncSession, ban_id: str) -> PayQrOut:
         table_name=ban.tenban,
         amount=amount,
         so_phieuban=len(phieu_list),
+        hoadon_id=hoadon.hoadon_id,
         qr_data=des,
         qr_url=sepay_qr_url,
     )
@@ -228,15 +270,17 @@ async def close_table(
     items = await _bill_items(db, phieu_list)
     tongtien = sum(i.thanhtien for i in items)
 
-    hoadon = HoaDon(
-        ban_id=ban.ban_id,
-        nhanvien_id=nhanvien_id,
-        so_phieuban=len(phieu_list),
-        tongtien=tongtien,
-        thoigianthanhtoan=func.now(),
-    )
-    db.add(hoadon)
-    await db.flush()
+    # Chốt hóa đơn nháp sinh lúc tạo QR (ADR-N16); chưa có (thanh toán tiền mặt) thì tạo mới
+    hoadon = await get_draft_hoadon(db, ban.ban_id)
+    if hoadon is None:
+        hoadon = HoaDon(ban_id=ban.ban_id)
+        db.add(hoadon)
+        await db.flush()
+    hoadon.nhanvien_id = nhanvien_id
+    hoadon.so_phieuban = len(phieu_list)
+    hoadon.tongtien = tongtien
+    hoadon.trangthai = "da_thanh_toan"
+    hoadon.thoigianthanhtoan = func.now()
     for phieu in phieu_list:
         phieu.hoadon_id = hoadon.hoadon_id
 

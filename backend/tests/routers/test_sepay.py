@@ -66,11 +66,36 @@ async def test_sepay_webhook_gach_no_tu_dong(client, setup_order):
 
 
 async def test_sepay_qr_noi_dung_chuyen_khoan_ban_so(client, setup_order):
-    """QR sinh nội dung CK 'Ban 06' (số bàn) — hoadon chỉ sinh khi thanh toán (ADR-N14)."""
+    """QR sinh nội dung CK 'Ban 06 - HD-...' — khách/quầy nhận diện đúng hóa đơn (ADR-N16)."""
     ban_id = setup_order
     qr = (await client.post(f"/tables/{ban_id}/pay-qr")).json()
-    assert qr["qr_data"] == "Ban 06"
-    assert "des=Ban%2006" in qr["qr_url"]
+    assert qr["hoadon_id"].startswith("HD")
+    assert qr["qr_data"] == f"Ban 06 - {qr['hoadon_id']}"
+    assert "des=Ban%2006%20-%20" in qr["qr_url"]
+
+
+async def test_sepay_webhook_khop_hoadon_id(client, setup_order):
+    """Webhook khớp bàn qua hoadon_id trong nội dung — cả khi nội dung không nhắc tên bàn."""
+    ban_id = setup_order
+    qr = (await client.post(f"/tables/{ban_id}/pay-qr")).json()
+
+    payload = {
+        "id": 88888,
+        "gateway": "MBBank",
+        "content": f"chuyen tien theo HD {qr['hoadon_id']}",
+        "transferAmount": 250000,
+    }
+    res = await client.post("/sepay/webhook", json=payload)
+    assert res.status_code == 200
+    assert "Bàn 06" in res.json()["message"]
+
+
+async def test_sepay_close_tai_su_dung_hoadon_nhap(client, setup_order):
+    """Thanh toán sau khi tạo QR → CHỐT hóa đơn nháp chứ không sinh hóa đơn thứ 2 (ADR-N16)."""
+    ban_id = setup_order
+    qr = (await client.post(f"/tables/{ban_id}/pay-qr")).json()
+    close = (await client.post(f"/tables/{ban_id}/close")).json()
+    assert close["hoadon_id"] == qr["hoadon_id"]
 
 
 async def test_sepay_demo_simulation_endpoint(client, setup_order):

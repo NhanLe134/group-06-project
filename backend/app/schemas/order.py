@@ -64,6 +64,7 @@ class PayQrOut(BaseModel):
     table_name: str
     amount: int
     so_phieuban: int
+    hoadon_id: str
     qr_data: str
     qr_url: str
 

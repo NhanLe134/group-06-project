@@ -249,6 +249,8 @@
 .payer-amount { font-weight: 800; font-size: 18px; color: #EA580C; font-variant-numeric: tabular-nums; }
 .payer-body { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
 .qr-img { width: 150px; height: 150px; border-radius: 8px; border: 1px solid #E2E8F0; background: #fff; }
+.qr-content { margin-top: 10px; font-size: 12px; color: var(--color-text-muted); text-align: center; }
+.qr-content b { color: var(--color-text-main); font-size: 13px; letter-spacing: 0.3px; }
 .qr-fallback {
   width: 150px; height: 150px; border: 2px dashed #CBD5E1; border-radius: 8px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;

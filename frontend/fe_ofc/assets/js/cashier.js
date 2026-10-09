@@ -290,6 +290,7 @@ function renderDetailPanel() {
         </div>
         <div class="payer-body">
           <img class="qr-img" alt="Mã QR thanh toán" src="${esc(qr.qr_url)}">
+          <p class="qr-content">Nội dung CK: <b>${esc(qr.qr_data)}</b></p>
         </div>
       </div>
       <button class="btn-confirm-pay" id="btn-confirm-pay" style="margin-top:14px; width:100%;">
