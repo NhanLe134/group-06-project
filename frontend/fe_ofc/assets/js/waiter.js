@@ -1,6 +1,10 @@
 let tables = [];
 
 async function loadTables() {
+    if (tables.length === 0) {
+        const grid = document.getElementById('table-grid');
+        if (grid) grid.innerHTML = '<div style="grid-column: 1 / -1; padding: 64px 24px; text-align: center;"><i class="ph-duotone ph-spinner-gap" style="font-size: 48px; color: var(--color-primary); margin-bottom: 16px; animation: spin 1s linear infinite;"></i><h3 style="margin:0; font-size: 18px; color: #1E293B; font-weight: 800;">Đang kết nối hệ thống...</h3><p style="margin: 8px 0 0 0; font-size: 14px; color: #64748B;">Vui lòng chờ trong giây lát (có thể mất tới 50s nếu máy chủ đang khởi động lại).</p><style>@keyframes spin { 100% { transform: rotate(360deg); } }</style></div>';
+    }
     try {
         const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/waiter/tables`);
         if (!res.ok) throw new Error('Lỗi tải sơ đồ bàn');
@@ -15,6 +19,8 @@ async function loadTables() {
         }
     } catch (err) {
         console.error(err);
+        const grid = document.getElementById('table-grid');
+        if (grid) grid.innerHTML = '<div style="grid-column: 1 / -1; padding: 64px 24px; text-align: center;"><i class="ph-duotone ph-warning-circle" style="font-size: 48px; color: #E11D48; margin-bottom: 16px;"></i><h3 style="margin:0; font-size: 18px; color: #1E293B; font-weight: 800;">Không thể tải Sơ đồ bàn</h3><p style="margin: 8px 0 0 0; font-size: 14px; color: #64748B;">Máy chủ không phản hồi. Vui lòng kiểm tra lại mạng hoặc báo lại quản lý.</p></div>';
         showToast('Lỗi kết nối', 'Không thể tải Sơ đồ bàn từ Server', 'danger');
     }
 }
