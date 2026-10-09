@@ -133,7 +133,7 @@ async def test_kitchen_cancel_returns_stock(
     và soluongton (đồ uống)."""
     bo = await _ingredient(client, "Thịt bò", 1)
     mon = await _dish(db_session, "Bò xào")
-    coca = await _dish(db_session, "Coca", phanloai="Đồ uống", soluongton=10)
+    banh = await _dish(db_session, "Bánh flan", phanloai="Tráng miệng", soluongton=10)
     await _recipe(client, mon, **{bo: 0.2})
     items = (
         await client.post(
@@ -142,21 +142,21 @@ async def test_kitchen_cancel_returns_stock(
                 "table_name": "Bàn 01",
                 "items": [
                     {"thucdon_id": mon.id, "soluong": 2},
-                    {"thucdon_id": coca.id, "soluong": 3},
+                    {"thucdon_id": banh.id, "soluong": 3},
                 ],
             },
         )
     ).json()["items"]
     assert await _stock(client, bo) == pytest.approx(0.6)
-    assert (await _menu(client, coca))["stock"] == 7
+    assert (await _menu(client, banh))["stock"] == 7
 
-    for dish, item in zip((mon, coca), items, strict=True):
+    for dish, item in zip((mon, banh), items, strict=True):
         assert (await client.post(f"/menu/items/{dish.id}/out-of-stock")).status_code == 200
         resp = await client.post(f"/kds/items/{item['id']}/cancel-out-of-stock")
         assert resp.status_code == 200 and resp.json()["trangthai"] == "da_huy"
 
     assert await _stock(client, bo) == pytest.approx(1.0)
-    assert (await _menu(client, coca))["stock"] == 10
+    assert (await _menu(client, banh))["stock"] == 10
 
 
 async def test_drink_count_goes_down_on_order(

@@ -72,6 +72,8 @@ async def get_all_tables(db: AsyncSession) -> list[WaiterTableOut]:
                     fe_status = "pending"
                     status_text = "Chờ nấu"
 
+                    is_drink = True if "uống" in (mon.phanloai or "").lower() else False
+
                     if db_status == "cho_nau":
                         fe_status = "pending"
                         status_text = "Chờ nấu"
@@ -80,14 +82,12 @@ async def get_all_tables(db: AsyncSession) -> list[WaiterTableOut]:
                         status_text = "Đang nấu"
                     elif db_status == "da_xong":
                         fe_status = "ready"
-                        status_text = "Chưa phục vụ"  # Bếp báo xong, chờ Waiter bưng
+                        status_text = "Cần phục vụ" if is_drink else "Chưa phục vụ"
                     elif db_status == "da_phuc_vu":
                         fe_status = "served"
                         status_text = "Đã phục vụ"
                     elif db_status == "da_huy":
                         continue  # Bỏ qua món đã hủy
-
-                    is_drink = True if "uống" in (mon.phanloai or "").lower() else False
 
                     items_out.append(
                         WaiterItemOut(
