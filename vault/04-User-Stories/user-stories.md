@@ -87,6 +87,7 @@
 - Story phụ thuộc: US-03 (Bếp báo OOS trên KDS) phải sẵn sàng để có dữ kiện tồn kho real-time; US-02 (Voice) mở rộng trực tiếp trên Order Draft của US-01.
 
 **Estimate:** 3 points
+**Design link:** [Figma CMP-PROD-CARD, CMP-NOTE-MODAL](docs/05-Design/figma-handoff.md)
 
 ## US-02 - Dùng giọng nói AI (Voice) để gọi món bổ sung
 
@@ -129,6 +130,7 @@ Trải nghiệm rảnh tay có rủi ro nhận diện sai do môi trường ồn
 - Cần làm sau khi US-01 (Giỏ hàng) hoàn thiện.
 
 **Estimate:** 3 points
+**Design link:** [Figma CMP-VOICE-BTN, CMP-DRAFT-SHEET, CMP-CONFIRM-DLG, CMP-AMBIG-MODAL](docs/05-Design/figma-handoff.md)
 
 ## US-05 - Thanh toán hóa đơn qua QR (Toàn bộ)
 
@@ -159,6 +161,7 @@ Trải nghiệm rảnh tay có rủi ro nhận diện sai do môi trường ồn
 - API Cổng thanh toán MoMo/VNPAY (Sandbox Gateway); WebSocket sự kiện xác nhận thanh toán.
 
 **Estimate:** 1 point
+**Design link:** [Figma SCR-CASHIER-MAIN, CMP-CASHIER-TABLE-CARD, CMP-CASHIER-PAY-PANEL, CMP-SIM-TOGGLE, SCR-BILL-QR](docs/05-Design/figma-handoff.md)
 
 ## US-03 - Bếp nhận Order và Báo hoàn thành trên KDS
 
@@ -245,6 +248,7 @@ Then giao diện hiển thị lỗi kết nối có thể phục hồi và lưu 
 - Story phụ thuộc: Phụ thuộc vào US-03 (Bếp bấm Done trên KDS qua WebSocket thì US-04 mới nhận được thông báo); là tiền đề cho US-05 (Thanh toán sau khi các món đã hoàn tất phục vụ).
 
 **Estimate:** 2 points
+**Design link:** [Figma CMP-WAITER-ALERT, SCR-TABLE-MAP](docs/05-Design/figma-handoff.md)
 
 ---
 
@@ -278,6 +282,7 @@ Chức năng đọc số liệu thống kê giúp quản lý ra quyết định 
 - Database Aggregation API (truy vấn doanh thu).
 
 **Estimate:** 2 points
+**Design link:** [Figma SCR-TABLE-MAP](docs/05-Design/figma-handoff.md)
 
 ## US-07 - Quản lý chỉnh sửa Menu (CMS)
 
@@ -306,6 +311,7 @@ Chức năng đọc số liệu thống kê giúp quản lý ra quyết định 
 - Role-based Access Control (RBAC) Middleware.
 
 **Estimate:** 2 points
+**Design link:** [Figma SCR-TABLE-MAP](docs/05-Design/figma-handoff.md)
 
 ## US-08 - Đối soát Tồn kho (Inventory Reconciliation)
 
@@ -334,6 +340,7 @@ Quy trình chốt ca kho rất quan trọng để tránh thất thoát và chu�
 - Database Inventory API.
 
 **Estimate:** 1 point
+**Design link:** [Figma CMP-KDS-STOCK](docs/05-Design/figma-handoff.md)
 
 ---
 
@@ -376,3 +383,4 @@ Quy trình chốt ca kho rất quan trọng để tránh thất thoát và chu�
 - Component: BillView (full-screen), ProvisionalBill, PaymentRequestModal.
 
 **Estimate:** 2 points
+**Design link:** [Figma SCR-BILL-VIEW, CMP-PAY-MODAL](docs/05-Design/figma-handoff.md)

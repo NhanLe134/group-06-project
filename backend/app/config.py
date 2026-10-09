@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     # true để bật endpoint demo (POST /kds/demo/orders) khi chưa có luồng đặt món thật.
     demo_mode: bool = False
 
+    # Mức log: DEBUG | INFO | WARNING | ERROR (app/logging_setup.py)
+    log_level: str = "INFO"
+
     jwt_secret: str = "change-me"
     ai_api_key: str = ""
 
@@ -26,6 +29,12 @@ class Settings(BaseSettings):
     # Tuyệt đối không trả về client, không đưa vào frontend.
     supabase_url: str = ""
     supabase_secret_key: str = ""
+
+    # SePay VietQR + Webhook gạch nợ tự động (ADR-N15)
+    sepay_bank_code: str = "MBBank"
+    sepay_account_no: str = "0123456789"
+    sepay_account_name: str = "NHA HANG SMART ORDERING"
+    sepay_webhook_api_key: str = ""
 
     @property
     def async_database_url(self) -> str:

@@ -133,6 +133,34 @@ npm run build
 
 ---
 
+## 7. Xem log backend
+
+Backend ghi log ra console (cửa sổ chạy `uvicorn`; khi deploy: tab **Logs** của dịch vụ trên Render). Cấu hình: `backend/app/logging_setup.py`, mức log bằng biến `LOG_LEVEL` (`DEBUG` | `INFO` | `WARNING` | `ERROR`, mặc định `INFO`).
+
+Mỗi dòng: `giờ mức module sự_kiện key=value ...`, ví dụ:
+
+```
+2026-10-09 11:02:05 INFO app.orders order_sent_to_kitchen ban="Bàn 01" items=2 lines=1
+2026-10-09 11:02:05 INFO app.stock stock_reserved dishes=MON001 ingredients=NL001:-0.4
+2026-10-09 11:02:05 INFO app.kds kds_status item=CTP-...-0004 ban="Bàn 01" mon=Coca soluong=2 trangthai=da_xong
+2026-10-09 11:02:05 INFO app.http api_error method=POST path=/orders status=409 code=ITEM_OUT_OF_STOCK
+2026-10-09 11:02:05 ERROR app.http unhandled_error method=GET path=/kds/items error=RuntimeError  (+ traceback)
+```
+
+| Module | Ghi gì |
+|---|---|
+| `app.http` | Mỗi request (phương thức, đường dẫn, mã trạng thái, ms); lỗi nghiệp vụ `api_error`; lỗi 500 `unhandled_error` kèm traceback |
+| `app.orders` | Khách gửi bếp |
+| `app.stock` | Trừ kho / từ chối do thiếu hàng / hoàn kho |
+| `app.kds` | Bếp đổi trạng thái, tách suất, xóa món hết hàng |
+| `app.menu` | Món đổi còn ↔ hết (báo hết, mở bán, hết nguyên liệu) |
+| `app.ws` | Client WebSocket bị ngắt |
+
+Lọc nhanh (PowerShell): `uv run uvicorn app.main:app --reload 2>&1 | Select-String "app.kds"`.
+**Không** ghi secret, chuỗi kết nối DB, PIN hay ghi chú khách nhập.
+
+---
+
 ## Cấu trúc thư mục chính
 
 ```

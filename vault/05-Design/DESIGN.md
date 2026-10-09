@@ -11,16 +11,16 @@
 
 | Token Name | Token Value | Usage / Application (Mục đích sử dụng) |
 | :--- | :---: | :--- |
-| `color.primary` | `#0D5C75` | Nút bấm chính (Primary CTA), trạng thái hoạt động của Trợ lý Voice AI. |
-| `color.success` | `#15803D` | Thông báo thành công, đơn hàng đã chốt, trạng thái "Đã xong/Đã phục vụ". |
-| `color.warning` | `#D97706` | Trạng thái làm rõ câu lệnh (Clarification), cảnh báo Bếp chờ quá 15 phút. |
-| `color.danger` | `#DC2626` | Trạng thái món hết hàng (Out of Stock), hủy món, báo lỗi mạng. |
-| `color.neutral.bg` | `#F8FAFC` | Màu nền ứng dụng di động di động (Mobile App background). |
+| `color.primary` | `#FF5A36` | Nút bấm chính (Primary CTA), thương hiệu Smart Ordering, nút Micro Voice AI, tab active. |
+| `color.success` | `#15803D` | Thông báo thành công, đơn hàng đã chốt, trạng thái "Bàn trống / Đã phục vụ". |
+| `color.warning` | `#D97706` | Trạng thái làm rõ câu lệnh (Clarification), cảnh báo Bếp chờ quá 15 phút, Bàn cần dọn. |
+| `color.danger` | `#DC2626` | Trạng thái món hết hàng (Out of Stock), Bàn đang ăn (Occupied), hủy món, báo lỗi mạng. |
+| `color.neutral.bg` | `#F8FAFC` | Màu nền ứng dụng di động (Mobile App background). |
 | `color.neutral.card` | `#FFFFFF` | Nền thẻ món ăn, nền giỏ hàng Order Draft và Modal dialog. |
 | `color.text.main` | `#0F172A` | Văn bản chính, tiêu đề món ăn, tổng tiền. |
 | `color.text.muted` | `#64748B` | Mô tả phụ, ghi chú dị ứng, thời gian tạo đơn. |
 | `radius.md` | `12px` | Bo góc cho Thẻ món ăn (Cards), Ô nhập liệu (Inputs), Modal dialogs. |
-| `radius.full` | `9999px` | Bo góc cho Nút bấm Micro (Voice FAB), Nhãn trạng thái (Status Pills). |
+| `radius.full` | `9999px` | Bo góc cho Nút bấm Micro (Voice FAB), Nhãn trạng thái (Status Pills), nút CTA. |
 | `space.base` | `4px scale` | Hệ tỷ lệ khoảng cách: 4px / 8px / 12px / 16px / 24px / 32px. |
 | `type.heading` | `20px / 28px` | Tiêu đề màn hình, tên món ăn nổi bật (Font Weight: 700). |
 | `type.body` | `16px / 24px` | Văn bản nội dung chính, danh sách món trong giỏ (Font Weight: 400). |
@@ -38,6 +38,12 @@
 | **CartItem** | `default`, `updating`, `error` | Vô hiệu hóa các thao tác bấm liên tục (Debounce mutation) khi đang cập nhật số lượng món trong giỏ. |
 | **OrderDraft** | `review`, `changed`, `expired` | Hiển thị rõ dòng nhãn màu đỏ *"Bản nháp - Chưa gửi bếp"* ở đầu giỏ hàng cho đến khi bấm nút xác nhận chốt đơn. |
 | **ConfirmDialog** | `default`, `loading`, `error` | Bẫy con trỏ phím (`Focus trap`); bấm phím `Enter` để xác nhận gửi bếp; bấm phím `Escape` để hủy bỏ modal. |
+| **NoteModal** (`CMP-NOTE-MODAL`) | `default`, `opened`, `saved`, `cleared` | Modal ghi chú món ăn (`#note-modal`, US-01 / ADR-N01); cho phép chọn chip ghi chú nhanh (không hành, nhiều cay...) hoặc gõ tự do; lưu ghi chú vào giỏ hàng. |
+| **BillView** (`SCR-BILL-VIEW`) | `hidden`, `visible`, `requested` | Màn hình Hóa đơn tạm tính (`#bill-view`, US-09); xem danh sách món đã gọi, tổng tiền và bấm gửi "Yêu cầu thanh toán" tới Thu ngân. |
+| **PaymentRequestModal** (`CMP-PAY-MODAL`) | `default`, `requested`, `confirmed` | Modal thông báo trạng thái "Đã gửi yêu cầu thanh toán" (`#pay-modal`, US-09) kèm icon thông báo phản hồi từ thu ngân. |
+| **CashierTableCard** (`CMP-CASHIER-TABLE-CARD`) | `tc-green` (Trống), `tc-red` (Đang ăn), `tc-amber` (Yêu cầu thanh toán), `active` | Thẻ bàn Thu ngân (`.tc-card`, US-05); hiển thị số bàn, số lượng món, tổng tiền và đổi màu thẻ tương ứng với trạng thái bàn. |
+| **PaymentDetailPanel** (`CMP-CASHIER-PAY-PANEL`) | `empty`, `selected`, `processing`, `paid` | Bảng chi tiết hóa đơn Thu ngân (`#detail-panel`, US-05); hiển thị chi tiết món, chọn PTTT (Tiền mặt/QR MoMo), bấm in hóa đơn và đóng bàn. |
+| **ErrorSimToggle** (`CMP-SIM-TOGGLE`) | `checked`, `unchecked` | Ô checkbox mô phỏng lỗi cổng thanh toán AC5 (`#err-sim`, US-05); phục vụ kiểm thử luồng xử lý ngoại lệ khi thanh toán thất bại. |
 | **KDSTicketCard** | `pending`, `cooking`, `ready`, `overdue` | Thẻ đơn tại Bếp; tự động đổi nền nhấp nháy Đỏ khi thời gian chờ quá 15 phút (`REQ-08`). |
 | **WaiterAlertCard** | `ready`, `served` | Phát âm thanh chuông báo khi có món từ Bếp hoàn tất (`REQ-07`); nút bấm lớn `Đã phục vụ` kích thước $\ge 44\text{px}$. |
 

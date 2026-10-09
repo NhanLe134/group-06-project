@@ -31,8 +31,16 @@ Bảng dưới đây hỗ trợ Lập trình viên (Developers) và QA bấm th�
 | `CMP-DRAFT-SHEET`| OrderDraft (Giỏ hàng bản nháp, nhãn đỏ cảnh báo) | `US-02` (Rà soát bản nháp giỏ hàng) | `REQ-02`, `ADR-003` |
 | `CMP-CONFIRM-DLG`| ConfirmDialog (Popup Explicit Confirmation) | `US-02` (Xác nhận gửi Bếp) | `REQ-02`, `BR-RO-03` |
 | `CMP-AMBIG-MODAL`| AmbiguousModal (Popup hỏi chọn món mơ hồ) | `US-01` (Hỏi lại làm rõ loại món) | `BR-RO-04`, `ADR-004` |
+| `CMP-NOTE-MODAL` | NoteModal (Modal ghi chú món: không hành, cay...) | `US-01` (Ghi chú món ăn) | `REQ-01`, `ADR-N01` |
+| `SCR-BILL-VIEW`  | BillViewSheet (Trang xem Hóa đơn tạm tính) | `US-09` (Xem hóa đơn & yêu cầu trả tiền) | `REQ-03`, `REQ-04` |
+| `CMP-PAY-MODAL`  | PaymentRequestModal (Popup báo đã gửi Yêu cầu trả tiền) | `US-09` (Yêu cầu thanh toán) | `REQ-03` |
+| `SCR-CASHIER-MAIN`| CashierMainScreen (Màn hình Thu ngân chính) | `US-05` (Thu ngân thanh toán & đóng bàn) | `REQ-05`, `REQ-06` |
+| `CMP-CASHIER-TABLE-CARD` | CashierTableCard (Thẻ bàn 3 màu: Trống, Ăn, Trả tiền) | `US-05` (Quản lý bàn Thu ngân) | `REQ-05` |
+| `CMP-CASHIER-PAY-PANEL` | PaymentDetailPanel (Bảng chi tiết thanh toán & in bill) | `US-05` (Thanh toán Tiền mặt / MoMo) | `REQ-05`, `REQ-06` |
+| `CMP-SIM-TOGGLE` | ErrorSimToggle (Checkbox mô phỏng lỗi thanh toán) | `US-05` (Kiểm thử ngoại lệ AC5) | `REQ-05` |
 | `CMP-KDS-TICKET` | KDSTicketCard (Thẻ đơn KDS, 3 trạng thái, timer đỏ) | `US-04` (Bếp KDS nhận & xử lý đơn) | `REQ-08` |
 | `CMP-KDS-STOCK`  | KDSStockControl (Nút công tắc báo món Hết hàng) | `US-04` (Bếp báo hết món) | `REQ-09` |
 | `CMP-WAITER-ALERT`| WaiterAlertCard (Thông báo món sẵn sàng & nút Đã phục vụ) | `US-05` (Phục vụ dọn món tại bàn) | `REQ-05`, `REQ-07` |
 | `SCR-BILL-QR`   | Bill & QR Payment Modal (Mã QR MoMo & Split Bill) | `US-06` (Thanh toán QR & chia tiền) | `REQ-03`, `REQ-04` |
 | `SCR-TABLE-MAP`  | TableSessionMap (Sơ đồ màu bàn & Manager Void) | `US-07` (Sơ đồ bàn & Manager Void) | `REQ-06`, `REQ-10` |
+
