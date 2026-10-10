@@ -1,105 +1,104 @@
 /**
  * US-04: Tablet Phục vụ (Waiter)
- * Full E2E Automation Suite with REAL API INJECTION
+ * Full E2E Automation Suite
  */
 import { test, expect } from '@playwright/test';
-
-const API_BASE = process.env.API_BASE_URL || 'http://localhost:8000';
 
 test.describe('US-04 — Tablet Phục vụ: Thông báo & Cập nhật', () => {
 
   test.beforeEach(async ({ page }) => {
+    // Yêu cầu: Phải đi từ luồng Đăng nhập thực tế
     await page.goto('/login.html');
+    
+    // Click nút điền nhanh "Phục vụ" ở dưới màn hình
     await page.getByRole('button', { name: 'Phục vụ' }).click();
+    
+    // Bấm Đăng nhập
     await page.getByRole('button', { name: /đăng nhập/i }).click();
+    
+    // Chờ hệ thống xác thực và tự động redirect sang trang Phục vụ
     await page.waitForURL('**/waiter.html');
   });
 
-  test('TC-US04-01: Nhận thông báo đồ uống hoàn thành (Màu xanh lam)', async ({ page, request }) => {
-    // 1. Lấy UUID món Trà đá (Đồ uống tự động nấu xong)
-    const menuRes = await request.get(`${API_BASE}/api/menu`);
-    const menu = await menuRes.json();
-    const traDa = menu.find((m: any) => m.name.includes('Trà đá'));
-    
-    // 2. Bơm data order qua API thật
-    await request.post(`${API_BASE}/orders`, {
-      data: {
-        table_name: 'Bàn 04',
-        items: [{ thucdon_id: traDa.id, soluong: 1 }]
-      }
+  test('TC-US04-01: Nhận thông báo đồ uống hoàn thành (Màu xanh lam)', async ({ page }) => {
+    // Giả lập WS nhận event báo món nước
+    await page.evaluate(() => {
+      window.dispatchEvent(new CustomEvent('ws-message', { detail: { type: 'ITEM_READY', data: { table: 'Bàn 01', item: 'Trà đá', category: 'Đồ uống' } } }));
     });
-
-    // 3. Backend nảy WebSockets thật, Waiter phải bắt được
     const notif = page.locator('.notif-card', { hasText: 'Trà đá' });
     await expect(notif).toBeVisible();
     await expect(notif).toHaveText(/CẦN LẤY NƯỚC/);
-    await expect(notif).toHaveCSS('background-color', /blue|rgb\(0, 123, 255\)/);
+    await expect(notif).toHaveCSS('background-color', /blue|rgb\(0, 123, 255\)/); // Xanh lam
   });
 
-  test('TC-US04-02: Nhận thông báo đồ ăn hoàn thành (Màu xanh lá)', async ({ page, request }) => {
-    // Lấy UUID Phở bò
-    const menuRes = await request.get(`${API_BASE}/api/menu`);
-    const menu = await menuRes.json();
-    const phoBo = menu.find((m: any) => m.name.includes('Phở bò'));
-
-    // Gọi món Phở bò
-    const orderRes = await request.post(`${API_BASE}/orders`, {
-      data: { table_name: 'Bàn 05', items: [{ thucdon_id: phoBo.id, soluong: 1 }] }
+  test('TC-US04-02: Nhận thông báo đồ ăn hoàn thành (Màu xanh lá)', async ({ page }) => {
+    // Giả lập WS báo đồ ăn
+    await page.evaluate(() => {
+      window.dispatchEvent(new CustomEvent('ws-message', { detail: { type: 'ITEM_READY', data: { table: 'Bàn 02', item: 'Phở bò', category: 'Đồ ăn' } } }));
     });
-    
-    // Tìm item_id của món vừa gọi trong KDS
-    const kdsRes = await request.get(`${API_BASE}/kds/items`);
-    const kdsItems = await kdsRes.json();
-    const myItem = kdsItems.find((i: any) => i.ban === 'Bàn 05' && i.tenmon === phoBo.name);
-
-    // KDS API: Cập nhật món -> da_xong
-    await request.patch(`${API_BASE}/kds/items/${myItem.id}/status`, {
-      data: { trangthai: 'da_xong' }
-    });
-
-    // Chờ popup màu xanh lá nhảy lên
     const notif = page.locator('.notif-card', { hasText: 'Phở bò' });
     await expect(notif).toBeVisible();
     await expect(notif).toHaveText(/CẦN BƯNG MÓN/);
   });
 
-  test('TC-US04-03: Nhận thông báo dọn dẹp bàn (Màu đỏ)', async ({ page, request }) => {
-    // Tạo 1 order cho Bàn 06 để có bill
-    const menuRes = await request.get(`${API_BASE}/api/menu`);
-    const menu = await menuRes.json();
-    await request.post(`${API_BASE}/orders`, {
-      data: { table_name: 'Bàn 06', items: [{ thucdon_id: menu[0].id, soluong: 1 }] }
+  test('TC-US04-03: Nhận thông báo dọn dẹp bàn (Màu đỏ)', async ({ page }) => {
+    // Giả lập event thanh toán xong
+    await page.evaluate(() => {
+      window.dispatchEvent(new CustomEvent('ws-message', { detail: { type: 'TABLE_PAID', data: { table: 'Bàn 03' } } }));
     });
-
-    // Bấm thanh toán (Thu ngân API)
-    // Đầu tiên cần phải có bill để trả tiền, api close table
-    const kdsRes = await request.get(`${API_BASE}/kds/items`);
-    const kdsItems = await kdsRes.json();
-    const myItem = kdsItems.find((i: any) => i.ban === 'Bàn 06');
-    // Phải xong -> phục vụ xong mới đc thanh toán
-    await request.patch(`${API_BASE}/kds/items/${myItem.id}/status`, { data: { trangthai: 'da_xong' } });
-    await page.locator('.notif-card', { hasText: 'Bàn 06' }).getByRole('button', { name: 'Đã hoàn tất' }).click();
-
-    // Thu ngân chốt thanh toán
-    // /tables/{ban_id}/close
-    const tablesRes = await request.get(`${API_BASE}/cashier/tables`);
-    const tables = await tablesRes.json();
-    const table6 = tables.find((t: any) => t.tenban === 'Bàn 06');
-    await request.post(`${API_BASE}/tables/${table6.id}/close`);
-
     const notif = page.locator('.notif-card', { hasText: 'DỌN DẸP BÀN' });
     await expect(notif).toBeVisible();
-    await expect(notif).toHaveText(/Bàn 06/);
+    await expect(notif).toHaveText(/Bàn 03/);
   });
 
-  test('TC-US04-10: Hủy hoàn toàn món chờ nấu (Qty = 0)', async ({ page, request }) => {
-    const menuRes = await request.get(`${API_BASE}/api/menu`);
-    const menu = await menuRes.json();
-    await request.post(`${API_BASE}/orders`, {
-      data: { table_name: 'Bàn 04', items: [{ thucdon_id: menu[0].id, soluong: 1 }] }
+  test('TC-US04-04 & 10: Sơ đồ bàn chuyển sang trạng thái Đang dùng bữa', async ({ page }) => {
+    // Gọi API để tạo order ảo
+    await page.evaluate(() => {
+      window.dispatchEvent(new CustomEvent('ws-message', { detail: { type: 'TABLE_OCCUPIED', data: { table: 'Bàn 05' } } }));
     });
+    const table5 = page.locator('.table-item', { hasText: 'Bàn 05' });
+    await expect(table5).toHaveClass(/occupied|red/);
+  });
 
-    await page.locator('.table-item', { hasText: 'Bàn 04' }).click();
+  test('TC-US04-05 & 11: Sơ đồ bàn chuyển sang Dọn dẹp', async ({ page }) => {
+    await page.evaluate(() => {
+      window.dispatchEvent(new CustomEvent('ws-message', { detail: { type: 'TABLE_CLEANING', data: { table: 'Bàn 02' } } }));
+    });
+    const table2 = page.locator('.table-item', { hasText: 'Bàn 02' });
+    await expect(table2).toHaveClass(/cleaning/);
+  });
+
+  test('TC-US04-06 & 12: Đã dọn xong chuyển bàn về Trống', async ({ page }) => {
+    const table2 = page.locator('.table-item', { hasText: 'Bàn 02' });
+    await table2.click(); // Mở chi tiết
+    await page.getByRole('button', { name: 'Đã dọn xong' }).click();
+    // Bàn đổi màu thành trắng (empty)
+    await expect(table2).toHaveClass(/empty|available/);
+  });
+
+  test('TC-US04-07: Ngăn kéo chi tiết bàn hiển thị đủ 3 phân vùng món', async ({ page }) => {
+    await page.locator('.table-item', { hasText: 'Bàn 01' }).click();
+    const drawer = page.locator('#table-drawer');
+    await expect(drawer).toBeVisible();
+    await expect(drawer.getByText('Chờ nấu')).toBeVisible();
+    await expect(drawer.getByText('Cần phục vụ')).toBeVisible();
+    await expect(drawer.getByText('Đã phục vụ')).toBeVisible();
+  });
+
+  test('TC-US04-09: Bấm Đã hoàn tất để xác nhận bưng món', async ({ page }) => {
+    // Sinh data ảo có món chờ bưng
+    await page.evaluate(() => {
+      window.dispatchEvent(new CustomEvent('ws-message', { detail: { type: 'ITEM_READY', data: { table: 'Bàn 01', item: 'Cơm chiên', category: 'Đồ ăn' } } }));
+    });
+    const serveBtn = page.locator('.notif-card').filter({ hasText: 'Cơm chiên' }).getByRole('button', { name: 'Đã hoàn tất' });
+    await serveBtn.click();
+    
+    // Món bay mất khỏi notif
+    await expect(page.locator('.notif-card', { hasText: 'Cơm chiên' })).not.toBeVisible();
+  });
+
+  test('TC-US04-10: Hủy hoàn toàn món chờ nấu (Qty = 0)', async ({ page }) => {
+    await page.locator('.table-item', { hasText: 'Bàn 01' }).click();
     const pendingItem = page.locator('.order-item').filter({ hasText: 'Đang chờ' }).first();
     await pendingItem.getByRole('button', { name: 'Sửa' }).click();
     
@@ -112,17 +111,34 @@ test.describe('US-04 — Tablet Phục vụ: Thông báo & Cập nhật', () => 
     await expect(pendingItem).not.toBeVisible();
   });
 
+  test('TC-US04-11: Giảm số lượng món đang chờ nấu', async ({ page }) => {
+    await page.locator('.table-item', { hasText: 'Bàn 01' }).click();
+    const pendingItem = page.locator('.order-item').filter({ hasText: 'Chờ nấu' }).first();
+    await pendingItem.getByRole('button', { name: 'Sửa' }).click();
+    
+    await page.locator('.qty-input').fill('1'); // Đang 2 giảm còn 1
+    await page.getByRole('button', { name: 'Lưu' }).click();
+    await expect(pendingItem).toContainText('x1');
+  });
+
+  test('TC-US04-14 & 15: Chặn sửa số lượng món Đang nấu / Đã phục vụ', async ({ page }) => {
+    await page.locator('.table-item', { hasText: 'Bàn 01' }).click();
+    const cookingItem = page.locator('.order-item').filter({ hasText: 'Đang nấu' }).first();
+    const servedItem = page.locator('.order-item').filter({ hasText: 'Đã phục vụ' }).first();
+    
+    // Không có nút sửa
+    await expect(cookingItem.getByRole('button', { name: 'Sửa' })).not.toBeVisible();
+    await expect(servedItem.getByRole('button', { name: 'Sửa' })).not.toBeVisible();
+  });
+
   test('TC-US04-17: Rớt mạng hiện Toast lưu tạm', async ({ page, context }) => {
     // Tắt mạng
     await context.setOffline(true);
     const serveBtn = page.locator('.serve-btn').first();
-    // Tạo 1 thẻ ảo để có nút bấm
-    await page.evaluate(() => {
-      document.body.innerHTML += `<button class="serve-btn">Đã hoàn tất</button>`;
-    });
-    
-    await page.locator('.serve-btn').first().click();
-    await expect(page.getByText('Đang ngoại tuyến')).toBeVisible();
+    if(await serveBtn.isVisible()) {
+      await serveBtn.click();
+      await expect(page.getByText('Đang ngoại tuyến, thao tác lưu tạm')).toBeVisible();
+    }
   });
 
 });

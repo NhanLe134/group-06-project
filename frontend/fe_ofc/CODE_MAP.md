@@ -35,7 +35,7 @@
 | Món hết hàng xử lý thế nào? (REQ-09) | ThucDon.js + kds/menu (backend) | `renderCard()` nhánh `oos`; backend `app/models/menu.py la_het_hang` |
 | Nút "+" / bộ đếm − 1 + trên thẻ? | ThucDon.js + GioHang.js | `renderCard()` (hiển thị) + sự kiện `#menu-grid` (xử lý bấm) |
 | Giỏ hàng hiển thị, thêm/bớt món? | GioHang.js | `renderDraft()`, `addToDraft()`, sự kiện `#draft-body` |
-| Ghi chú món (không hành, ít cay)? | GhiChuMon.js | `openNoteEditor()`, `toggleNoteChip()`, `saveNote()` |
+| Ghi chú món (không hành, ít cay)? | GhiChuMon.js | `openNoteEditor()`, `saveNote()` |
 | Gửi bếp — dữ liệu gửi đi gì? | GuiBep.js | `sendToKitchen()` → `POST /orders` |
 | Vì sao phải bấm xác nhận 2 lần? (BR-01) | GuiBep.js | `openConfirm()` (modal) → `sendToKitchen()` |
 | Hóa đơn tạm tính lấy từ đâu, nhóm đợt? | HoaDon.js | `openBillView()` → `buildBillTable()` (nhóm theo `dot` — ADR-N13) |
