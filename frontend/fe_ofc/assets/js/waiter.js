@@ -178,7 +178,7 @@ function openTableDrawer(tableIdOrName, skipPushState = false) {
     const table = tables.find(t => t.id === tableIdOrName || t.name === tableIdOrName);
     if (!table) return;
 
-    drawerTitle.innerHTML = `${table.name}`;
+    drawerTitle.innerHTML = `${table.name} <span style="font-size: 12px; color: #64748b; font-weight: 500;">(${table.id})</span>`;
     
     // Header Status Badge
     if (table.status === 'occupied') {
@@ -215,7 +215,7 @@ function openTableDrawer(tableIdOrName, skipPushState = false) {
     tableDrawer.classList.add('active');
 
     if (!skipPushState) {
-        window.history.pushState({table: tableId}, '', `?table=${tableId}`);
+        window.history.pushState({table: table.id}, '', `?table=${table.id}`);
     }
 }
 
