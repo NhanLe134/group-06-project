@@ -72,7 +72,7 @@
   - **Then** Món hiển thị nhóm theo thứ tự `Món chính` ➔ `Set lẩu` ➔ `Đồ uống`; chip nhóm đang xem nền cam, chip khác nền trắng; bấm chip cuộn tới nhóm; tìm kiếm lọc trong nhóm và ẩn nhóm trống.
 
 - **AC8 (UX — Ghi chú từng món trong giỏ — ADR-N01)**
-  - **Then** Mở trình ghi chú cho món trong giỏ: chip gợi ý nhanh (`Không hành`, `Ít cay`, `Không đá`...) chạm để nối/bỏ nội dung; gõ tự do; Lưu gắn ghi chú vào dòng món (hiển thị cả trên Hóa đơn — US-09 AC1); Xóa ghi chú để làm trống.
+  - **Then** Mở trình ghi chú cho món trong giỏ: ô nhập tự do; **Lưu** gắn ghi chú vào dòng món (hiển thị cả trên Hóa đơn — US-09 AC1); **Xóa ghi chú** để làm trống.
 
 - **AC9 (Business Rule — Hai tầng hiển thị hết bán / hết tồn — ADR-N11)**
   - **Then** (1) Bếp/quản lý **tắt bán** (`trangthaiban = false`) → món **ẨN hẳn** khỏi E-Menu (`listed = false`); (2) món **còn bán nhưng hết tồn** (`soluongton = 0`) → vẫn hiện nhưng xám "Hết hàng", nút "+" disabled; món đang trong Draft xử lý theo AC3.
