@@ -43,7 +43,12 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     
     try {
         btnLogin.disabled = true;
-        btnLogin.innerHTML = 'Đang xử lý... <i class="ph-bold ph-spinner ph-spin"></i>';
+        let dots = 0;
+        btnLogin.innerHTML = 'Đang xử lý';
+        window.loginInterval = setInterval(() => {
+            dots = (dots + 1) % 4;
+            btnLogin.innerHTML = 'Đang xử lý' + '.'.repeat(dots);
+        }, 300);
         errorMsg.textContent = '';
         
         const response = await fetch(`${API_BASE}/api/auth/login`, {
@@ -57,6 +62,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         const data = await response.json();
         
         if (!response.ok) {
+            clearInterval(window.loginInterval);
             throw new Error(data.detail || 'Đăng nhập thất bại');
         }
         
@@ -75,14 +81,20 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         
         const targetPage = rolePaths[data.vaitro];
         if (targetPage) {
-            window.location.href = targetPage;
+            // Cố tình delay 1 chút để user thấy đang chuyển hướng
+            setTimeout(() => {
+                clearInterval(window.loginInterval);
+                window.location.href = targetPage;
+            }, 500);
         } else {
+            clearInterval(window.loginInterval);
             errorMsg.textContent = 'Vai trò không hợp lệ: ' + data.vaitro;
             btnLogin.disabled = false;
             btnLogin.innerHTML = 'Đăng nhập <i class="ph-bold ph-sign-in"></i>';
         }
         
     } catch (error) {
+        clearInterval(window.loginInterval);
         console.error('Login error:', error);
         errorMsg.textContent = error.message || 'Lỗi kết nối máy chủ';
         btnLogin.disabled = false;

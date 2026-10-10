@@ -41,21 +41,15 @@ class HoaDon(Base):
 
     __tablename__ = "hoadon"
 
-    hoadon_id: Mapped[str] = mapped_column(
-        String(30), primary_key=True, server_default=FetchedValue()
-    )
+    hoadon_id: Mapped[str] = mapped_column(String(30), primary_key=True, server_default=FetchedValue())
     ban_id: Mapped[str | None] = mapped_column(String(30), ForeignKey("ban.ban_id"), default=None)
     # Thu ngân xác nhận thu tiền (RBAC sau này); NULL = chưa gán
-    nhanvien_id: Mapped[str | None] = mapped_column(
-        String(30), ForeignKey("nguoidung.id"), default=None
-    )
+    nhanvien_id: Mapped[str | None] = mapped_column(String(30), ForeignKey("nguoidung.id"), default=None)
     so_phieuban: Mapped[int | None] = mapped_column(Integer, server_default="0")
     tongtien: Mapped[int | None] = mapped_column(Integer, server_default="0")
     # Hóa đơn chỉ sinh khi chốt tiền → mặc định đã thanh toán
     trangthai: Mapped[str | None] = mapped_column(String, server_default="da_thanh_toan")
-    thoigianthanhtoan: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=False), server_default=func.now()
-    )
+    thoigianthanhtoan: Mapped[datetime | None] = mapped_column(DateTime(timezone=False), server_default=func.now())
 
 
 class PhieuBan(Base):
@@ -67,14 +61,10 @@ class PhieuBan(Base):
 
     __tablename__ = "phieuban"
 
-    phieuban_id: Mapped[str] = mapped_column(
-        String(30), primary_key=True, server_default=FetchedValue()
-    )
+    phieuban_id: Mapped[str] = mapped_column(String(30), primary_key=True, server_default=FetchedValue())
     ban_id: Mapped[str | None] = mapped_column(String(30), ForeignKey("ban.ban_id"), default=None)
     giogoimon: Mapped[datetime] = mapped_column(DateTime(timezone=False), server_default=func.now())
-    hoadon_id: Mapped[str | None] = mapped_column(
-        ForeignKey("hoadon.hoadon_id", ondelete="CASCADE"), default=None
-    )
+    hoadon_id: Mapped[str | None] = mapped_column(ForeignKey("hoadon.hoadon_id", ondelete="CASCADE"), default=None)
 
 
 class ChiTietPhieu(Base):
@@ -87,9 +77,7 @@ class ChiTietPhieu(Base):
 
     __tablename__ = "chitietphieu"
 
-    chitietphieu_id: Mapped[str] = mapped_column(
-        String(30), primary_key=True, server_default=FetchedValue()
-    )
+    chitietphieu_id: Mapped[str] = mapped_column(String(30), primary_key=True, server_default=FetchedValue())
     phieuban_id: Mapped[str | None] = mapped_column(
         String(30), ForeignKey("phieuban.phieuban_id", ondelete="CASCADE"), default=None
     )

@@ -77,7 +77,7 @@ async def lifespan(app: FastAPI):
             if existing.first() is None:
                 session.add_all(ThucDon(**item) for item in SEED_MENU_ITEMS)
                 await session.commit()
-            
+
             existing_user = await session.execute(select(NguoiDung.id).limit(1))
             if existing_user.first() is None:
                 session.add_all(NguoiDung(**user) for user in SEED_USERS)
@@ -98,9 +98,16 @@ async def log_requests(request: Request, call_next):
     response = await call_next(request)
     ms = round((time.perf_counter() - started) * 1000)
     level = logging.WARNING if response.status_code >= 500 else logging.INFO
-    http_log.log(level, "request %s", kv(
-        method=request.method, path=request.url.path, status=response.status_code, ms=ms,
-    ))
+    http_log.log(
+        level,
+        "request %s",
+        kv(
+            method=request.method,
+            path=request.url.path,
+            status=response.status_code,
+            ms=ms,
+        ),
+    )
     return response
 
 

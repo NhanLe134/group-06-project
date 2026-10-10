@@ -75,14 +75,10 @@ class MenuCreate(BaseModel):
     category: str = Field(min_length=1, max_length=100, description="Danh mục món")
     image_url: str | None = Field(default=None, description="URL hình ảnh")
     is_available: bool = Field(default=True, description="Món hiện có thể bán hay không")
-    stock: int | None = Field(
-        default=None, ge=0, description="Số lượng tồn; để trống nếu không theo dõi"
-    )
+    stock: int | None = Field(default=None, ge=0, description="Số lượng tồn; để trống nếu không theo dõi")
     ingredients: str | None = Field(default=None, description="Thành phần món ăn")
     spicy: str | None = Field(default=None, max_length=30, description="Mức độ cay")
-    diet: str | None = Field(
-        default=None, max_length=30, description="Loại món, ví dụ Mặn hoặc Chay"
-    )
+    diet: str | None = Field(default=None, max_length=30, description="Loại món, ví dụ Mặn hoặc Chay")
     allergens: str | None = Field(default=None, description="Thông tin chất gây dị ứng")
 
 
@@ -95,9 +91,7 @@ class MenuUpdate(BaseModel):
     category: str | None = Field(default=None, min_length=1, max_length=100)
     image_url: str | None = None
     is_available: bool | None = None
-    stock: int | None = Field(
-        default=None, ge=0, description="Số lượng tồn; null nếu không theo dõi"
-    )
+    stock: int | None = Field(default=None, ge=0, description="Số lượng tồn; null nếu không theo dõi")
     ingredients: str | None = None
     spicy: str | None = Field(default=None, max_length=30)
     diet: str | None = Field(default=None, max_length=30)

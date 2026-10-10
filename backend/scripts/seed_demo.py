@@ -45,11 +45,7 @@ async def seed() -> None:
     async with async_session_factory() as db:
         if (await db.scalar(select(func.count()).select_from(ThucDon))) == 0:
             for ten, loai, gia, dangban, ton in CATALOG:
-                db.add(
-                    ThucDon(
-                        tenmon=ten, phanloai=loai, giaban=gia, trangthaiban=dangban, soluongton=ton
-                    )
-                )
+                db.add(ThucDon(tenmon=ten, phanloai=loai, giaban=gia, trangthaiban=dangban, soluongton=ton))
             await db.flush()
             print(f"Đã thêm {len(CATALOG)} món vào thucdon.")
         else:

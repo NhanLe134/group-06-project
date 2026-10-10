@@ -30,15 +30,113 @@ const VS = {
 
 let recognition = null;
 let recognitionFailures = 0;
+let pendingLocalQuantity = null;
 
-/* ───────── Truy vấn CATALOG (dùng lại từ mock-data.js) ───────── */
-const vDishById = id =>
-  (typeof MENU !== 'undefined' ? MENU.find(d => d.id === id) : null);
+/* ───────── Truy vấn MENU (dùng biến MENU từ customer.js — dữ liệu thực từ Supabase) ───────── */
+/* MENU được load bởi customer.js qua GET /menu; voice.js đọc cùng biến toàn cục đó.
+   Không dùng CATALOG từ mock-data.js để tránh lệch dữ liệu với DB thực. */
+const vDishById = id => (typeof MENU !== 'undefined' ? MENU.find(d => d.id === id) : null);
+/* status từ API Supabase luôn là 'out_of_stock' (snake_case); giữ thêm 'Out of Stock'
+   để tương thích ngược với mock khi chạy offline. */
 const vIsOos     = id => ['out_of_stock', 'Out of Stock'].includes(vDishById(id)?.status);
 const vDraftUnits = () => draft.reduce((n,it)=>n+it.qty,0);     /* draft từ customer.js */
-const vDraftTotal = () => draft.reduce((n,it)=>n+it.qty*vDishById(it.id).price,0);
+const vDraftTotal = () => draft.reduce((n,it)=>n+it.qty*(vDishById(it.id)?.price||0),0);
 
-/* Transcript NLU is handled by the backend endpoint. */
+/* Simple, explicit orders can be handled locally so ordering still works if
+   the NLU service is temporarily unavailable. Complex requests use the API.
+   Chỉ thử local matching khi MENU đã load từ Supabase (MENU.length > 0). */
+function vTryLocalOrder(text) {
+  if (typeof MENU === 'undefined' || !MENU.length) return false;
+
+  const normalizedRawText = normV(text);
+  const normalizedText = normalizedRawText.replace(/[.,!?;:()[\]{}"']/g, ' ').replace(/\s+/g, ' ').trim();
+  const quantityWords = { mot: 1, hai: 2, ba: 3, bon: 4, tu: 4, nam: 5, sau: 6, bay: 7, tam: 8, chin: 9, muoi: 10 };
+  const quantityMatch = normalizedText.match(/(?:^|\s)(\d+|mot|hai|ba|bon|tu|nam|sau|bay|tam|chin|muoi)(?=\s|$)/);
+  const quantity = quantityMatch
+    ? (/^\d+$/.test(quantityMatch[1]) ? Number(quantityMatch[1]) : quantityWords[quantityMatch[1]])
+    : null;
+  let query = normalizedText;
+  if (quantityMatch) query = query.replace(quantityMatch[0], ' ');
+
+  if (pendingLocalQuantity) {
+    const remainder = query.replace(/\b(?:phan|suat|ly|chai|coc|bat|dia)\b/g, ' ').trim();
+    if (quantity && !remainder) {
+      const dish = vDishById(pendingLocalQuantity.id);
+      const note = pendingLocalQuantity.note;
+      pendingLocalQuantity = null;
+      if (!dish || vIsOos(dish.id)) return false;
+      addToDraft(dish.id, quantity, note);
+      renderStickyBar();
+      renderMenu();
+      if (draftOpen) renderDraft();
+      VS.ui = 'idle';
+      VS.interim = '';
+      vAiSay(`Dạ, em đã thêm ${quantity} phần ${dish.name}${note ? ` (${note})` : ''} vào bản nháp ạ.`);
+      vRender();
+      return true;
+    }
+    pendingLocalQuantity = null;
+  }
+
+  // Compound requests belong to the backend parser; this local shortcut only
+  // resolves one dish and otherwise can match the last item with the first qty.
+  if (/\b(?:va|voi)\b|[,;\n]/.test(normalizedRawText)) return false;
+
+  if (quantity !== null && (!Number.isInteger(quantity) || quantity < 1 || quantity > 99)) return false;
+
+  const notePatterns = [
+    [/\bit cay\b/, 'Ít cay'], [/\bkhong cay\b/, 'Không cay'],
+    [/\bnhieu cay\b/, 'Nhiều cay'], [/\bkhong hanh\b/, 'Không hành'],
+    [/\bkhong rau\b/, 'Không rau'], [/\bkhong ot\b/, 'Không ớt'],
+    [/\bkhong da\b/, 'Không đá'], [/\bit da\b/, 'Ít đá'],
+    [/\bit ngot\b/, 'Ít ngọt'], [/\bchia doi(?: phan)?\b/, 'Chia đôi phần'],
+  ];
+  let note = '';
+  for (const [pattern, label] of notePatterns) {
+    if (pattern.test(query)) {
+      query = query.replace(pattern, '').trim();
+      note = label;
+      break;
+    }
+  }
+
+  query = query.replace(/\b(?:cho|them|lay|order|anh|chi|toi|minh|em|muon|can|goi|dat|an|uong|phan|suat|ly|chai|coc|bat|dia|mon|giup|voi|nhe|nha|a|rat)\b/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+  const exactMatches = MENU.filter(d => ` ${query} `.includes(` ${normV(d.name)} `));
+  if (exactMatches.length > 1) return false;
+  const matches = exactMatches.length ? exactMatches : MENU.filter(d => {
+    const name = normV(d.name);
+    const queryWords = new Set(query.split(/\s+/).filter(Boolean));
+    const nameWords = name.split(/\s+/).filter(Boolean);
+    return nameWords.length > 1 && queryWords.size >= 2
+      && [...queryWords].every(word => nameWords.includes(word));
+  }).sort((a, b) => normV(b.name).length - normV(a.name).length);
+  if (!matches.length) return false;
+  const longestNameLength = normV(matches[0].name).length;
+  const bestMatches = matches.filter(d => normV(d.name).length === longestNameLength);
+  if (bestMatches.length !== 1) return false;
+  const dish = bestMatches[0];
+  if (vIsOos(dish.id)) return false;
+
+  if (quantity === null) {
+    pendingLocalQuantity = { id: dish.id, note };
+    VS.ui = 'idle';
+    VS.interim = '';
+    vAiSay(`Dạ, anh/chị muốn gọi mấy phần ${dish.name} ạ?`);
+    vRender();
+    return true;
+  }
+
+  addToDraft(dish.id, quantity, note);
+  renderStickyBar();
+  renderMenu();
+  if (draftOpen) renderDraft();
+  VS.ui = 'idle';
+  VS.interim = '';
+  vAiSay(`Dạ, em đã thêm ${quantity} phần ${dish.name}${note ? ` (${note})` : ''} vào bản nháp ạ.`);
+  vRender();
+  return true;
+}
 
 function vAmbiguityQuestion(a) {
   const ds = a.candidates.map(vDishById);
@@ -49,8 +147,29 @@ function vAmbiguityQuestion(a) {
 }
 
 /* ───────── AI chat ───────── */
+// Guard chống ghi trùng: giữ key của message cuối cùng đã được thêm vào chat
+let _lastVoiceMsgKey = '';
+
 function vAiSay(text, chips) {
-  VS.chat.push({ from:'ai', text, chips: chips||null });
+  // Chống render lại chính xác cùng một message (key = text + số chip)
+  const chipKey = chips ? chips.map(c => c.id).join(',') : '';
+  const msgKey = text + '|' + chipKey;
+  if (msgKey === _lastVoiceMsgKey) return;    // bỏ qua nếu đã hiển thị
+  _lastVoiceMsgKey = msgKey;
+
+  // Khử trùng chip theo id trước khi lưu
+  let deduped = null;
+  if (chips && chips.length) {
+    const seen = new Set();
+    deduped = chips.filter(ch => {
+      if (seen.has(ch.id)) return false;
+      seen.add(ch.id);
+      return true;
+    }).slice(0, 3);   // tối đa 3 chip
+    if (!deduped.length) deduped = null;
+  }
+
+  VS.chat.push({ from:'ai', text, chips: deduped || null });
   if (VS.chat.length > 60) VS.chat.splice(0, VS.chat.length-60);
 }
 
@@ -163,9 +282,10 @@ function vApplyParse(parsed) {
   if (parsed.oos.length) {
     const o = parsed.oos[0];
     const d = vDishById(o.id);
+    const dishName = d?.name || o.id;
     vAiSay(
-      parsed.message || `"${d.name}" ${COPY.OOS_MSG}`,
-      o.suggestions.map(id => vDishById(id)).filter(Boolean)
+      parsed.message || `"${dishName}" ${COPY.OOS_MSG}`,
+      (o.suggestions || []).map(id => vDishById(id)).filter(Boolean)
         .map(s=>({ id:s.id, label:`<i class="ph-bold ph-plus"></i> ${s.name} · ${fmtVND(s.price)}` }))
     );
     vRender(); return;
@@ -178,13 +298,26 @@ function vApplyParse(parsed) {
     vRender(); return;
   }
 
-  /* ── Intent A: Tư vấn theo từ khóa / nguyên liệu ── */
+  /* ── Intent A: Tư vấn theo từ khóa / nguyên liệu ──
+     Chỉ hiển thị các món trong recommendations (backend đã lọc).
+     Không gộp suggestions và recommendations để tránh trùng lặp. */
   if (parsed.intent === 'recommendation' || parsed.suggestions?.length || parsed.recommendations?.length) {
-    const chips = (parsed.suggestions || []).concat(parsed.recommendations || [])
-      .map(s => ({
-        id: s.id,
-        label: `<i class="ph-bold ph-plus"></i> ${escV(s.name)} · ${fmtVND(s.price)}`,
-      }));
+    // Duyệt theo ưu tiên: recommendations trước (backend đã lọc và xếp hạng)
+    const rawChips = (parsed.recommendations || []).length
+      ? (parsed.recommendations || [])
+      : (parsed.suggestions || []);
+    // Khử trùng theo id + giới hạn 3 chip
+    // Ưu tiên dữ liệu từ MENU (Supabase) để lấy image_url, fallback về dữ liệu backend
+    const seen = new Set();
+    const chips = rawChips
+      .filter(s => s && s.id && !seen.has(s.id) && (seen.add(s.id), true))
+      .slice(0, 3)
+      .map(s => {
+        const local = vDishById(s.id);   // lấy từ MENU Supabase nếu có
+        const name  = local?.name  || s.name;
+        const price = local?.price || s.price;
+        return { id: s.id, label: `<i class="ph-bold ph-plus"></i> ${escV(name)} · ${fmtVND(price)}` };
+      });
     vAiSay(
       parsed.message || 'Dạ, anh/chị muốn dùng món nào ạ?',
       chips.length ? chips : null,
@@ -217,9 +350,14 @@ function vApplyParse(parsed) {
 /* ───────── Gửi transcript lên backend NLU ───────── */
 async function vRunText(text) {
   VS.chat.push({ from:'user', text });
-  VS.interim = text;
+  // VS.interim chỉ dùng cho live voice transcript khi đang nghe mic;
+  // KHÔNG set ở đây khi user nhập text để tránh hiển thị transcript giả.
+  VS.UI_source = 'text'; // đánh dấu nguồn gốc để xử lý lỗi đúng ngữ cảnh
   VS.ui = 'processing';
   vRender();
+  if (vTryLocalOrder(text)) {
+    return;
+  }
   try {
     const parsed = await apiFetch('/api/v1/ai/voice-parse', {
       method: 'POST',
@@ -235,11 +373,14 @@ async function vRunText(text) {
       }),
     });
     recognitionFailures = 0;
+    VS.UI_source = null;
     vApplyParse(parsed);
   } catch (error) {
     VS.ui = 'idle';
-    VS.noisy = true;
-    vVoiceToast('Không kết nối được AI; giỏ nháp vẫn được giữ nguyên. Vui lòng nhập tên món bằng bàn phím.');
+    // KHÔNG set VS.noisy=true ở đây — flag đó chỉ dành cho lỗi nhận diện
+    // giọng nói (SpeechRecognition), không phải lỗi kết nối API khi nhập text.
+    VS.UI_source = null;
+    vVoiceToast('Không tìm thấy món nào phù hợp. Vui lòng thử lại.');
     vAiSay(error.message || 'Em chưa phân tích được yêu cầu. Anh/chị vui lòng thử lại nhé ạ.');
     vRender();
   }
@@ -318,7 +459,7 @@ function vRender() {
 
   /* ── Mini draft ── */
   const miniDraft = vDraftUnits()
-    ? `<div class="v-mini-draft"><b>Đang chọn:</b> ${draft.map(it=>`${it.qty}× ${escV(vDishById(it.id).name)}`).join(' · ')} — <b>${fmtVND(vDraftTotal())}</b></div>`
+    ? `<div class="v-mini-draft"><b>Đang chọn:</b> ${draft.map(it=>`${it.qty}× ${escV(vDishById(it.id)?.name||it.id)}`).join(' · ')} — <b>${fmtVND(vDraftTotal())}</b></div>`
     : `<div class="v-mini-draft empty">${COPY.EMPTY}</div>`;
 
   /* ── Stage ── */
@@ -351,13 +492,18 @@ function vRender() {
       <p class="v-clarify-q"><i class="ph-duotone ph-robot"></i> ${escV(vAmbiguityQuestion(VS.ambiguity))}</p>
       <div class="v-cand-list">
         ${VS.ambiguity.candidates.map(id => {
-          const d = vDishById(id), oos = vIsOos(id);
+          const d = vDishById(id); if (!d) return '';
+          const oos = vIsOos(id);
+          /* Dùng image_url từ Supabase nếu có, fallback icon */
+          const thumb = d.image_url
+            ? `<img src="${escV(d.image_url)}" alt="${escV(d.name)}" style="width:32px;height:32px;object-fit:cover;border-radius:6px;">`
+            : (d.emoji || '<i class="ph-duotone ph-fork-knife"></i>');
           return `<button class="v-cand ${oos?'oos':''}" data-action="v-pick" data-id="${d.id}" ${oos?'disabled':''}>
-            <span style="font-size:22px">${d.emoji || '<i class="ph-duotone ph-fork-knife"></i>'}</span>
+            <span style="font-size:22px">${thumb}</span>
             <span class="v-cand-info"><b>${escV(d.name)}</b><small>${fmtVND(d.price)}</small></span>
             <span class="v-cand-add">${oos ? 'Hết' : 'Chọn'}</span>
           </button>`;
-        }).join('')}
+        }).filter(Boolean).join('')}
       </div>
       <button class="btn-mini-v" data-action="v-dismiss-ambiguous">Để sau</button>
     </div>`;
@@ -458,7 +604,7 @@ document.addEventListener('click', e => {
     }
     case 'v-stock-accept': {
       addToDraft(el.dataset.id, Number(el.dataset.qty) || 1, '');
-      vAiSay(`Dạ, em đã thêm ${el.dataset.qty} phần ${vDishById(el.dataset.id).name} vào giỏ nháp ạ.`);
+      vAiSay(`Dạ, em đã thêm ${el.dataset.qty} phần ${vDishById(el.dataset.id)?.name || el.dataset.id} vào giỏ nháp ạ.`);
       renderStickyBar();
       vRender(); break;
     }

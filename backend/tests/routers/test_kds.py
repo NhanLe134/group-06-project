@@ -40,9 +40,7 @@ async def _seed(db: AsyncSession, *, het_hang: bool = False, soluong: int = 2, *
     return mon, item
 
 
-async def test_list_items_returns_card_fields_sorted_fifo(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_list_items_returns_card_fields_sorted_fifo(client: AsyncClient, db_session: AsyncSession):
     """GIVEN 2 món gọi lúc khác nhau, WHEN GET /kds/items,
     THEN có đủ bàn/tên món/giờ gọi, món gọi trước đứng trước (FIFO)."""
     _, newer = await _seed(db_session, giogoimon=datetime(2026, 10, 6, 5, 0))
@@ -74,15 +72,11 @@ async def test_list_items_hides_served_and_cancelled(client: AsyncClient, db_ses
         ("da_xong", "dang_nau"),
     ],
 )
-async def test_update_status_valid_transitions(
-    client: AsyncClient, db_session: AsyncSession, start: str, target: str
-):
+async def test_update_status_valid_transitions(client: AsyncClient, db_session: AsyncSession, start: str, target: str):
     """AC2: đổi trạng thái hợp lệ (kể cả Chờ nấu → Đã nấu bằng nút Xong) được lưu vào DB."""
     _, item = await _seed(db_session, trangthai=start)
 
-    resp = await client.patch(
-        f"/kds/items/{item.chitietphieu_id}/status", json={"trangthai": target}
-    )
+    resp = await client.patch(f"/kds/items/{item.chitietphieu_id}/status", json={"trangthai": target})
 
     assert resp.status_code == 200
     assert resp.json()["trangthai"] == target
@@ -90,22 +84,16 @@ async def test_update_status_valid_transitions(
     assert item.trangthai == target
 
 
-async def test_update_status_rejects_invalid_transition(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_update_status_rejects_invalid_transition(client: AsyncClient, db_session: AsyncSession):
     _, item = await _seed(db_session, trangthai="da_xong")
-    resp = await client.patch(
-        f"/kds/items/{item.chitietphieu_id}/status", json={"trangthai": "cho_nau"}
-    )
+    resp = await client.patch(f"/kds/items/{item.chitietphieu_id}/status", json={"trangthai": "cho_nau"})
     assert resp.status_code == 409
     assert resp.json()["error_code"] == "INVALID_STATUS_TRANSITION"
 
 
 async def test_update_status_rejects_unknown_value(client: AsyncClient, db_session: AsyncSession):
     _, item = await _seed(db_session)
-    resp = await client.patch(
-        f"/kds/items/{item.chitietphieu_id}/status", json={"trangthai": "READY"}
-    )
+    resp = await client.patch(f"/kds/items/{item.chitietphieu_id}/status", json={"trangthai": "READY"})
     assert resp.status_code == 422
 
 
@@ -115,14 +103,10 @@ async def test_update_status_404(client: AsyncClient):
     assert resp.json()["error_code"] == "ORDER_ITEM_NOT_FOUND"
 
 
-async def test_cannot_cook_pending_item_when_out_of_stock(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_cannot_cook_pending_item_when_out_of_stock(client: AsyncClient, db_session: AsyncSession):
     """BR-03: món hết hàng khi còn Chờ nấu thì server chặn nấu — client không bypass được."""
     _, item = await _seed(db_session, het_hang=True)
-    resp = await client.patch(
-        f"/kds/items/{item.chitietphieu_id}/status", json={"trangthai": "dang_nau"}
-    )
+    resp = await client.patch(f"/kds/items/{item.chitietphieu_id}/status", json={"trangthai": "dang_nau"})
     assert resp.status_code == 409
     assert resp.json()["error_code"] == "ITEM_OUT_OF_STOCK"
 
@@ -131,9 +115,7 @@ async def test_split_moves_part_and_keeps_rest(client: AsyncClient, db_session: 
     """Nấu từng phần: 10 suất, nấu trước 4 → 6 Chờ nấu + 4 Đang nấu, giữ giờ gọi gốc."""
     _, item = await _seed(db_session, soluong=10)
 
-    resp = await client.post(
-        f"/kds/items/{item.chitietphieu_id}/split", json={"soluong": 4, "trangthai": "dang_nau"}
-    )
+    resp = await client.post(f"/kds/items/{item.chitietphieu_id}/split", json={"soluong": 4, "trangthai": "dang_nau"})
 
     assert resp.status_code == 200
     body = resp.json()
@@ -156,9 +138,7 @@ async def test_split_rejects_quantity_not_less_than_current(
     assert resp.json()["error_code"] == "INVALID_SPLIT_QUANTITY"
 
 
-async def test_cancel_out_of_stock_marks_cancelled_and_logs(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_cancel_out_of_stock_marks_cancelled_and_logs(client: AsyncClient, db_session: AsyncSession):
     """Món chờ nấu đã hết hàng → xóa khỏi hàng đợi (da_huy) và có nhật ký loghuymon."""
     _, item = await _seed(db_session, het_hang=True)
 
@@ -170,9 +150,7 @@ async def test_cancel_out_of_stock_marks_cancelled_and_logs(
     assert len(logs) == 1 and logs[0].chitietphieu_id == item.chitietphieu_id
 
 
-async def test_cancel_out_of_stock_rejected_when_dish_available(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_cancel_out_of_stock_rejected_when_dish_available(client: AsyncClient, db_session: AsyncSession):
     _, item = await _seed(db_session, het_hang=False)
     resp = await client.post(f"/kds/items/{item.chitietphieu_id}/cancel-out-of-stock")
     assert resp.status_code == 409
@@ -198,9 +176,7 @@ async def test_mark_out_of_stock_404(client: AsyncClient):
     assert resp.json()["error_code"] == "MENU_ITEM_NOT_FOUND"
 
 
-async def test_demo_orders_disabled_when_demo_mode_off(
-    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
-):
+async def test_demo_orders_disabled_when_demo_mode_off(client: AsyncClient, monkeypatch: pytest.MonkeyPatch):
     # đặt rõ giá trị — không phụ thuộc DEMO_MODE trong backend/.env của từng máy
     monkeypatch.setattr(settings, "demo_mode", False)
     resp = await client.post("/kds/demo/orders")
@@ -249,9 +225,7 @@ async def test_publish_sends_envelope_and_drops_broken_clients():
     assert broken not in mgr.channels["kds:tickets"]
 
 
-async def test_kds_still_cooks_reserved_item_when_drink_stock_is_zero(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_kds_still_cooks_reserved_item_when_drink_stock_is_zero(client: AsyncClient, db_session: AsyncSession):
     """Story Spec trừ kho tự động (AC6): soluongton = 0 nghĩa là đã bán hết cho các đơn đã gửi bếp
     (đã trừ lúc gửi) → món đang chờ nấu vẫn nấu/xong được; chỉ bếp BÁO HẾT mới chặn."""
     mon, item = await _seed(db_session)
@@ -259,15 +233,11 @@ async def test_kds_still_cooks_reserved_item_when_drink_stock_is_zero(
     await db_session.commit()
 
     assert (await client.get("/kds/items")).json()[0]["het_hang"] is False
-    resp = await client.patch(
-        f"/kds/items/{item.chitietphieu_id}/status", json={"trangthai": "da_xong"}
-    )
+    resp = await client.patch(f"/kds/items/{item.chitietphieu_id}/status", json={"trangthai": "da_xong"})
     assert resp.status_code == 200
 
 
-async def test_double_click_done_second_request_is_409(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_double_click_done_second_request_is_409(client: AsyncClient, db_session: AsyncSession):
     """TC-OP-KDS-005 (§11.3 double click): bấm "Xong" 2 lần liên tiếp → lần 2 bị 409,
     trạng thái trong DB vẫn đúng 1 lần chuyển."""
     _, item = await _seed(db_session)
@@ -280,9 +250,7 @@ async def test_double_click_done_second_request_is_409(
     assert second.json()["error_code"] == "INVALID_STATUS_TRANSITION"
 
 
-async def test_vietnamese_and_emoji_note_shown_unchanged_on_kds(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_vietnamese_and_emoji_note_shown_unchanged_on_kds(client: AsyncClient, db_session: AsyncSession):
     """TC-OP-KDS-012 (§11.3 Unicode/tiếng Việt/emoji): ghi chú khách nhập hiện nguyên vẹn."""
     note = "Không hành, ít cay 🌶️ — thêm chanh"
     mon = ThucDon(tenmon="Bún bò Huế", phanloai="Món chính", giaban=60000)

@@ -1,0 +1,822 @@
+﻿let tables = [];
+
+async function loadTables() {
+    if (tables.length === 0) {
+        const grid = document.getElementById('table-grid');
+        if (grid) grid.innerHTML = '<div style="grid-column: 1 / -1; padding: 64px 24px; text-align: center;"><h3 style="margin:0; font-size: 16px; color: #1E293B; font-weight: 800;">─Éang lß║Ñy dß╗» liß╗çu<span class="animated-dots"></span></h3><p style="margin: 8px 0 0 0; font-size: 13px; color: #64748B;">Vui l├▓ng chß╗¥ trong gi├óy l├ít.</p><style>.animated-dots::after { content: ""; animation: ellipsis 1.5s infinite; } @keyframes ellipsis { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } 100% { content: ""; } }</style></div>';
+    }
+    try {
+        const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/waiter/tables`);
+        if (!res.ok) throw new Error('Lß╗ùi tß║úi s╞í ─æß╗ô b├án');
+        tables = await res.json();
+        renderTables();
+
+        // Sync URL with Drawer on initial load
+        const urlParams = new URLSearchParams(window.location.search);
+        const tableIdParam = urlParams.get('table');
+        if (tableIdParam && !document.getElementById('table-drawer').classList.contains('active')) {
+            openTableDrawer(tableIdParam, true);
+        }
+        
+        updateConnectionStatus(true);
+    } catch (err) {
+        console.error(err);
+        const grid = document.getElementById('table-grid');
+        if (grid) grid.innerHTML = '<div style="grid-column: 1 / -1; padding: 64px 24px; text-align: center;"><i class="ph-duotone ph-warning-circle" style="font-size: 48px; color: #E11D48; margin-bottom: 16px;"></i><h3 style="margin:0; font-size: 18px; color: #1E293B; font-weight: 800;">Kh├┤ng thß╗â tß║úi S╞í ─æß╗ô b├án</h3><p style="margin: 8px 0 0 0; font-size: 14px; color: #64748B;">M├íy chß╗º kh├┤ng phß║ún hß╗ôi. Vui l├▓ng kiß╗âm tra lß║íi mß║íng hoß║╖c b├ío lß║íi quß║ún l├╜.</p></div>';
+        showToast('Lß╗ùi kß║┐t nß╗æi', 'Kh├┤ng thß╗â tß║úi S╞í ─æß╗ô b├án tß╗½ Server', 'danger');
+        updateConnectionStatus(false);
+    }
+}
+
+// Logic ─æiß╗üu khiß╗ân UI Trß║íng th├íi kß║┐t nß╗æi
+function updateConnectionStatus(isOk) {
+    const connStatus = document.getElementById('conn-status');
+    
+    if (!connStatus) return;
+    
+    const dot = connStatus.querySelector('.dot');
+    const text = connStatus.querySelector('.text');
+    
+    if (!navigator.onLine || !isOk) {
+        connStatus.style.color = 'var(--color-danger)';
+        dot.style.background = 'var(--color-danger)';
+        text.textContent = 'Mß║Ñt kß║┐t nß╗æi';
+    } else {
+        connStatus.style.color = 'var(--color-success)';
+        dot.style.background = 'var(--color-success)';
+        text.textContent = 'Realtime - ─É├ú ─æß╗ông bß╗Ö';
+    }
+}
+
+window.addEventListener('online', () => {
+    updateConnectionStatus(true);
+    // Tß╗▒ ─æß╗Öng tß║úi lß║íi khi c├│ mß║íng
+    if (tables.length > 0) {
+        const grid = document.getElementById('table-grid');
+        if (grid) grid.innerHTML = '<div style="grid-column: 1 / -1; padding: 64px 24px; text-align: center;"><h3 style="margin:0; font-size: 16px; color: #1E293B; font-weight: 800;">─Éang ─æß╗ông bß╗Ö lß║íi<span class="animated-dots"></span></h3><p style="margin: 8px 0 0 0; font-size: 13px; color: #64748B;">─Éang tß║úi lß║íi dß╗» liß╗çu mß╗¢i nhß║Ñt.</p><style>.animated-dots::after { content: ""; animation: ellipsis 1.5s infinite; } @keyframes ellipsis { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } 100% { content: ""; } }</style></div>';
+    }
+    loadTables();
+});
+window.addEventListener('offline', () => updateConnectionStatus(false));
+
+const tableGrid = document.getElementById('table-grid');
+const voidModal = document.getElementById('void-modal');
+const voidQtyInput = document.getElementById('void-qty-input');
+const voidError = document.getElementById('void-error');
+
+// Drawer DOM
+const drawerOverlay = document.getElementById('drawer-overlay');
+const tableDrawer = document.getElementById('table-drawer');
+const drawerTitle = document.getElementById('drawer-title');
+const drawerSubtitle = document.getElementById('drawer-subtitle');
+const drawerOrderList = document.getElementById('drawer-order-list');
+const drawerOrderSection = document.getElementById('drawer-order-section');
+const drawerEmptyState = document.getElementById('drawer-empty-state');
+const drawerFooter = document.getElementById('drawer-footer');
+const drawerBadge = document.getElementById('drawer-status-badge');
+
+let currentActionCb = null;
+
+let currentZone = 'all';
+
+// Initialize Zone Filter Event Listener
+function initZoneFilter() {
+    const zoneFilter = document.getElementById('zone-filter');
+    if (zoneFilter) {
+        zoneFilter.addEventListener('change', (e) => {
+            currentZone = e.target.value;
+            renderTables();
+        });
+    }
+}
+initZoneFilter();
+
+// 1. RENDER TABLE MAP CHUY├èN NGHIß╗åP C├ô T├ìNH TO├üN TIß║╛N ─Éß╗ÿ L├èN M├ôN
+function renderTables() {
+    tableGrid.innerHTML = '';
+    tables.forEach(t => {
+        if (currentZone !== 'all' && t.zone !== currentZone) return; // Lß╗ìc theo khu vß╗▒c
+        
+        const card = document.createElement('div');
+        card.className = 'table-card';
+        card.setAttribute('data-status', t.status);
+        
+        card.addEventListener('click', () => openTableDrawer(t.id));
+
+        // Logic check xem c├│ m├│n n├áo cß║ºn "B╞░ng" (Trß║íng th├íi Ready)
+        const hasReadyItem = t.items.some(i => i.status === 'ready');
+        const alertBadge = hasReadyItem ? `<div class="action-required-badge"><i class="ph-bold ph-bell-ringing"></i> Cß║ªN L├èN M├ôN</div>` : '';
+
+        let progressHtml = '';
+        let tableStatusText = '';
+        let badgeColor = 'var(--color-danger)';
+        
+        if (t.status === 'occupied') {
+            const totalItems = t.items.length;
+            const servedItems = t.items.filter(i => i.status === 'served').length;
+            const progressPercent = totalItems === 0 ? 0 : (servedItems / totalItems) * 100;
+            
+            if (totalItems === 0) {
+                tableStatusText = '─Éang chß╗ìn m├│n';
+                badgeColor = '#64748B';
+            } else if (hasReadyItem) {
+                tableStatusText = 'Cß║ºn l├¬n m├│n';
+                badgeColor = 'var(--color-danger)';
+            } else if (servedItems === totalItems) {
+                tableStatusText = '─É├ú ─æß╗º m├│n';
+                badgeColor = 'var(--color-success)';
+            } else {
+                tableStatusText = 'Bß║┐p ─æang l├ám';
+                badgeColor = 'var(--color-warning)';
+            }
+
+            progressHtml = `
+                <div class="progress-container" style="margin-top: 12px; border-top: 1px dashed #E2E8F0; padding-top: 12px;">
+                    <div class="progress-text" style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px;">
+                        <span style="color:#64748B; font-weight:600;">Tiß║┐n tr├¼nh m├│n</span>
+                        <span style="font-weight:700; color: ${servedItems === totalItems ? 'var(--color-success)' : 'var(--color-danger)'}">${servedItems}/${totalItems} M├│n</span>
+                    </div>
+                    <div class="progress-bar-bg" style="background:#F1F5F9; height:6px; border-radius:10px; overflow:hidden;">
+                        <div class="progress-bar-fill" style="width: ${progressPercent}%; background: ${servedItems === totalItems ? 'var(--color-success)' : 'var(--color-primary)'}; height:100%; transition:width 0.3s ease;"></div>
+                    </div>
+                </div>
+            `;
+        } else if (t.status === 'cleaning') {
+            tableStatusText = 'Cß║ºn dß╗ìn dß║╣p';
+            badgeColor = 'var(--color-warning)';
+        } else {
+            tableStatusText = 'Trß╗æng';
+            badgeColor = 'var(--color-success)';
+        }
+
+        const detailsHtml = `
+            <div class="table-details">
+                <span><i class="ph-bold ph-users"></i> ${t.capacity}</span>
+            </div>
+        `;
+
+        card.innerHTML = `
+            ${alertBadge}
+            <div class="table-header-row">
+                <h3 class="table-name">${t.name}</h3>
+                <span class="table-status-badge" style="color: ${badgeColor};">${tableStatusText}</span>
+            </div>
+            ${detailsHtml}
+            ${progressHtml}
+        `;
+        tableGrid.appendChild(card);
+    });
+    
+    if (typeof renderTasks === 'function') {
+        renderTasks();
+    }
+}
+
+// 2. Mß╗₧ CHI TIß║╛T B├ÇN (DRAWER UI)
+function openTableDrawer(tableId, skipPushState = false) {
+    const table = tables.find(t => t.id === tableId);
+    if (!table) return;
+
+    drawerTitle.innerHTML = `${table.name}`;
+    
+    // Header Status Badge
+    if (table.status === 'occupied') {
+        drawerBadge.innerText = '─Éang d├╣ng bß╗»a';
+        drawerBadge.style.background = 'var(--color-danger)';
+        drawerSubtitle.innerHTML = `<i class="ph-bold ph-users"></i> ${table.capacity} Kh├ích ΓÇó ─É├ú ngß╗ôi ${table.time}`;
+    } else if (table.status === 'cleaning') {
+        drawerBadge.innerText = 'Cß║ºn dß╗ìn';
+        drawerBadge.style.background = 'var(--color-warning)';
+        drawerSubtitle.innerHTML = `<i class="ph-bold ph-clock"></i> Kh├ích vß╗½a thanh to├ín rß╗¥i ─æi`;
+    } else {
+        drawerBadge.innerText = 'Trß╗æng';
+        drawerBadge.style.background = 'var(--color-success)';
+        drawerSubtitle.innerHTML = `<i class="ph-bold ph-users"></i> ${table.capacity} Kh├ích`;
+    }
+
+    // Body content
+    if (table.status === 'empty') {
+        drawerEmptyState.style.display = 'block';
+        drawerOrderSection.style.display = 'none';
+        drawerFooter.innerHTML = '';
+    } else if (table.status === 'cleaning') {
+        drawerEmptyState.style.display = 'none';
+        drawerOrderSection.style.display = 'none';
+        drawerFooter.innerHTML = `<button class="btn-clean-lg" onclick="markTableClean('${table.id}')"><i class="ph-bold ph-check-circle"></i> X├íc nhß║¡n ─É├ú dß╗ìn xong</button>`;
+    } else {
+        drawerEmptyState.style.display = 'none';
+        drawerOrderSection.style.display = 'block';
+        renderOrderItems(table);
+        drawerFooter.innerHTML = '';
+    }
+
+    drawerOverlay.classList.add('active');
+    tableDrawer.classList.add('active');
+
+    if (!skipPushState) {
+        window.history.pushState({table: tableId}, '', `?table=${tableId}`);
+    }
+}
+
+function closeTableDrawer() {
+    drawerOverlay.classList.remove('active');
+    tableDrawer.classList.remove('active');
+    window.history.pushState({}, '', window.location.pathname);
+}
+
+document.getElementById('btn-close-drawer').addEventListener('click', closeTableDrawer);
+drawerOverlay.addEventListener('click', closeTableDrawer);
+
+// Handle browser Back/Forward buttons for URL syncing
+window.addEventListener('popstate', (e) => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tableIdParam = urlParams.get('table');
+    if (tableIdParam) {
+        openTableDrawer(tableIdParam, true);
+    } else {
+        drawerOverlay.classList.remove('active');
+        tableDrawer.classList.remove('active');
+    }
+});
+
+// Render danh s├ích m├│n trong Drawer (chia theo trß║íng th├íi cho dß╗à nh├¼n)
+function renderOrderItems(table) {
+    drawerOrderList.innerHTML = '';
+    
+    // Sort items ─æß╗â "Cß║ºn b╞░ng" l├¬n ─æß║ºu, "─É├ú b╞░ng" xuß╗æng cuß╗æi
+    const sortedItems = [...table.items].sort((a, b) => {
+        const rank = { 'ready': 1, 'cooking': 2, 'pending': 3, 'served': 4 };
+        return rank[a.status] - rank[b.status];
+    });
+
+    sortedItems.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'order-item';
+        
+        let actionBtn = '';
+        if (item.status === 'ready') {
+            actionBtn = `<button class="btn-serve-item" title="X├íc nhß║¡n" onclick="event.stopPropagation(); markItemServed('${table.id}', '${item.id}')">Phß╗Ñc vß╗Ñ</button>`;
+        }
+        
+        let cancelBtn = '';
+        if (item.status === 'pending' || item.status === 'cooking' || item.status === 'ready') {
+            if (item.status === 'cooking' && item.qty <= 1) {
+                cancelBtn = `<button class="btn-void-item" title="Kh├┤ng thß╗â hß╗ºy m├│n ─æang nß║Ñu c├│ sß╗æ l╞░ß╗úng 1" disabled style="opacity: 0.3; cursor: not-allowed;"><i class="ph-bold ph-trash"></i></button>`;
+            } else {
+                cancelBtn = `<button class="btn-void-item" title="─Éiß╗üu chß╗ënh/Hß╗ºy m├│n" onclick="event.stopPropagation(); requestVoid('${table.id}', '${item.id}', '${item.name}', '${item.status}', ${item.qty})"><i class="ph-bold ph-trash"></i></button>`;
+            }
+        } else {
+            cancelBtn = `<div style="width: 36px"></div>`; 
+        }
+
+        let rowStyle = item.status === 'served' ? 'opacity: 0.5; filter: grayscale(1);' : '';
+        let statusColor = '#64748B'; // Default
+        if (item.status === 'pending') statusColor = 'var(--color-warning)';
+        if (item.status === 'cooking') statusColor = 'var(--color-primary)';
+        if (item.status === 'ready') statusColor = 'var(--color-danger)';
+        
+        let statusWeight = item.status === 'served' ? '500' : '800';
+
+        row.innerHTML = `
+            <div class="item-info" style="${rowStyle}">
+                <span class="item-name">${item.name} <span style="color: var(--color-primary); font-weight: 800;">x${item.qty}</span></span>
+                <div class="item-meta">
+                    <span style="color: ${statusColor}; font-weight: ${statusWeight};">${item.statusText}</span>
+                    <span style="color: #94A3B8; font-weight: 500;">${item.price}</span>
+                </div>
+            </div>
+            <div class="item-actions">
+                ${actionBtn}
+                ${cancelBtn}
+            </div>
+        `;
+        drawerOrderList.appendChild(row);
+    });
+}
+
+// 3. NGHIß╗åP Vß╗ñ: ─É├â PHß╗ñC Vß╗ñ (SERVED)
+window.markItemServed = async function(tableId, itemId) {
+    // Optimistic Update
+    const table = tables.find(t => t.id === tableId);
+    if (table) {
+        const item = table.items.find(i => i.id === itemId);
+        if (item) item.status = 'served';
+        if (document.getElementById('table-drawer').classList.contains('active')) {
+            renderOrderItems(table);
+        }
+        renderTables();
+    }
+
+    try {
+        const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/waiter/items/${itemId}/serve`, { method: 'PATCH' });
+        if (!res.ok) throw new Error('Lß╗ùi cß║¡p nhß║¡t');
+        
+        loadTables().then(() => {
+            if (document.getElementById('table-drawer').classList.contains('active')) {
+                const freshTable = tables.find(t => t.id === tableId);
+                if (freshTable) renderOrderItems(freshTable);
+            }
+        });
+    } catch (e) {
+        showToast('Lß╗ùi', 'Kh├┤ng thß╗â x├íc nhß║¡n phß╗Ñc vß╗Ñ', 'danger');
+        loadTables().then(() => {
+            if (document.getElementById('table-drawer').classList.contains('active')) {
+                const freshTable = tables.find(t => t.id === tableId);
+                if (freshTable) renderOrderItems(freshTable);
+            }
+        });
+    }
+}
+
+// 4. NGHIß╗åP Vß╗ñ: HO├ÇN Tß║ñT Dß╗îN B├ÇN
+window.markTableClean = async function(tableId) {
+    try {
+        const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/waiter/tables/${tableId}/clean`, { method: 'PATCH' });
+        if (!res.ok) throw new Error('Lß╗ùi cß║¡p nhß║¡t');
+        
+        closeTableDrawer();
+        await loadTables();
+        showToast('─É├ú dß╗ìn dß║╣p', `B├án ─æ├ú sß║╡n s├áng ─æ├│n kh├ích mß╗¢i.`, 'success');
+    } catch (e) {
+        showToast('Lß╗ùi', 'Kh├┤ng thß╗â cß║¡p nhß║¡t dß╗ìn b├án', 'danger');
+    }
+}
+
+// 5. ─ÉIß╗ÇU CHß╗êNH Sß╗É L╞»ß╗óNG & Hß╗ªY M├ôN
+window.requestVoid = function(tableId, itemId, itemName, itemStatus, itemQty) {
+    if (itemStatus === 'served') {
+        showToast('Lß╗ùi', 'Kh├┤ng thß╗â sß╗¡a m├│n ─æ├ú phß╗Ñc vß╗Ñ', 'danger');
+        return;
+    }
+    
+    const modalDesc = document.getElementById('void-modal-desc');
+    if(modalDesc) {
+        modalDesc.innerHTML = `<span style="color: var(--color-text-main); font-size: 18px; font-weight: 800;">${itemName}</span><br>─Éang c├│ <b>${itemQty}</b> phß║ºn`;
+    }
+    
+    voidQtyInput.value = itemQty; window.currentMaxVoidQty = itemQty;
+    voidError.style.display = 'none';
+    
+    currentActionCb = async (qtyToKeep) => {
+        const qty = qtyToKeep !== undefined ? qtyToKeep : parseInt(voidQtyInput.value, 10);
+        if (isNaN(qty) || qty < 0 || qty > itemQty) {
+            voidError.innerHTML = `<i class="ph-fill ph-warning-circle"></i> Sß╗æ l╞░ß╗úng kh├┤ng hß╗úp lß╗ç (0 ─æß║┐n ${itemQty})!`;
+            voidError.style.display = 'block';
+            return;
+        }
+        
+        // ─É├│ng modal ngay lß║¡p tß╗⌐c cho m╞░ß╗út
+        voidModal.style.display = 'none';
+
+        // Optimistic UI Update: Cß║¡p nhß║¡t dß╗» liß╗çu tß║ím & render lß║íi ngay lß║¡p tß╗⌐c
+        const table = tables.find(t => t.id === tableId);
+        if (table) {
+            if (qty === 0) {
+                table.items = table.items.filter(i => i.id !== itemId);
+            } else {
+                const item = table.items.find(i => i.id === itemId);
+                if (item) item.qty = qty;
+            }
+            if (document.getElementById('table-drawer').classList.contains('active')) {
+                renderOrderItems(table);
+            }
+            renderTables();
+        }
+        
+        try {
+            const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/waiter/items/${itemId}/void`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin: "", new_quantity: qty })
+            });
+            if (!res.ok) {
+                throw new Error('Kh├┤ng thß╗â cß║¡p nhß║¡t m├│n');
+            }
+            
+            showToast('Th├ánh c├┤ng', qty === 0 ? '─É├ú hß╗ºy m├│n.' : `─É├ú ─æiß╗üu chß╗ënh th├ánh ${qty} phß║ºn.`, 'success');
+            
+            // ─Éß╗ông bß╗Ö lß║íi ngß║ºm tß╗½ Server
+            loadTables().then(() => {
+                if (document.getElementById('table-drawer').classList.contains('active')) {
+                    const freshTable = tables.find(t => t.id === tableId);
+                    if (freshTable) renderOrderItems(freshTable);
+                }
+            });
+        } catch (e) {
+            showToast('Lß╗ùi', e.message, 'danger');
+            // Rollback UI nß║┐u lß╗ùi
+            loadTables().then(() => {
+                if (document.getElementById('table-drawer').classList.contains('active')) {
+                    const freshTable = tables.find(t => t.id === tableId);
+                    if (freshTable) renderOrderItems(freshTable);
+                }
+            });
+        }
+    };
+    
+    voidModal.style.display = 'flex';
+};
+
+document.getElementById('btn-cancel-void').addEventListener('click', () => { voidModal.style.display = 'none'; });
+document.getElementById('btn-full-void').addEventListener('click', () => {
+    if (currentActionCb) currentActionCb(0);
+});
+document.getElementById('btn-confirm-void').addEventListener('click', () => {
+    if (voidQtyInput.value !== "") { 
+        if (currentActionCb) currentActionCb();
+    } else { voidError.style.display = 'block'; }
+});
+voidQtyInput.addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') document.getElementById('btn-confirm-void').click();
+});
+
+document.getElementById('btn-void-minus').addEventListener('click', () => {
+    let current = parseInt(voidQtyInput.value, 10);
+    if (!isNaN(current) && current > 0) {
+        voidQtyInput.value = current - 1;
+    }
+});
+
+document.getElementById('btn-void-plus').addEventListener('click', () => {
+    let current = parseInt(voidQtyInput.value, 10);
+    if (!isNaN(current) && current < window.currentMaxVoidQty) {
+        voidQtyInput.value = current + 1;
+    }
+});
+
+// ==========================================
+// TR├îNH GIß║ó Lß║¼P LUß╗ÆNG (SIMULATOR ACTIONS)
+// ==========================================
+
+const notifList = document.getElementById('notif-list');
+const notifCountBadge = document.getElementById('notif-count');
+let notifCount = 0;
+
+// H├ám hiß╗ân thß╗ï Toast chung
+function showToast(title, msg, type = 'primary') {
+    const colors = {
+        'primary': { bg: '#F0F9FF', border: '#0284C7', text: '#0369A1' },
+        'success': { bg: '#F0FDF4', border: '#16A34A', text: '#15803D' },
+        'warning': { bg: '#FFFBEB', border: '#D97706', text: '#B45309' },
+        'danger': { bg: '#FEF2F2', border: '#DC2626', text: '#B91C1C' }
+    };
+    const c = colors[type];
+    
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.style.backgroundColor = c.bg;
+    toast.style.borderLeftColor = c.border;
+    toast.innerHTML = `<h4 class="toast-title" style="color: ${c.border};">${title}</h4><p class="toast-body" style="color: ${c.text};">${msg}</p>`;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 6000);
+}
+
+// ==========================================
+// T├ìNH N─éNG: GOM M├ôN TH├öNG MINH (SMART BATCHING)
+// ==========================================
+
+function renderTasks() {
+    const container = document.getElementById('smart-batching-container');
+    if (!container) return;
+    
+    let grouped = {};
+    let cleaningTasks = [];
+    let totalTasks = 0;
+    
+    // 1. Ph├ón loß║íi tasks
+    tables.forEach(t => {
+        // Lß╗ìc th├┤ng b├ío nhiß╗çm vß╗Ñ theo khu vß╗▒c Waiter ─æang chß╗ìn
+        if (currentZone !== 'all' && t.zone !== currentZone) return;
+
+        if (t.status === 'cleaning') {
+            cleaningTasks.push(t);
+            totalTasks++;
+        }
+        
+        t.items.forEach(i => {
+            if (i.status === 'ready') {
+                if (!grouped[i.name]) grouped[i.name] = { isDrink: i.isDrink, items: [] };
+                grouped[i.name].items.push({ tableId: t.id, tableName: t.name, item: i });
+                totalTasks++;
+            }
+        });
+    });
+    
+    // 2. Cß║¡p nhß║¡t Badge ─æß╗Å d╞░ß╗¢i Bottom Nav (Mobile)
+    const bottomNotifBadge = document.getElementById('bottom-notif-badge');
+    if (bottomNotifBadge) {
+        if (totalTasks > 0) {
+            bottomNotifBadge.innerText = totalTasks;
+            bottomNotifBadge.style.display = 'inline-block';
+        } else {
+            bottomNotifBadge.style.display = 'none';
+        }
+    }
+
+    let html = '';
+
+    // 3. Render nh├│m 1: Gß╗úi ├╜ Gom ─æ╞ín (Gom >= 2)
+    let hasBatched = false;
+    Object.keys(grouped).forEach(itemName => {
+        const group = grouped[itemName];
+        const list = group.items;
+        if (list.length > 1) {
+            if (!hasBatched) {
+                html += '<h4 style="font-size: 12px; font-weight: 800; color: #64748B; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.05em;"><i class="ph-bold ph-lightning"></i> Gß╗úi ├╜ tiß╗çn ─æ╞░ß╗¥ng</h4>';
+                hasBatched = true;
+            }
+            let tablesText = list.map(entry => entry.tableName).join(', ');
+            let totalQty = list.reduce((sum, entry) => sum + (entry.item.qty || 1), 0);
+            
+            html += `
+            <div class="notif-card" style="margin-top: 0; background: #FFFBEB; border-color: #E2E8F0; border-left-color: var(--color-warning);">
+                <div class="notif-header" style="margin-bottom: 8px;">
+                    <span class="notif-table" style="color: #B45309; display: flex; align-items: center; gap: 6px;">
+                        <i class="ph-fill ph-stack"></i> GOM M├ôN
+                    </span>
+                    <span class="notif-time">Mß╗¢i nhß║Ñt</span>
+                </div>
+                <div class="notif-desc" style="margin-bottom: 12px;">
+                    <p style="margin:0; font-size: 16px; color: var(--color-text-main);"><b>${totalQty}x ${itemName}</b></p>
+                    <p style="margin:4px 0 0 0; font-size:13px; color: #64748B; display: flex; align-items: center; gap: 4px;"><i class="ph-bold ph-map-pin"></i> Giao ─æß║┐n: <b style="color: var(--color-text-main);">${tablesText}</b></p>
+                </div>
+                <button class="btn-serve" style="background: #B45309; color: #fff;" onclick="event.stopPropagation(); serveBatch('${itemName}')"><i class="ph-bold ph-check"></i> ─É├ú lß║Ñy xong (${totalQty})</button>
+            </div>
+            `;
+            delete grouped[itemName]; // X├│a ─æß╗â kh├┤ng bß╗ï render lß║íi ß╗ƒ d╞░ß╗¢i
+        }
+    });
+
+    // 4. Render nh├│m 2: Phß╗Ñc vß╗Ñ lß║╗ & Lß║Ñy n╞░ß╗¢c -> Gß╗Öp theo b├án
+    let hasSingles = false;
+    
+    // Gß╗Öp c├íc m├│n lß║╗ theo B├án
+    let singlesByTable = {};
+    Object.keys(grouped).forEach(itemName => {
+        const group = grouped[itemName];
+        group.items.forEach(entry => {
+            if (!singlesByTable[entry.tableId]) {
+                singlesByTable[entry.tableId] = { tableId: entry.tableId, tableName: entry.tableName, items: [] };
+            }
+            singlesByTable[entry.tableId].items.push({ itemName: itemName, isDrink: group.isDrink, item: entry.item });
+        });
+    });
+
+    Object.values(singlesByTable).forEach(tableData => {
+        if (!hasSingles) {
+            html += `<h4 style="font-size: 12px; font-weight: 800; color: #64748B; margin: ${hasBatched ? '16px' : '0'} 0 12px 0; text-transform: uppercase; letter-spacing: 0.05em;"><i class="ph-bold ph-tray"></i> Cß║ºn phß╗Ñc vß╗Ñ</h4>`;
+            hasSingles = true;
+        }
+        
+        const allDrinks = tableData.items.every(i => i.isDrink);
+        const hasDrinks = tableData.items.some(i => i.isDrink);
+        
+        let icon = '<i class="ph-bold ph-cooking-pot"></i> Cß║ªN B╞»NG M├ôN';
+        let titleColor = 'var(--color-success)';
+        let bgColor = '#ffffff';
+        let borderColor = 'var(--color-success)';
+
+        if (allDrinks) {
+            icon = '<i class="ph-bold ph-bottle"></i> Cß║ªN Lß║ñY N╞»ß╗ÜC';
+            titleColor = '#0284C7';
+            bgColor = '#F0F9FF';
+            borderColor = '#38BDF8';
+        } else if (hasDrinks) {
+            icon = '<i class="ph-bold ph-tray"></i> ─Éß╗Æ ─éN & N╞»ß╗ÜC';
+            titleColor = 'var(--color-primary)';
+            borderColor = 'var(--color-primary)';
+        }
+        
+        let itemsHtml = tableData.items.map(i => {
+            return `<p style="margin:0 0 4px 0; font-size: 16px; color: var(--color-text-main);"><b>${i.item.qty || 1}x ${i.itemName}</b></p>`;
+        }).join('');
+        
+        let itemIdsArrayStr = '[' + tableData.items.map(i => `'${i.item.id}'`).join(', ') + ']';
+        let serveAction = `event.stopPropagation(); ${itemIdsArrayStr}.forEach(id => markItemServed('${tableData.tableId}', id))`;
+        
+        html += `
+        <div class="notif-card" style="margin-top: 8px; background: ${bgColor}; border-color: #E2E8F0; border-left-color: ${borderColor};">
+            <div class="notif-header" style="margin-bottom: 8px;">
+                <span class="notif-table" style="color: ${titleColor}; display: flex; align-items: center; gap: 6px;">
+                    ${icon}
+                </span>
+                <span class="notif-time">Vß╗½a xong</span>
+            </div>
+            <div class="notif-desc" style="margin-bottom: 12px;">
+                ${itemsHtml}
+                <p style="margin:4px 0 0 0; font-size:13px; color: #64748B;"><i class="ph-bold ph-map-pin"></i> B├án: <b style="color: var(--color-text-main);">${tableData.tableName}</b></p>
+            </div>
+            <button class="btn-serve" style="background: ${titleColor}; color: #fff;" onclick="${serveAction}"><i class="ph-bold ph-check"></i> ─É├ú ho├án tß║Ñt</button>
+        </div>
+        `;
+    });
+
+    // 5. Render nh├│m 3: Dß╗ìn dß║╣p b├án
+    let hasCleaning = false;
+    cleaningTasks.forEach(t => {
+        if (!hasCleaning) {
+            html += `<h4 style="font-size: 12px; font-weight: 800; color: #64748B; margin: ${(hasBatched || hasSingles) ? '16px' : '0'} 0 12px 0; text-transform: uppercase; letter-spacing: 0.05em;"><i class="ph-bold ph-broom"></i> Cß║ºn dß╗ìn dß║╣p</h4>`;
+            hasCleaning = true;
+        }
+        
+        html += `
+        <div class="notif-card" style="margin-top: 8px; background: #FEF2F2; border-color: #E2E8F0; border-left-color: var(--color-danger);">
+            <div class="notif-header" style="margin-bottom: 8px;">
+                <span class="notif-table" style="color: var(--color-danger); display: flex; align-items: center; gap: 6px;">
+                    <i class="ph-bold ph-broom"></i> Dß╗îN Dß║╕P B├ÇN
+                </span>
+                <span class="notif-time">Vß╗½a xong</span>
+            </div>
+            <div class="notif-desc" style="margin-bottom: 12px;">
+                <p style="margin:0; font-size: 16px; color: var(--color-text-main);">Kh├ích ─æ├ú thanh to├ín rß╗¥i ─æi</p>
+                <p style="margin:4px 0 0 0; font-size:13px; color: #64748B;"><i class="ph-bold ph-map-pin"></i> Vß╗ï tr├¡: <b style="color: var(--color-text-main);">${t.name}</b></p>
+            </div>
+            <button class="btn-serve" style="background: var(--color-danger); color: #fff;" onclick="markTableClean('${t.id}')"><i class="ph-bold ph-check"></i> ─É├ú dß╗ìn xong</button>
+        </div>
+        `;
+    });
+
+    container.innerHTML = html;
+    
+    // 6. Xß╗¡ l├╜ Empty State
+    const emptyState = document.querySelector('#notif-list .empty-state');
+    if (totalTasks > 0) {
+        if (emptyState) emptyState.style.display = 'none';
+    } else {
+        if (emptyState) emptyState.style.display = 'block';
+    }
+}
+
+window.serveBatch = async function(itemName) {
+    const itemsToServe = [];
+    tables.forEach(t => {
+        t.items.forEach(i => {
+            if (i.status === 'ready' && i.name === itemName) {
+                itemsToServe.push(i.id);
+            }
+        });
+    });
+    
+    if (itemsToServe.length === 0) return;
+    
+    try {
+        await Promise.all(itemsToServe.map(id => 
+            fetch(`${window.APP_CONFIG.API_BASE_URL}/waiter/items/${id}/serve`, { method: 'PATCH' })
+        ));
+        
+        await loadTables();
+        
+        if (document.getElementById('table-drawer').classList.contains('active')) {
+            const titleText = document.getElementById('drawer-title').innerText;
+            const activeTable = tables.find(t => t.name.includes(titleText));
+            if (activeTable) renderOrderItems(activeTable);
+        }
+        showToast('Ho├án tß║Ñt', `─É├ú b╞░ng <b>${itemName}</b> ─æß║┐n c├íc b├án.`, 'success');
+    } catch (e) {
+        showToast('Lß╗ùi', 'Kh├┤ng thß╗â gom b╞░ng m├│n', 'danger');
+    }
+}
+
+// T├ìNH N─éNG: TH├öNG B├üO (NOTIFICATION BELL & BOTTOM NAV)
+const sidePanel = document.getElementById('side-panel');
+const mainContent = document.querySelector('.main-content');
+const navNotif = document.getElementById('nav-notif');
+const navTables = document.getElementById('nav-tables');
+const bottomNotifBadge = document.getElementById('bottom-notif-badge');
+
+if (navNotif && navTables) {
+    navNotif.addEventListener('click', () => {
+        navNotif.classList.add('active');
+        navTables.classList.remove('active');
+        sidePanel.classList.add('tab-active');
+        sidePanel.classList.remove('tab-hidden');
+        mainContent.classList.add('tab-hidden');
+        mainContent.classList.remove('tab-active');
+        
+        // Reset badge khi mß╗ƒ tab th├┤ng b├ío
+        bottomNotifBadge.style.display = 'none';
+        bottomNotifBadge.innerText = '0';
+    });
+
+    navTables.addEventListener('click', () => {
+        navTables.classList.add('active');
+        navNotif.classList.remove('active');
+        mainContent.classList.add('tab-active');
+        mainContent.classList.remove('tab-hidden');
+        sidePanel.classList.add('tab-hidden');
+        sidePanel.classList.remove('tab-active');
+    });
+}
+
+// Ghi ─æ├¿ lß║íi h├ánh vi push th├┤ng b├ío ─æß╗â cß║¡p nhß║¡t Badge m├áu ─æß╗Å
+const originalNotifListPrepend = notifList.prepend;
+notifList.prepend = function(node) {
+    originalNotifListPrepend.call(notifList, node);
+    
+    // Nß║┐u ─æang ß╗ƒ tab B├án (side-panel bß╗ï ß║⌐n) tr├¬n mobile, hiß╗çn badge ─æß╗Å ß╗ƒ d╞░ß╗¢i c├╣ng
+    if (window.innerWidth <= 900 && (!navNotif.classList.contains('active'))) {
+        let currentCount = parseInt(bottomNotifBadge.innerText) || 0;
+        bottomNotifBadge.innerText = currentCount + 1;
+        bottomNotifBadge.style.display = 'inline-block';
+    }
+};
+
+// REALTIME: Bß║╛P B├üO M├ôN XONG (US-03 AC2)
+// KDS bß║Ñm "Xong" ΓåÆ backend publish ITEM_READY {chitietmon_id, ban, tenmon, soluong}
+// l├¬n k├¬nh kds:tickets ΓåÆ hiß╗çn th├┤ng b├ío + toast + tiß║┐ng "ting".
+// ==========================================
+const escHtml = s => String(s ?? '').replace(/[&<>"']/g, c => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+));
+
+// Smart Batching (US-10) Buffer
+const batchingTimers = {};
+
+function pushReadyNotifBatch(ban) {
+    const batch = batchingTimers[ban];
+    if (!batch || batch.items.length === 0) return;
+    
+    const items = batch.items;
+    delete batchingTimers[ban];
+    
+    const emptyState = notifList.querySelector('.empty-state');
+    if (emptyState) emptyState.style.display = 'none';
+
+    const table = tables.find(t => t.name === ban);
+    const time = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    
+    const totalItems = items.reduce((sum, i) => sum + i.soluong, 0);
+    const itemsHtml = items.map(i => `<p style="margin:0 0 4px 0;"><i class="ph-bold ph-cooking-pot"></i> <b>${escHtml(i.tenmon)}</b> ├ù ${i.soluong}</p>`).join('');
+    
+    const card = document.createElement('div');
+    card.className = 'notif-card';
+    card.innerHTML = `
+        <div class="notif-header"><span class="notif-table">Bß║┐p Gß╗ìi: ${escHtml(ban)}</span><span class="notif-time">${time}</span></div>
+        <div class="notif-desc">
+            ${itemsHtml}
+        </div>
+        ${table ? `<button class="btn-serve" onclick="openTableDrawer('${table.id}')"><i class="ph-bold ph-eye"></i> Mß╗ƒ xem ${escHtml(ban)}</button>` : ''}
+    `;
+    notifList.prepend(card);
+    notifCount++; notifCountBadge.innerText = notifCount;
+
+    showToast('KDS Alert', `${escHtml(ban)}: <b>${totalItems} m├│n</b> ─æ├ú sß║╡n s├áng. Mß╗¥i b╞░ng m├│n!`, 'success');
+    if (typeof playTing === 'function') playTing();
+}
+
+function handleItemReadyEvent({ ban, tenmon, soluong }) {
+    // US-11: Lß╗ìc bß╗Å qua th├┤ng b├ío nß║┐u b├án thuß╗Öc khu vß╗▒c kh├íc
+    const table = tables.find(t => t.name === ban);
+    if (table && currentZone !== 'all' && table.zone !== currentZone) {
+        return; // Bß╗Å qua, kh├┤ng ─æ╞░a v├áo danh s├ích gß╗Öp hay k├¬u chu├┤ng
+    }
+
+    if (!batchingTimers[ban]) {
+        batchingTimers[ban] = {
+            items: [],
+            timerId: setTimeout(() => pushReadyNotifBatch(ban), 10000)
+        };
+    }
+    batchingTimers[ban].items.push({ tenmon, soluong: Number(soluong) || 1 });
+}
+
+function handleTableCleaningEvent({ ban, ban_id }) {
+    // Lß╗ìc theo khu vß╗▒c
+    const table = tables.find(t => t.id === ban_id || t.name === ban);
+    if (table && currentZone !== 'all' && table.zone !== currentZone) {
+        return; 
+    }
+    
+    showToast('Dß╗ìn dß║╣p', `Kh├ích b├án <b>${ban}</b> ─æ├ú thanh to├ín rß╗¥i ─æi. Cß║ºn dß╗ìn dß║╣p!`, 'warning');
+    if (typeof playTing === 'function') playTing();
+    loadTables(); // Reload lß║íi bß║úng ─æß╗â cß║¡p nhß║¡t giao diß╗çn
+}
+
+if (typeof subscribeChannel === 'function') {
+    subscribeChannel('kds:tickets', msg => {
+        if (msg.event === 'ITEM_READY') handleItemReadyEvent(msg.payload || {});
+        if (msg.event === 'TABLE_CLEANING') handleTableCleaningEvent(msg.payload || {});
+    });
+}
+
+// Khß╗ƒi chß║íy
+loadTables();
+
+// T├ìNH N─éNG Mß╗₧ IFRAME KH├üCH H├ÇNG & MOBILE NAV
+window.openCustomerIframe = function(tableName) {
+    const iframe = document.getElementById('customer-iframe');
+    const modal = document.getElementById('iframe-modal');
+    if (iframe && modal) {
+        iframe.src = '../customer/customer.html?table=' + encodeURIComponent(tableName);
+        modal.style.display = 'flex';
+    }
+}
+const btnCloseIframe = document.getElementById('btn-close-iframe');
+if (btnCloseIframe) {
+    btnCloseIframe.addEventListener('click', () => {
+        document.getElementById('iframe-modal').style.display = 'none';
+        document.getElementById('customer-iframe').src = '';
+        loadTables();
+    });
+}

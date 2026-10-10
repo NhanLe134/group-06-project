@@ -123,9 +123,7 @@ class CongThuc(Base):
     thucdon_id: Mapped[str | None] = mapped_column(
         String(30), ForeignKey("thucdon.id", ondelete="CASCADE"), default=None
     )
-    tonkho_id: Mapped[str | None] = mapped_column(
-        String(30), ForeignKey("tonkho.id", ondelete="CASCADE"), default=None
-    )
+    tonkho_id: Mapped[str | None] = mapped_column(String(30), ForeignKey("tonkho.id", ondelete="CASCADE"), default=None)
     dinhluong: Mapped[Decimal] = mapped_column(Numeric)
 
     nguyenlieu: Mapped[TonKho] = relationship(lazy="selectin")

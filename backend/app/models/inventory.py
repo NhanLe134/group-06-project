@@ -65,9 +65,7 @@ class ChiTietKiemKe(Base):
 
     # Mã do database tự sinh (migration 007, ADR-ARCH-004), vd. MON001, HD-20261006-0001
     id: Mapped[str] = mapped_column(String(30), primary_key=True, server_default=FetchedValue())
-    phieukiemke_id: Mapped[str] = mapped_column(
-        String(30), ForeignKey("phieukiemke.id", ondelete="CASCADE")
-    )
+    phieukiemke_id: Mapped[str] = mapped_column(String(30), ForeignKey("phieukiemke.id", ondelete="CASCADE"))
     thucdon_id: Mapped[str] = mapped_column(String(30), ForeignKey("thucdon.id"))
     tondauca: Mapped[int] = mapped_column(Integer)
     daban: Mapped[int | None] = mapped_column(Integer, default=None)

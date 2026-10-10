@@ -30,9 +30,14 @@ Db = Annotated[AsyncSession, Depends(get_db)]
 async def create_order(data: OrderCreateIn, db: Db) -> OrderCurrentOut:
     """US-01 — Gửi bếp: mỗi lần gọi = 1 phiếu bàn mới (hoadon_id NULL)."""
     order, flipped = await service.create_order(db, data)
-    log.info("order_sent_to_kitchen %s", kv(
-        ban=order.table_name, items=sum(it.soluong for it in data.items), lines=len(data.items),
-    ))
+    log.info(
+        "order_sent_to_kitchen %s",
+        kv(
+            ban=order.table_name,
+            items=sum(it.soluong for it in data.items),
+            lines=len(data.items),
+        ),
+    )
     # US-03 AC1: báo màn hình Bếp (KDS) có món mới — KDS tự tải lại GET /kds/items
     await manager.publish(
         KDS_CHANNEL,
@@ -45,18 +50,16 @@ async def create_order(data: OrderCreateIn, db: Db) -> OrderCurrentOut:
     )
     # Món vừa hết hàng do trừ kho → khóa trên E-Menu/KDS ngay (US-03 AC3)
     await broadcast_flipped(db, flipped)
-    
+
     # Báo đồ uống cho Waiter (các món mới gọi đợt này có trạng thái da_xong)
     if order.items:
         max_dot = max((i.dot for i in order.items if i.dot is not None), default=0)
         new_drinks = [i for i in order.items if i.dot == max_dot and i.trangthai == "da_xong"]
         for d in new_drinks:
             await manager.publish(
-                "kds:tickets",
-                "ITEM_READY",
-                {"ban": order.table_name, "tenmon": d.tenmon, "soluong": d.soluong}
+                "kds:tickets", "ITEM_READY", {"ban": order.table_name, "tenmon": d.tenmon, "soluong": d.soluong}
             )
-            
+
     return order
 
 
@@ -86,11 +89,7 @@ async def create_pay_qr(ban_id: str, db: Db) -> PayQrOut:
 async def close_table(ban_id: str, db: Db) -> dict:
     """US-05 — Xác nhận đã nhận tiền: tạo hoadon, gắn các phiếu, bàn về chờ dọn (3)."""
     result = await service.close_table(db, ban_id)
-    await manager.publish(
-        "kds:tickets",
-        "TABLE_CLEANING",
-        {"ban": result["table_name"], "ban_id": result["ban_id"]}
-    )
+    await manager.publish("kds:tickets", "TABLE_CLEANING", {"ban": result["table_name"], "ban_id": result["ban_id"]})
     return result
 
 

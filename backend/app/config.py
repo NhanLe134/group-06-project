@@ -23,7 +23,18 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     jwt_secret: str = "change-me"
+    # Chấp nhận cả GEMINI_API_KEY (tên cũ trong .env của một số thành viên)
+    # lẫn AI_API_KEY — pydantic-settings tự đọc tên biến khớp field name.
+    # Nếu .env dùng GEMINI_API_KEY thì khai thêm alias dưới đây.
     ai_api_key: str = ""
+    gemini_api_key: str = ""  # alias cho GEMINI_API_KEY trong .env
+    # Tên model Gemini — mặc định gemini-2.5-flash nếu không khai báo AI_MODEL trong .env
+    ai_model: str = "models/gemini-2.5-flash"
+
+    @property
+    def effective_ai_key(self) -> str:
+        """Trả về key Gemini hợp lệ đầu tiên tìm thấy."""
+        return self.ai_api_key or self.gemini_api_key
 
     # Supabase — SECRET, chỉ nằm ở backend (tác vụ server-side, ví dụ Realtime broadcast).
     # Tuyệt đối không trả về client, không đưa vào frontend.

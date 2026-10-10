@@ -12,9 +12,7 @@ async def test_list_menu_items_empty(client: AsyncClient):
     assert resp.json() == []
 
 
-async def test_list_menu_items_maps_thucdon_to_api_fields(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_list_menu_items_maps_thucdon_to_api_fields(client: AsyncClient, db_session: AsyncSession):
     """GIVEN 1 mon trong bang thucdon, WHEN GET /menu,
     THEN tra ve dung ten truong API (name, price...)."""
     db_session.add(ThucDon(tenmon="Phở bò tái lăn", phanloai="Món chính", giaban=65000))
@@ -32,14 +30,10 @@ async def test_list_menu_items_maps_thucdon_to_api_fields(
     assert body[0]["bestseller"] is False  # banchay NULL → không phải món bán chạy
 
 
-async def test_menu_item_out_of_stock_when_trangthaiban_false(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_menu_item_out_of_stock_when_trangthaiban_false(client: AsyncClient, db_session: AsyncSession):
     """GIVEN mon co trangthaiban = false (Bep bao Het hang - REQ-09), WHEN GET /menu,
     THEN status = out_of_stock de E-Menu lam mo mon."""
-    db_session.add(
-        ThucDon(tenmon="Bò sốt tiêu đen", phanloai="Món chính", giaban=120000, trangthaiban=False)
-    )
+    db_session.add(ThucDon(tenmon="Bò sốt tiêu đen", phanloai="Món chính", giaban=120000, trangthaiban=False))
     await db_session.commit()
 
     resp = await client.get("/menu")
@@ -50,16 +44,12 @@ async def test_menu_item_out_of_stock_when_trangthaiban_false(
     assert body["listed"] is False
 
 
-async def test_menu_item_het_ton_nhung_van_ban_co_listed(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_menu_item_het_ton_nhung_van_ban_co_listed(client: AsyncClient, db_session: AsyncSession):
     """ADR-N11: trangthaiban = true + soluongton = 0 → món VẪN HIỂN trên E-Menu
     (listed = true) với status out_of_stock để render xám "Hết hàng"."""
     from app.models.menu import ThucDon, true
 
-    db_session.add(
-        ThucDon(tenmon="Trà đá", phanloai="Đồ uống", giaban=5000, trangthaiban=true(), soluongton=0)
-    )
+    db_session.add(ThucDon(tenmon="Trà đá", phanloai="Đồ uống", giaban=5000, trangthaiban=true(), soluongton=0))
     await db_session.commit()
 
     resp = await client.get("/menu")
@@ -89,9 +79,7 @@ async def _drink(db_session: AsyncSession, stock: int | None) -> ThucDon:
     return mon
 
 
-async def test_menu_returns_stock_and_null_for_untracked_items(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_menu_returns_stock_and_null_for_untracked_items(client: AsyncClient, db_session: AsyncSession):
     """GIVEN đồ uống có soluongton = 24 và món nấu không đếm số lượng,
     WHEN GET /menu, THEN stock = 24 / null, cả hai đều đang bán."""
     await _drink(db_session, 24)
@@ -152,15 +140,15 @@ async def test_api_list_menu_items_empty(client: AsyncClient):
     assert resp.json() == []
 
 
-async def test_api_list_menu_items_filters_category_and_availability(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_api_list_menu_items_filters_category_and_availability(client: AsyncClient, db_session: AsyncSession):
     """Category and availability query parameters are applied together."""
     db_session.add_all(
         [
             ThucDon(tenmon="Bò xào", phanloai="Món chính", giaban=85000),
             ThucDon(
-                tenmon="Bò sốt tiêu", phanloai="Món chính", giaban=120000,
+                tenmon="Bò sốt tiêu",
+                phanloai="Món chính",
+                giaban=120000,
                 trangthaiban=False,
             ),
             ThucDon(tenmon="Coca", phanloai="Đồ uống", giaban=15000),
@@ -168,12 +156,8 @@ async def test_api_list_menu_items_filters_category_and_availability(
     )
     await db_session.commit()
 
-    available = await client.get(
-        "/api/menu", params={"category": "Món chính", "is_available": "true"}
-    )
-    unavailable = await client.get(
-        "/api/menu", params={"category": "Món chính", "is_available": "false"}
-    )
+    available = await client.get("/api/menu", params={"category": "Món chính", "is_available": "true"})
+    unavailable = await client.get("/api/menu", params={"category": "Món chính", "is_available": "false"})
 
     assert available.status_code == unavailable.status_code == 200
     assert [item["name"] for item in available.json()] == ["Bò xào"]
@@ -187,9 +171,7 @@ async def test_api_get_menu_item_returns_not_found_error(client: AsyncClient):
     assert resp.json()["error_code"] == "MENU_ITEM_NOT_FOUND"
 
 
-async def test_api_create_menu_item_maps_all_fields(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_api_create_menu_item_maps_all_fields(client: AsyncClient, db_session: AsyncSession):
     payload = {
         "name": "Bún chả Hà Nội",
         "description": "Bún chả nướng ăn kèm rau sống",
@@ -225,9 +207,7 @@ async def test_api_create_menu_item_rejects_invalid_required_fields(client: Asyn
     assert resp.status_code == 422
 
 
-async def test_api_update_menu_item_changes_only_submitted_fields(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_api_update_menu_item_changes_only_submitted_fields(client: AsyncClient, db_session: AsyncSession):
     mon = ThucDon(
         tenmon="Coca",
         phanloai="Đồ uống",
@@ -305,9 +285,7 @@ async def test_api_update_stock_validates_and_updates_availability(
     assert invalid.status_code == 422
 
 
-async def test_api_delete_menu_item_returns_no_content_and_404(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_api_delete_menu_item_returns_no_content_and_404(client: AsyncClient, db_session: AsyncSession):
     mon = ThucDon(tenmon="Sữa chua", phanloai="Tráng miệng", giaban=25000)
     db_session.add(mon)
     await db_session.commit()
