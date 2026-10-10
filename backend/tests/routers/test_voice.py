@@ -37,9 +37,7 @@ async def _dish(
 
 
 @pytest.mark.parametrize("endpoint", VOICE_ENDPOINTS)
-async def test_voice_endpoint_parses_order_and_modifier(
-    client: AsyncClient, db_session: AsyncSession, endpoint: str
-):
+async def test_voice_endpoint_parses_order_and_modifier(client: AsyncClient, db_session: AsyncSession, endpoint: str):
     dish = await _dish(db_session, "Bún chả Hà Nội", price=55000)
 
     resp = await client.post(
@@ -51,17 +49,13 @@ async def test_voice_endpoint_parses_order_and_modifier(
     body = resp.json()
     assert body["transcript"] == "Cho tôi 2 Bún chả Hà Nội không hành"
     assert body["intent"] == "order"
-    assert body["adds"] == [
-        {"id": dish.id, "name": "Bún chả Hà Nội", "qty": 2, "note": "Không hành", "price": 55000}
-    ]
+    assert body["adds"] == [{"id": dish.id, "name": "Bún chả Hà Nội", "qty": 2, "note": "Không hành", "price": 55000}]
     assert body["not_found"] == []
     assert "Không hành" in body["message"]
 
 
 @pytest.mark.parametrize("endpoint", VOICE_ENDPOINTS)
-async def test_voice_endpoint_validates_missing_or_blank_transcript(
-    client: AsyncClient, endpoint: str
-):
+async def test_voice_endpoint_validates_missing_or_blank_transcript(client: AsyncClient, endpoint: str):
     missing = await client.post(endpoint, json={})
     blank = await client.post(endpoint, json={"transcript": "   "})
 
@@ -78,9 +72,7 @@ async def test_voice_endpoint_rejects_invalid_draft_quantity(client: AsyncClient
     assert resp.status_code == 422
 
 
-async def test_voice_endpoint_asks_for_quantity_when_customer_omits_it(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_voice_endpoint_asks_for_quantity_when_customer_omits_it(client: AsyncClient, db_session: AsyncSession):
     dish = await _dish(db_session, "Phở bò tái lăn")
 
     resp = await client.post("/voice/interpret", json={"transcript": "Cho tôi Phở bò tái lăn"})
@@ -92,37 +84,25 @@ async def test_voice_endpoint_asks_for_quantity_when_customer_omits_it(
     assert body["needs_quantity_for"] == {"item_id": dish.id, "item_name": dish.tenmon}
 
 
-async def test_voice_endpoint_reports_requested_quantity_over_stock(
-    client: AsyncClient, db_session: AsyncSession
-):
-    dish = await _dish(
-        db_session, "Coca", category="Đồ uống", price=15000, soluongton=2
-    )
+async def test_voice_endpoint_reports_requested_quantity_over_stock(client: AsyncClient, db_session: AsyncSession):
+    dish = await _dish(db_session, "Coca", category="Đồ uống", price=15000, soluongton=2)
 
-    resp = await client.post(
-        "/api/v1/ai/voice-parse", json={"transcript": "Cho 3 Coca"}
-    )
+    resp = await client.post("/api/v1/ai/voice-parse", json={"transcript": "Cho 3 Coca"})
 
     assert resp.status_code == 200
     body = resp.json()
     assert body["adds"] == []
-    assert body["stock_limits"] == [
-        {"item_id": dish.id, "item_name": "Coca", "requested": 3, "available": 2}
-    ]
+    assert body["stock_limits"] == [{"item_id": dish.id, "item_name": "Coca", "requested": 3, "available": 2}]
     assert "chỉ còn 2 phần Coca" in body["message"]
 
 
-async def test_voice_endpoint_recommends_available_beverages_only(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_voice_endpoint_recommends_available_beverages_only(client: AsyncClient, db_session: AsyncSession):
     coca = await _dish(db_session, "Coca", category="Đồ uống", price=15000)
     await _dish(db_session, "Trà đá", category="Đồ uống", price=10000, soluongton=0)
     appetizer = await _dish(db_session, "Khoai tây chiên", category="Khai vị", price=40000)
     await _dish(db_session, "Phở bò", category="Món chính", price=65000)
 
-    resp = await client.post(
-        "/voice/interpret", json={"transcript": "Quán có nước uống gì?"}
-    )
+    resp = await client.post("/voice/interpret", json={"transcript": "Quán có nước uống gì?"})
 
     assert resp.status_code == 200
     body = resp.json()
@@ -133,9 +113,7 @@ async def test_voice_endpoint_recommends_available_beverages_only(
     assert "Khoai tây chiên" in body["message"]
 
 
-async def test_voice_endpoint_soup_search_excludes_beverages(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_voice_endpoint_soup_search_excludes_beverages(client: AsyncClient, db_session: AsyncSession):
     pho = await _dish(
         db_session,
         "Phở bò",
@@ -144,9 +122,7 @@ async def test_voice_endpoint_soup_search_excludes_beverages(
     )
     await _dish(db_session, "Coca", category="Đồ uống", price=15000)
 
-    resp = await client.post(
-        "/api/v1/ai/voice-parse", json={"transcript": "Quán có món súp gì không?"}
-    )
+    resp = await client.post("/api/v1/ai/voice-parse", json={"transcript": "Quán có món súp gì không?"})
 
     assert resp.status_code == 200
     body = resp.json()
@@ -224,9 +200,7 @@ async def test_voice_endpoint_keeps_item_when_customer_declines_allergy_removal(
     assert "giữ món Bò xào" in body["message"]
 
 
-async def test_voice_endpoint_decreases_quantity_in_order_draft(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_voice_endpoint_decreases_quantity_in_order_draft(client: AsyncClient, db_session: AsyncSession):
     coca = await _dish(db_session, "Coca", category="Đồ uống", price=15000)
 
     resp = await client.post(
@@ -244,9 +218,7 @@ async def test_voice_endpoint_decreases_quantity_in_order_draft(
     assert "giảm xuống còn 2 Coca" in body["message"]
 
 
-async def test_voice_endpoint_removes_item_from_order_draft(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_voice_endpoint_removes_item_from_order_draft(client: AsyncClient, db_session: AsyncSession):
     coca = await _dish(db_session, "Coca", category="Đồ uống", price=15000)
 
     resp = await client.post(
@@ -268,9 +240,7 @@ async def test_voice_endpoint_returns_not_found_item_without_mutating_draft(
 ):
     await _dish(db_session, "Phở bò tái lăn")
 
-    resp = await client.post(
-        "/api/v1/ai/voice-parse", json={"transcript": "Cho tôi 1 pizza"}
-    )
+    resp = await client.post("/api/v1/ai/voice-parse", json={"transcript": "Cho tôi 1 pizza"})
 
     assert resp.status_code == 200
     body = resp.json()
@@ -280,9 +250,7 @@ async def test_voice_endpoint_returns_not_found_item_without_mutating_draft(
 
 
 async def test_voice_endpoint_recognizes_finish_intent(client: AsyncClient):
-    resp = await client.post(
-        "/voice/interpret", json={"transcript": "Tôi chọn món xong rồi"}
-    )
+    resp = await client.post("/voice/interpret", json={"transcript": "Tôi chọn món xong rồi"})
 
     assert resp.status_code == 200
     body = resp.json()
@@ -293,9 +261,8 @@ async def test_voice_endpoint_recognizes_finish_intent(client: AsyncClient):
 
 # ── TEST CASES THEO YÊU CẦU 6 CASE ──
 
-async def test_case_1_spicy_dishes_with_reason_and_price(
-    client: AsyncClient, db_session: AsyncSession
-):
+
+async def test_case_1_spicy_dishes_with_reason_and_price(client: AsyncClient, db_session: AsyncSession):
     """Case 1: 'Em ơi quán có món nào cay không?' -> Chỉ món có độ cay trong DB kèm lý do & giá."""
     spicy_dish = await _dish(db_session, "Gà Rán Giòn Cay", price=65000, docay="Cay vừa")
     await _dish(db_session, "Phở bò", price=65000, docay=None)
@@ -312,9 +279,7 @@ async def test_case_1_spicy_dishes_with_reason_and_price(
     assert "Cay vừa" in body["message"]
 
 
-async def test_case_2_non_spicy_dishes_exclude_spicy_with_reason(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_case_2_non_spicy_dishes_exclude_spicy_with_reason(client: AsyncClient, db_session: AsyncSession):
     """Case 2: 'Tôi không ăn được cay, gợi ý món đi' -> Loại hết món cay, gợi ý món khác kèm lý do."""
     spicy_dish = await _dish(db_session, "Gà Rán Giòn Cay", price=65000, docay="Cay vừa")
     normal_dish = await _dish(db_session, "Bún chả Hà Nội", price=55000, docay=None)
@@ -330,9 +295,7 @@ async def test_case_2_non_spicy_dishes_exclude_spicy_with_reason(
     assert "55.000đ" in body["message"]
 
 
-async def test_case_3_dessert_dishes_only(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_case_3_dessert_dishes_only(client: AsyncClient, db_session: AsyncSession):
     """Case 3: 'Cho tôi món ngọt tráng miệng' -> Chỉ món trong Tráng miệng."""
     flan = await _dish(db_session, "Bánh Flan", category="Tráng miệng", price=25000)
     yogurt = await _dish(db_session, "Sữa chua Hy Lạp", category="Tráng miệng", price=30000)
@@ -348,9 +311,7 @@ async def test_case_3_dessert_dishes_only(
     assert "Bánh Flan" in body["message"] or "Sữa chua Hy Lạp" in body["message"]
 
 
-async def test_case_4_light_food_real_data_or_ask_clarification(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_case_4_light_food_real_data_or_ask_clarification(client: AsyncClient, db_session: AsyncSession):
     """Case 4: 'Có món nào thanh đạm, nhẹ bụng không?' -> Dữ liệu thật / hỏi lại nếu thiếu thông tin."""
     # Subtest 4a: DB chưa có món nào ghi "thanh đạm" -> Hỏi lại 1 câu
     await _dish(db_session, "Phở bò", mota="Món ăn truyền thống")
@@ -371,10 +332,10 @@ async def test_case_4_light_food_real_data_or_ask_clarification(
     assert "Gỏi cuốn" in body2["message"]
 
 
-async def test_case_5_soup_cold_weather_seafood_warning(
-    client: AsyncClient, db_session: AsyncSession
-):
-    """Case 5: 'Tôi muốn món có nước, trời lạnh' -> Món có nước dùng; cảnh báo hải sản nếu tất cả món nước là hải sản."""
+async def test_case_5_soup_cold_weather_seafood_warning(client: AsyncClient, db_session: AsyncSession):
+    """Case 5: 'Tôi muốn món có nước, trời lạnh' -> Món có nước dùng;
+    cảnh báo hải sản nếu tất cả món nước là hải sản.
+    """
     lau_hai_san = await _dish(
         db_session,
         "Set lẩu hải sản 4 người",
@@ -395,9 +356,7 @@ async def test_case_5_soup_cold_weather_seafood_warning(
     assert any(w["item_id"] == lau_hai_san.id for w in body["warnings"])
 
 
-async def test_case_6_best_seller_matches_real_label(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_case_6_best_seller_matches_real_label(client: AsyncClient, db_session: AsyncSession):
     """Case 6: 'Gợi ý món bán chạy của quán' -> Chỉ nói bán chạy nếu có cờ/thống kê thật."""
     pho_banchay = await _dish(db_session, "Phở bò tái lăn", price=65000, banchay=True)
     bun_normal = await _dish(db_session, "Bún chả Hà Nội", price=55000, banchay=False)
@@ -413,22 +372,13 @@ async def test_case_6_best_seller_matches_real_label(
     assert "khớp nhãn Bán chạy" in body["message"] or "Bán chạy" in body["message"]
 
 
-async def test_screenshot_case_light_food_with_shrimp(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_screenshot_case_light_food_with_shrimp(client: AsyncClient, db_session: AsyncSession):
     """Test câu hỏi trong ảnh 1: 'Tôi thích ăn món thanh đạm mà có chứa tôm'."""
     goi_cuon = await _dish(
-        db_session,
-        "Gỏi cuốn",
-        price=45000,
-        thanhphan="Tôm, thịt heo, rau củ",
-        mota="Món thanh đạm, nhẹ bụng"
+        db_session, "Gỏi cuốn", price=45000, thanhphan="Tôm, thịt heo, rau củ", mota="Món thanh đạm, nhẹ bụng"
     )
 
-    resp = await client.post(
-        "/voice/interpret",
-        json={"transcript": "Tôi thích ăn món thanh đạm mà có chứa tôm"}
-    )
+    resp = await client.post("/voice/interpret", json={"transcript": "Tôi thích ăn món thanh đạm mà có chứa tôm"})
     assert resp.status_code == 200
     body = resp.json()
     assert body["intent"] == "ingredient_search"
@@ -439,22 +389,13 @@ async def test_screenshot_case_light_food_with_shrimp(
     assert "chưa có thông tin đánh dấu món" not in body["message"]
 
 
-async def test_screenshot_case_shrimp_or_seafood(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_screenshot_case_shrimp_or_seafood(client: AsyncClient, db_session: AsyncSession):
     """Test câu hỏi trong ảnh 2: 'tôi thích ăn món có chứa tôm hoặc hải sản'."""
     lau_hai_san = await _dish(
-        db_session,
-        "Set lẩu hải sản 4 người",
-        price=350000,
-        thanhphan="Tôm, mực, cá",
-        thongtindiung="Hải sản"
+        db_session, "Set lẩu hải sản 4 người", price=350000, thanhphan="Tôm, mực, cá", thongtindiung="Hải sản"
     )
 
-    resp = await client.post(
-        "/voice/interpret",
-        json={"transcript": "tôi thích ăn món có chứa tôm hoặc hải sản"}
-    )
+    resp = await client.post("/voice/interpret", json={"transcript": "tôi thích ăn món có chứa tôm hoặc hải sản"})
     assert resp.status_code == 200
     body = resp.json()
     assert body["intent"] == "ingredient_search"
@@ -462,5 +403,3 @@ async def test_screenshot_case_shrimp_or_seafood(
     assert lau_hai_san.id in rec_ids
     assert "tôm hoặc hải sản" in body["message"].lower()
     assert "chua tom hoac hai san" not in body["message"]
-
-

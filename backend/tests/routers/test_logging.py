@@ -37,22 +37,22 @@ async def test_order_and_kitchen_actions_are_logged(
     mon = await _seed(db_session, soluongton=5)
     note = "Không đá — dị ứng lạnh"
 
-    resp = await client.post("/orders", json={
-        "table_name": "Bàn 01", "items": [{"thucdon_id": mon.id, "soluong": 2, "ghichu": note}],
-    })
+    resp = await client.post(
+        "/orders",
+        json={
+            "table_name": "Bàn 01",
+            "items": [{"thucdon_id": mon.id, "soluong": 2, "ghichu": note}],
+        },
+    )
     item_id = resp.json()["items"][0]["id"]
     await client.patch(f"/kds/items/{item_id}/status", json={"trangthai": "da_xong"})
     await client.post(f"/menu/items/{mon.id}/out-of-stock")
 
-    assert any("order_sent_to_kitchen" in m and "items=2" in m
-               for m in _messages(caplog, "app.orders"))
+    assert any("order_sent_to_kitchen" in m and "items=2" in m for m in _messages(caplog, "app.orders"))
     assert any("stock_reserved" in m and mon.id in m for m in _messages(caplog, "app.stock"))
-    assert any(f"item={item_id}" in m and "trangthai=da_xong" in m
-               for m in _messages(caplog, "app.kds"))
-    assert any("menu_availability" in m and "status=out_of_stock" in m
-               for m in _messages(caplog, "app.menu"))
-    assert any("request" in m and "path=/orders" in m and "status=200" in m
-               for m in _messages(caplog, "app.http"))
+    assert any(f"item={item_id}" in m and "trangthai=da_xong" in m for m in _messages(caplog, "app.kds"))
+    assert any("menu_availability" in m and "status=out_of_stock" in m for m in _messages(caplog, "app.menu"))
+    assert any("request" in m and "path=/orders" in m and "status=200" in m for m in _messages(caplog, "app.http"))
     assert note not in caplog.text  # không ghi ghi chú khách (dữ liệu cá nhân)
 
 
@@ -62,14 +62,19 @@ async def test_rejected_order_is_logged_as_business_error(
     caplog.set_level(logging.INFO, logger="app")
     mon = await _seed(db_session, soluongton=1)
 
-    resp = await client.post("/orders", json={
-        "table_name": "Bàn 01", "items": [{"thucdon_id": mon.id, "soluong": 3}],
-    })
+    resp = await client.post(
+        "/orders",
+        json={
+            "table_name": "Bàn 01",
+            "items": [{"thucdon_id": mon.id, "soluong": 3}],
+        },
+    )
 
     assert resp.status_code == 409
     assert any("stock_rejected" in m and mon.id in m for m in _messages(caplog, "app.stock"))
-    assert any("api_error" in m and "status=409" in m and "code=ITEM_OUT_OF_STOCK" in m
-               for m in _messages(caplog, "app.http"))
+    assert any(
+        "api_error" in m and "status=409" in m and "code=ITEM_OUT_OF_STOCK" in m for m in _messages(caplog, "app.http")
+    )
 
 
 async def test_unexpected_error_returns_generic_500_and_logs_traceback(
@@ -98,7 +103,8 @@ async def test_unexpected_error_returns_generic_500_and_logs_traceback(
 
     assert resp.status_code == 500
     assert resp.json() == {
-        "error_code": "INTERNAL_ERROR", "message": "Lỗi máy chủ, vui lòng thử lại.",
+        "error_code": "INTERNAL_ERROR",
+        "message": "Lỗi máy chủ, vui lòng thử lại.",
     }
     assert "db connection lost" not in resp.text  # không lộ chi tiết bên trong cho client
     errors = [r for r in caplog.records if r.name == "app.http" and r.levelno == logging.ERROR]

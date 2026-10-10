@@ -4,8 +4,6 @@ import logging
 import re
 import unicodedata
 
-logger = logging.getLogger(__name__)
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,9 +26,20 @@ from app.schemas.voice import (
     VoiceWarning,
 )
 
+logger = logging.getLogger(__name__)
+
 QUANTITIES = {
-    "mot": 1, "hai": 2, "ba": 3, "bon": 4, "tu": 4, "nam": 5,
-    "sau": 6, "bay": 7, "tam": 8, "chin": 9, "muoi": 10,
+    "mot": 1,
+    "hai": 2,
+    "ba": 3,
+    "bon": 4,
+    "tu": 4,
+    "nam": 5,
+    "sau": 6,
+    "bay": 7,
+    "tam": 8,
+    "chin": 9,
+    "muoi": 10,
 }
 # Ánh xạ tên dị ứng → các từ khóa cần khớp trong allergens/ingredients/name/description.
 # Hải sản = toàn bộ nhóm: tôm, cua, mực, cá, nghêu, sò, ốc, ghẹ, ngao, hào...
@@ -38,16 +47,39 @@ ALLERGEN_ALIASES: dict[str, tuple[str, ...]] = {
     "tôm": ("tom", "shrimp", "prawn"),
     "hành": ("hanh", "onion", "spring onion", "green onion", "shallot"),
     "hải sản": (
-        "hai san", "seafood", "do bien",
+        "hai san",
+        "seafood",
+        "do bien",
         # tôm các loại
-        "tom su", "tom the", "tom hum", "tom tit", "tom cang", "tom bien", "tom tuoi",
+        "tom su",
+        "tom the",
+        "tom hum",
+        "tom tit",
+        "tom cang",
+        "tom bien",
+        "tom tuoi",
         # cua / ghẹ
-        "cua bien", "ghe", "cua",
+        "cua bien",
+        "ghe",
+        "cua",
         # mực
-        "muc", "muc ong", "muc nang", "squid", "calamari",
+        "muc",
+        "muc ong",
+        "muc nang",
+        "squid",
+        "calamari",
         # khác
-        "shrimp", "prawn", "ngheu", "clam", "hao", "oyster", "ngao",
-        "bao ngu", "abalone", "tom yum", "tomyum",
+        "shrimp",
+        "prawn",
+        "ngheu",
+        "clam",
+        "hao",
+        "oyster",
+        "ngao",
+        "bao ngu",
+        "abalone",
+        "tom yum",
+        "tomyum",
     ),
     "trứng": ("trung", "egg", "trung ga"),
     "đậu phộng": ("dau phong", "lac", "peanut"),
@@ -59,9 +91,17 @@ ALLERGY_TRIGGERS: dict[str, tuple[str, ...]] = {
     "tôm": ("tom", "shrimp", "prawn"),
     "hành": ("hanh", "onion", "spring onion", "green onion", "shallot"),
     "hải sản": (
-        "hai san", "seafood", "do bien",
+        "hai san",
+        "seafood",
+        "do bien",
         # khách có thể nói "dị ứng tôm / cua / mực" → map về nhóm hải sản
-        "tom", "cua", "muc", "ghe", "ngheu", "ngao", "hao",
+        "tom",
+        "cua",
+        "muc",
+        "ghe",
+        "ngheu",
+        "ngao",
+        "hao",
     ),
     "trứng": ("trung", "egg"),
     "đậu phộng": ("dau phong", "lac", "peanut"),
@@ -72,10 +112,17 @@ ALLERGY_TRIGGERS: dict[str, tuple[str, ...]] = {
 # Nhóm tên món / cụm từ phổ biến chứa hải sản (compound match, dùng cho tên món)
 ALLERGEN_NAME_GROUPS: dict[str, tuple[str, ...]] = {
     "hải sản": (
-        "hai san", "seafood", "do bien",
-        "tom yum", "tomyum",
-        "lau tom", "lau cua", "lau hai san",
-        "sup hai san", "mien hai san", "mi hai san",
+        "hai san",
+        "seafood",
+        "do bien",
+        "tom yum",
+        "tomyum",
+        "lau tom",
+        "lau cua",
+        "lau hai san",
+        "sup hai san",
+        "mien hai san",
+        "mi hai san",
         "com chien hai san",
     ),
 }
@@ -90,10 +137,41 @@ NOTE_PATTERN = re.compile(
 )
 SEGMENT_SPLIT = re.compile(r"[,;\n]+|\s+(?:và|với|rồi)\s+", re.IGNORECASE)
 FILLER_WORDS = {
-    "toi", "minh", "muon", "an", "uong", "cho", "lay", "them", "goi", "y",
-    "tu", "van", "nen", "giup", "tim", "voi", "mot", "phan", "suat", "ly",
-    "chai", "coc", "bat", "dia", "mon", "do", "nha", "hang", "quan", "co",
-    "nao", "gi", "di", "nhe", "a",
+    "toi",
+    "minh",
+    "muon",
+    "an",
+    "uong",
+    "cho",
+    "lay",
+    "them",
+    "goi",
+    "y",
+    "tu",
+    "van",
+    "nen",
+    "giup",
+    "tim",
+    "voi",
+    "mot",
+    "phan",
+    "suat",
+    "ly",
+    "chai",
+    "coc",
+    "bat",
+    "dia",
+    "mon",
+    "do",
+    "nha",
+    "hang",
+    "quan",
+    "co",
+    "nao",
+    "gi",
+    "di",
+    "nhe",
+    "a",
 }
 
 
@@ -114,10 +192,8 @@ def _quantity_and_text(segment: str) -> tuple[int, str, bool]:
     if not quantity_word.isdigit() and quantity_word not in QUANTITIES:
         return 1, cleaned, False
     quantity = int(quantity_word) if quantity_word.isdigit() else QUANTITIES[quantity_word]
-    remainder = cleaned[match.end():]
-    remainder = re.sub(
-        r"^\s*(?:phần|suất|ly|chai|cốc|bát|đĩa)\s+", "", remainder, flags=re.IGNORECASE
-    )
+    remainder = cleaned[match.end() :]
+    remainder = re.sub(r"^\s*(?:phần|suất|ly|chai|cốc|bát|đĩa)\s+", "", remainder, flags=re.IGNORECASE)
     return max(quantity, 1), remainder, True
 
 
@@ -186,16 +262,17 @@ def _resolve_dish(text: str, dishes: list[ThucDon]) -> tuple[ThucDon | None, lis
     if query in {"bo xao", "thit bo xao"}:
         # Phrase này được người dùng dùng như cách gọi mơ hồ cho nhóm món bò.
         candidates = [
-            dish for dish in dishes
-            if "bo" in normalize(dish.tenmon)
-            and any(token in normalize(dish.tenmon) for token in ("xao", "sot"))
+            dish
+            for dish in dishes
+            if "bo" in normalize(dish.tenmon) and any(token in normalize(dish.tenmon) for token in ("xao", "sot"))
         ]
         return (candidates[0] if len(candidates) == 1 else None), candidates, False
 
     query_tokens = query.split()
     if len(query_tokens) >= 2:
         named = [
-            dish for dish in dishes
+            dish
+            for dish in dishes
             if query in normalize(dish.tenmon)
             or set(query_tokens).issubset(set(re.findall(r"[a-z0-9]+", normalize(dish.tenmon))))
         ]
@@ -218,8 +295,7 @@ def _should_parse_order_deterministically(transcript: str, dishes: list[ThucDon]
 
     # An explicit quantity and multiple possible dishes must always trigger a
     # clarification question, even if Gemini would otherwise select one.
-    if any(qty_explicit and len(candidates) > 1
-           for qty_explicit, _, candidates in parsed_segments):
+    if any(qty_explicit and len(candidates) > 1 for qty_explicit, _, candidates in parsed_segments):
         return True
 
     # For a joined order, use the parser when every portion has an explicit
@@ -236,10 +312,7 @@ def _allergies_in(transcript: str) -> list[str]:
     return [
         allergen
         for allergen, aliases in ALLERGY_TRIGGERS.items()
-        if any(
-            re.search(r"di ung(?: voi)?\s+(?:toi\s+)?" + re.escape(alias) + r"\b", normalized)
-            for alias in aliases
-        )
+        if any(re.search(r"di ung(?: voi)?\s+(?:toi\s+)?" + re.escape(alias) + r"\b", normalized) for alias in aliases)
     ]
 
 
@@ -279,9 +352,7 @@ def _dish_contains_ingredient(dish: ThucDon, ingredient_norm: str) -> bool:
 
     So khớp theo từ (word-boundary) sau khi normalize. Fail-safe tương tự.
     """
-    content = normalize(" ".join(filter(
-        None, (dish.thanhphan, dish.thongtindiung, dish.tenmon, dish.mota)
-    )))
+    content = normalize(" ".join(filter(None, (dish.thanhphan, dish.thongtindiung, dish.tenmon, dish.mota))))
     if not content:
         return False  # không rõ ingredient → không loại cứng, chỉ cảnh báo
     # Kiểm tra từng token của nguyên liệu cần loại
@@ -300,17 +371,41 @@ def _extract_ingredient_queries(transcript: str) -> tuple[list[str], str]:
         return [], ""
 
     # Chỉ xử lý khi có tín hiệu hỏi nguyên liệu rõ ràng
-    has_ingredient_intent = any(
-        k in norm for k in ("chua", "co chua", "lam tu", "nguyen lieu", "thanh phan")
-    ) or bool(re.search(r"mon\s+(?:nao\s+)?co\s+", norm))
+    has_ingredient_intent = any(k in norm for k in ("chua", "co chua", "lam tu", "nguyen lieu", "thanh phan")) or bool(
+        re.search(r"mon\s+(?:nao\s+)?co\s+", norm)
+    )
 
     if not has_ingredient_intent:
         return [], ""
 
     skip_words = {
-        "co", "chua", "mon", "nao", "nhung", "cac", "la", "a", "nhe", "vay",
-        "thich", "an", "muon", "toi", "em", "quan", "khong", "mang", "dam", "ma",
-        "thiet", "lam", "tu", "nguyen", "lieu", "thanh", "phan"
+        "co",
+        "chua",
+        "mon",
+        "nao",
+        "nhung",
+        "cac",
+        "la",
+        "a",
+        "nhe",
+        "vay",
+        "thich",
+        "an",
+        "muon",
+        "toi",
+        "em",
+        "quan",
+        "khong",
+        "mang",
+        "dam",
+        "ma",
+        "thiet",
+        "lam",
+        "tu",
+        "nguyen",
+        "lieu",
+        "thanh",
+        "phan",
     }
 
     raw_clause = None
@@ -356,9 +451,15 @@ def _extract_ingredient_queries(transcript: str) -> tuple[list[str], str]:
 
 def _is_best_seller_question(transcript: str) -> bool:
     normalized = normalize(transcript)
-    return any(term in normalized for term in (
-        "best seller", "bestseller", "ban chay", "mon ban chay",
-    ))
+    return any(
+        term in normalized
+        for term in (
+            "best seller",
+            "bestseller",
+            "ban chay",
+            "mon ban chay",
+        )
+    )
 
 
 def _dish_matches_ingredient_search(dish: ThucDon, query: str) -> bool:
@@ -396,13 +497,13 @@ class SmartIntent:
         prefer_light: bool | None = None,
         budget_max: int | None = None,
     ) -> None:
-        self.allergies = allergies                       # ràng buộc cứng: dị ứng
-        self.exclude_ingredients = exclude_ingredients   # ràng buộc cứng: không ăn X
-        self.prefer_spicy = prefer_spicy                 # ưu tiên mềm: thích cay (True) / không cay (False)
-        self.prefer_soup = prefer_soup                   # ưu tiên mềm: cần món có nước
-        self.prefer_vegetarian = prefer_vegetarian       # ưu tiên mềm: ăn chay
-        self.prefer_dessert = prefer_dessert             # món ngọt / tráng miệng
-        self.prefer_light = prefer_light                 # món thanh đạm / nhẹ bụng
+        self.allergies = allergies  # ràng buộc cứng: dị ứng
+        self.exclude_ingredients = exclude_ingredients  # ràng buộc cứng: không ăn X
+        self.prefer_spicy = prefer_spicy  # ưu tiên mềm: thích cay (True) / không cay (False)
+        self.prefer_soup = prefer_soup  # ưu tiên mềm: cần món có nước
+        self.prefer_vegetarian = prefer_vegetarian  # ưu tiên mềm: ăn chay
+        self.prefer_dessert = prefer_dessert  # món ngọt / tráng miệng
+        self.prefer_light = prefer_light  # món thanh đạm / nhẹ bụng
         self.budget_max = budget_max
 
 
@@ -522,28 +623,19 @@ def _filter_dishes_for_recommendation(
     if intent.allergies:
         safe: list[ThucDon] = []
         for dish in available:
-            is_unsafe = any(
-                _dish_contains_allergen(dish, allergen)
-                for allergen in intent.allergies
-            )
+            is_unsafe = any(_dish_contains_allergen(dish, allergen) for allergen in intent.allergies)
             if not is_unsafe:
                 safe.append(dish)
         allergen_removed = len(available) - len(safe)
         if allergen_removed:
-            reasons.append(
-                f"đã loại {allergen_removed} món chứa hoặc có thể chứa " +
-                ", ".join(intent.allergies)
-            )
+            reasons.append(f"đã loại {allergen_removed} món chứa hoặc có thể chứa " + ", ".join(intent.allergies))
         available = safe
 
     # b2) Loại cứng theo exclude_ingredients
     if intent.exclude_ingredients:
         safe2: list[ThucDon] = []
         for dish in available:
-            has_excluded = any(
-                _dish_contains_ingredient(dish, normalize(ing))
-                for ing in intent.exclude_ingredients
-            )
+            has_excluded = any(_dish_contains_ingredient(dish, normalize(ing)) for ing in intent.exclude_ingredients)
             if not has_excluded:
                 safe2.append(dish)
         available = safe2
@@ -588,7 +680,12 @@ def _filter_dishes_for_recommendation(
         for dish in available:
             phanloai_norm = normalize(dish.phanloai or "")
             loaimon_norm = normalize(dish.loaimon or "")
-            if "trang mieng" in phanloai_norm or "trang mieng" in loaimon_norm or "ngot" in phanloai_norm or "ngot" in loaimon_norm:
+            if (  # noqa: E501
+                "trang mieng" in phanloai_norm
+                or "trang mieng" in loaimon_norm
+                or "ngot" in phanloai_norm
+                or "ngot" in loaimon_norm
+            ):
                 dessert_dishes.append(dish)
         available = dessert_dishes
         if not available:
@@ -598,9 +695,9 @@ def _filter_dishes_for_recommendation(
     if intent.prefer_light is True:
         light_dishes = []
         for dish in available:
-            search_content = normalize(" ".join(filter(None, (
-                dish.mota, dish.thanhphan, dish.loaimon, dish.tenmon, dish.phanloai
-            ))))
+            search_content = normalize(
+                " ".join(filter(None, (dish.mota, dish.thanhphan, dish.loaimon, dish.tenmon, dish.phanloai)))
+            )
             if any(k in search_content for k in ("thanh dam", "nhe bung", "thanh nhe")):
                 light_dishes.append(dish)
         available = light_dishes
@@ -623,33 +720,69 @@ def _filter_dishes_for_recommendation(
 
 def _beverage_inquiry(text: str) -> bool:
     normalized = normalize(text)
-    return any(term in normalized for term in (
-        "nuoc uong", "giai khat", "do uong", "uong gi", "nuoc gi",
-    ))
+    return any(
+        term in normalized
+        for term in (
+            "nuoc uong",
+            "giai khat",
+            "do uong",
+            "uong gi",
+            "nuoc gi",
+        )
+    )
 
 
 def _soup_inquiry(text: str) -> bool:
     normalized = normalize(text)
-    return any(term in normalized for term in (
-        "sup", "nuoc dung", "nuoc leo", "mon nao co nuoc", "mon co nuoc",
-        "mon gi co nuoc", "co mon nuoc",
-    ))
+    return any(
+        term in normalized
+        for term in (
+            "sup",
+            "nuoc dung",
+            "nuoc leo",
+            "mon nao co nuoc",
+            "mon co nuoc",
+            "mon gi co nuoc",
+            "co mon nuoc",
+        )
+    )
 
 
 def _affirmative(text: str) -> bool:
     normalized = normalize(text)
-    return any(term in normalized for term in (
-        "xoa di", "bo di", "bo mon", "xoa mon", "xoa no", "duoc xoa",
-        "hay xoa", "dung xoa", "ok xoa", "uh xoa", "u xoa", "vang xoa",
-        "co xoa", "xoa giup",
-    )) or normalized.strip() in {"co", "vang", "duoc", "ok", "u", "uh", "roi"}
+    return any(
+        term in normalized
+        for term in (
+            "xoa di",
+            "bo di",
+            "bo mon",
+            "xoa mon",
+            "xoa no",
+            "duoc xoa",
+            "hay xoa",
+            "dung xoa",
+            "ok xoa",
+            "uh xoa",
+            "u xoa",
+            "vang xoa",
+            "co xoa",
+            "xoa giup",
+        )
+    ) or normalized.strip() in {"co", "vang", "duoc", "ok", "u", "uh", "roi"}
 
 
 def _negative(text: str) -> bool:
     normalized = normalize(text)
-    return any(term in normalized for term in (
-        "khong xoa", "dung xoa", "giu lai", "de lai", "khong can",
-    ))
+    return any(
+        term in normalized
+        for term in (
+            "khong xoa",
+            "dung xoa",
+            "giu lai",
+            "de lai",
+            "khong can",
+        )
+    )
 
 
 def _recommendation(dish: ThucDon) -> VoiceRecommendation:
@@ -671,20 +804,29 @@ def _draft_dish_mentions(text: str, draft_dishes: list[ThucDon]) -> list[ThucDon
 
 def _note_for(segment: str) -> str:
     canonical = {
-        "khong hanh": "Không hành", "khong lay hanh": "Không hành",
+        "khong hanh": "Không hành",
+        "khong lay hanh": "Không hành",
         "bo hanh": "Không hành",
-        "khong rau": "Không rau", "khong lay rau": "Không rau",
+        "khong rau": "Không rau",
+        "khong lay rau": "Không rau",
         "bo rau": "Không rau",
-        "it cay": "Ít cay", "nhieu cay": "Nhiều cay",
-        "khong da": "Không đá", "khong lay da": "Không đá",
+        "it cay": "Ít cay",
+        "nhieu cay": "Nhiều cay",
+        "khong da": "Không đá",
+        "khong lay da": "Không đá",
         "it da": "Ít đá",
         "it ngot": "Ít ngọt",
         "chia doi phan": "Chia đôi phần",
-        "khong ot": "Không ớt", "bo ot": "Không ớt",
-        "khong tieu": "Không tiêu", "bo tieu": "Không tiêu",
-        "them da": "Thêm đá", "them nuoc": "Thêm nước",
-        "them tuong": "Thêm tương", "them ot": "Thêm ớt",
-        "it hanh": "Ít hành", "it rau": "Ít rau",
+        "khong ot": "Không ớt",
+        "bo ot": "Không ớt",
+        "khong tieu": "Không tiêu",
+        "bo tieu": "Không tiêu",
+        "them da": "Thêm đá",
+        "them nuoc": "Thêm nước",
+        "them tuong": "Thêm tương",
+        "them ot": "Thêm ớt",
+        "it hanh": "Ít hành",
+        "it rau": "Ít rau",
     }
     notes = []
     for raw_note in NOTE_PATTERN.findall(segment):
@@ -801,9 +943,7 @@ def _build_gemini_system_prompt(
     if last_added_item_id:
         dish_map_tmp = {d.id: d for d in dishes}
         last_dish = dish_map_tmp.get(last_added_item_id)
-        last_added_item_id_block = (
-            f"{last_dish.tenmon} (ID: {last_added_item_id})" if last_dish else last_added_item_id
-        )
+        last_added_item_id_block = f"{last_dish.tenmon} (ID: {last_added_item_id})" if last_dish else last_added_item_id
     else:
         last_added_item_id_block = "(không có)"
 
@@ -862,12 +1002,18 @@ QUY TẮC 7 — KHÔNG TỰ GỬI BẾP (BR-01):
     "xong rồi", "đặt xong", "vậy thôi", "hết rồi", "confirm" hoặc tương đương.
 
 QUY TẮC 8 — GỢI Ý MÓN THEO KHẨU VỊ & SỞ THÍCH:
-  • Khi hỏi món cay ("quán có món nào cay không"): CHỈ gợi ý món có độ cay trong DB (trường "Vị" có ghi cay), kèm lý do và giá.
-  • Khi khách không ăn được cay ("tôi không ăn được cay"): LOẠI HẾT toàn bộ món cay, gợi ý món khác kèm lý do và giá.
-  • Khi hỏi món ngọt tráng miệng ("cho tôi món ngọt tráng miệng"): CHỈ gợi ý món thuộc phân loại "Tráng miệng".
-  • Khi hỏi món thanh đạm, nhẹ bụng ("có món nào thanh đạm, nhẹ bụng không"): gợi ý theo dữ liệu thật (Mô tả/Thành phần), hỏi lại 1 câu nếu thiếu thông tin, TUYỆT ĐỐI không bịa "thanh đạm".
-  • Khi hỏi món có nước, trời lạnh ("tôi muốn món có nước, trời lạnh"): gợi ý món có nước dùng; nếu các món nước đều hải sản và khách chưa nêu dị ứng thì gợi ý kèm cảnh báo hải sản.
-  • Khi hỏi món bán chạy ("gợi ý món bán chạy của quán"): CHỈ nói "bán chạy" nếu có cờ/thống kê thật (nhãn Bán chạy trên menu), kết quả phải khớp nhãn đó.
+  • Khi hỏi món cay ("quán có món nào cay không"): CHỈ gợi ý món có độ cay trong DB
+    (trường "Vị" có ghi cay), kèm lý do và giá.
+  • Khi khách không ăn được cay ("tôi không ăn được cay"): LOẠI HẾT toàn bộ món cay,
+    gợi ý món khác kèm lý do và giá.
+  • Khi hỏi món ngọt tráng miệng ("cho tôi món ngọt tráng miệng"): CHỈ gợi ý món thuộc
+    phân loại "Tráng miệng".
+  • Khi hỏi món thanh đạm, nhẹ bụng ("có món nào thanh đạm, nhẹ bụng không"): gợi ý theo
+    dữ liệu thật (Mô tả/Thành phần), hỏi lại 1 câu nếu thiếu thông tin, TUYỆT ĐỐI không bịa "thanh đạm".
+  • Khi hỏi món có nước, trời lạnh ("tôi muốn món có nước, trời lạnh"): gợi ý món có nước dùng;
+    nếu các món nước đều hải sản và khách chưa nêu dị ứng thì gợi ý kèm cảnh báo hải sản.
+  • Khi hỏi món bán chạy ("gợi ý món bán chạy của quán"): CHỈ nói "bán chạy" nếu có cờ/thống kê thật
+    (nhãn Bán chạy trên menu), kết quả phải khớp nhãn đó.
 
 ═══ DỮ LIỆU MENU (chỉ món còn bán — đây là nguồn duy nhất, không dùng kiến thức ngoài) ═══
 {menu_block}
@@ -877,20 +1023,20 @@ current_draft_items: {current_draft_block}
 last_added_item_id: {last_added_item_id_block}
 
 ═══ BẢNG XỬ LÝ INTENT ═══
-| Tình huống                                              | intent            | Trường cần điền                              |
-|---------------------------------------------------------|-------------------|----------------------------------------------|
-| Khách hỏi gợi ý / tư vấn / nói sở thích               | recommendation    | recommendations (≤3 món), message giải thích |
-| Khai báo dị ứng khi giỏ đang có món chứa chất đó       | order             | warnings, pending_draft_removal, message     |
-| Thêm món — tên + số lượng rõ ràng                       | order             | adds                                         |
-| Tên món mơ hồ khớp 2+ món                              | order             | ambiguities, message liệt kê lựa chọn       |
-| Món hết hàng hoặc không có trong menu                  | order             | oos / not_found, suggestions gợi ý thay thế |
-| Thiếu số lượng (câu có 2+ món, không rõ từng qty)       | order             | needs_quantity_for                           |
-| Thêm/sửa ghi chú cho món trong giỏ                     | order             | draft_note_updates                           |
-| Giảm số lượng món trong giỏ                             | order             | draft_changes                                |
-| Xóa món khỏi giỏ                                        | order             | remove_from_draft                            |
-| Ghi chú bổ sung (không tên món, last_added_item_id ≠ ∅)| order             | draft_note_updates cho last_added_item_id    |
-| Khách kết thúc ("xong rồi", "đặt xong", v.v.)          | finish            | done: true                                   |
-| Không rõ ý định                                         | unknown           | message hỏi lại                              |
+| Tình huống                                        | intent         | Trường cần điền                   |
+|---------------------------------------------------|----------------|-----------------------------------|
+| Khách hỏi gợi ý / tư vấn / nói sở thích           | recommendation | recommendations, message          |
+| Khai báo dị ứng khi giỏ có món chứa chất đó       | order          | warnings, pending_draft_removal   |
+| Thêm món — tên + số lượng rõ ràng                 | order          | adds                              |
+| Tên món mơ hồ khớp 2+ món                         | order          | ambiguities, message              |
+| Món hết hàng hoặc không có trong menu            | order          | oos / not_found, suggestions      |
+| Thiếu số lượng (câu 2+ món, không rõ qty)         | order          | needs_quantity_for                |
+| Thêm/sửa ghi chú cho món trong giỏ               | order          | draft_note_updates                |
+| Giảm số lượng món trong giỏ                       | order          | draft_changes                     |
+| Xóa món khỏi giỏ                                  | order          | remove_from_draft                 |
+| Ghi chú bổ sung (last_added_item_id ≠ ∅)          | order          | draft_note_updates                |
+| Khách kết thúc ("xong rồi", "đặt xong", v.v.)     | finish         | done: true                        |
+| Không rõ ý định                                   | unknown        | message hỏi lại                   |
 
 ═══ FORMAT OUTPUT (JSON thuần — không bọc markdown) ═══
 {{
@@ -907,7 +1053,8 @@ last_added_item_id: {last_added_item_id_block}
   "stock_limits": [{{"item_id": "MON001", "item_name": "Tên món", "requested": 5, "available": 2}}],
   "not_found": ["tên món khách nói"],
   "warnings": [{{"item_id": "MON001", "item_name": "Tên món", "allergen": "tôm", "message": "Món này có chứa tôm"}}],
-  "pending_draft_removal": {{"item_ids": ["MON001"], "allergen": "tôm", "message": "Giỏ có món chứa tôm, anh/chị có muốn em xóa không?"}},
+  "pending_draft_removal": {{"item_ids": ["MON001"], "allergen": "tôm",
+                           "message": "Giỏ có món chứa tôm, anh/chị có muốn em xóa không?"}},
   "recommendations": [{{"id": "MON002", "name": "Tên món", "price": 85000}}],
   "suggestions": [{{"id": "MON003", "name": "Tên món", "price": 90000}}]
 }}
@@ -935,13 +1082,12 @@ async def _gemini_interpret(
     if not settings.effective_ai_key:
         return None
 
-    system_prompt = _build_gemini_system_prompt(
-        dishes, draft_quantities, draft_lines, last_added_item_id
-    )
+    system_prompt = _build_gemini_system_prompt(dishes, draft_quantities, draft_lines, last_added_item_id)
 
     def _call_sync() -> dict | None:
         try:
             from google import genai  # type: ignore[import]
+
             client = genai.Client(api_key=settings.effective_ai_key)
             model = settings.ai_model or "models/gemini-2.5-flash"
             logger.info("Gemini request: model=%s, transcript=%r", model, transcript[:120])
@@ -964,8 +1110,7 @@ async def _gemini_interpret(
             logger.info("Gemini parsed intent=%r", parsed.get("intent"))
             return parsed
         except Exception as exc:
-            logger.warning("Gemini call failed (%s: %s) — falling back to rule-based",
-                           type(exc).__name__, exc)
+            logger.warning("Gemini call failed (%s: %s) — falling back to rule-based", type(exc).__name__, exc)
             return None
 
     loop = asyncio.get_event_loop()
@@ -998,25 +1143,28 @@ def _gemini_result_to_out(
 
     # Draft management
     remove_from_draft: list[str] = [
-        str(item_id) for item_id in (data.get("remove_from_draft") or [])
-        if str(item_id) in dish_map
+        str(item_id) for item_id in (data.get("remove_from_draft") or []) if str(item_id) in dish_map
     ]
     draft_changes: list[VoiceDraftChange] = []
     for item in data.get("draft_changes") or []:
         iid = str(item.get("item_id", ""))
         if iid in dish_map:
-            draft_changes.append(VoiceDraftChange(
-                item_id=iid,
-                quantity=max(int(item.get("quantity") or 0), 0),
-            ))
+            draft_changes.append(
+                VoiceDraftChange(
+                    item_id=iid,
+                    quantity=max(int(item.get("quantity") or 0), 0),
+                )
+            )
     draft_note_updates: list[VoiceDraftNoteUpdate] = []
     for item in data.get("draft_note_updates") or []:
         iid = str(item.get("item_id", ""))
         if iid in dish_map:
-            draft_note_updates.append(VoiceDraftNoteUpdate(
-                item_id=iid,
-                note=str(item.get("note") or ""),
-            ))
+            draft_note_updates.append(
+                VoiceDraftNoteUpdate(
+                    item_id=iid,
+                    note=str(item.get("note") or ""),
+                )
+            )
 
     nqf_raw = data.get("needs_quantity_for")
     needs_quantity_for: VoiceNeedsQuantity | None = None
@@ -1033,52 +1181,62 @@ def _gemini_result_to_out(
     for item in data.get("adds") or []:
         dish = dish_map.get(str(item.get("id", "")))
         if dish and _is_safe(dish.id):
-            adds.append(VoiceAdd(
-                id=dish.id,
-                name=dish.tenmon,
-                qty=max(int(item.get("qty") or 1), 1),
-                note=str(item.get("note") or ""),
-                price=int(dish.giaban),
-            ))
+            adds.append(
+                VoiceAdd(
+                    id=dish.id,
+                    name=dish.tenmon,
+                    qty=max(int(item.get("qty") or 1), 1),
+                    note=str(item.get("note") or ""),
+                    price=int(dish.giaban),
+                )
+            )
 
     ambiguities: list[VoiceAmbiguity] = []
     for item in data.get("ambiguities") or []:
         cands = [str(c) for c in (item.get("candidates") or []) if str(c) in dish_map]
         if len(cands) >= 2:
-            ambiguities.append(VoiceAmbiguity(
-                qty=max(int(item.get("qty") or 1), 1),
-                candidates=cands,
-                segment=str(item.get("segment") or ""),
-            ))
+            ambiguities.append(
+                VoiceAmbiguity(
+                    qty=max(int(item.get("qty") or 1), 1),
+                    candidates=cands,
+                    segment=str(item.get("segment") or ""),
+                )
+            )
 
     oos: list[VoiceOos] = []
     for item in data.get("oos") or []:
         if str(item.get("id", "")) in dish_map:
-            oos.append(VoiceOos(
-                id=str(item["id"]),
-                qty=max(int(item.get("qty") or 1), 1),
-                suggestions=[str(s) for s in (item.get("suggestions") or []) if str(s) in dish_map],
-            ))
+            oos.append(
+                VoiceOos(
+                    id=str(item["id"]),
+                    qty=max(int(item.get("qty") or 1), 1),
+                    suggestions=[str(s) for s in (item.get("suggestions") or []) if str(s) in dish_map],
+                )
+            )
 
     stock_limits: list[VoiceStockLimit] = []
     for item in data.get("stock_limits") or []:
         if str(item.get("item_id", "")) in dish_map:
-            stock_limits.append(VoiceStockLimit(
-                item_id=str(item["item_id"]),
-                item_name=str(item.get("item_name") or dish_map[item["item_id"]].tenmon),
-                requested=max(int(item.get("requested") or 1), 1),
-                available=max(int(item.get("available") or 0), 0),
-            ))
+            stock_limits.append(
+                VoiceStockLimit(
+                    item_id=str(item["item_id"]),
+                    item_name=str(item.get("item_name") or dish_map[item["item_id"]].tenmon),
+                    requested=max(int(item.get("requested") or 1), 1),
+                    available=max(int(item.get("available") or 0), 0),
+                )
+            )
 
     warnings: list[VoiceWarning] = []
     for item in data.get("warnings") or []:
         if str(item.get("item_id", "")) in dish_map:
-            warnings.append(VoiceWarning(
-                item_id=str(item["item_id"]),
-                item_name=str(item.get("item_name") or ""),
-                allergen=str(item.get("allergen") or ""),
-                message=str(item.get("message") or ""),
-            ))
+            warnings.append(
+                VoiceWarning(
+                    item_id=str(item["item_id"]),
+                    item_name=str(item.get("item_name") or ""),
+                    allergen=str(item.get("allergen") or ""),
+                    message=str(item.get("message") or ""),
+                )
+            )
 
     # pending_draft_removal từ Gemini — hỗ trợ cả 2 format:
     # - format cũ: {"item_id": "MON001", "allergen": "..."}
@@ -1088,10 +1246,7 @@ def _gemini_result_to_out(
     if pdr_raw and isinstance(pdr_raw, dict):
         # Thử item_ids (array) trước, fallback sang item_id (string)
         item_ids_raw = pdr_raw.get("item_ids") or []
-        pdr_id = (
-            str(item_ids_raw[0]) if item_ids_raw
-            else str(pdr_raw.get("item_id", ""))
-        )
+        pdr_id = str(item_ids_raw[0]) if item_ids_raw else str(pdr_raw.get("item_id", ""))
         if pdr_id in dish_map:
             pending_draft_removal = VoicePendingDraftRemoval(
                 item_id=pdr_id,
@@ -1105,16 +1260,24 @@ def _gemini_result_to_out(
             dish = dish_map.get(str(item.get("id", "")))
             # Double-check: loại món dị ứng khỏi gợi ý (safety net)
             if dish and dish.id not in seen and _is_safe(dish.id):
-                result.append(VoiceRecommendation(
-                    id=dish.id, name=dish.tenmon, price=int(dish.giaban),
-                ))
+                result.append(
+                    VoiceRecommendation(
+                        id=dish.id,
+                        name=dish.tenmon,
+                        price=int(dish.giaban),
+                    )
+                )
                 seen.add(dish.id)
         return result[:3]  # tối đa 3 chip
 
     intent_raw = str(data.get("intent") or "unknown")
     valid_intents = {
-        "order", "suggestion", "recommendation",
-        "ingredient_search", "finish", "unknown",
+        "order",
+        "suggestion",
+        "recommendation",
+        "ingredient_search",
+        "finish",
+        "unknown",
     }
     intent = intent_raw if intent_raw in valid_intents else "unknown"
 
@@ -1150,9 +1313,7 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
     if pending:
         dish = next((item for item in dishes if item.id == pending.item_id), None)
         still_in_draft = pending.item_id in draft_quantities
-        if dish and still_in_draft and _affirmative(body.transcript) and not _negative(
-            body.transcript
-        ):
+        if dish and still_in_draft and _affirmative(body.transcript) and not _negative(body.transcript):
             return VoiceInterpretOut(
                 transcript=body.transcript,
                 intent="order",
@@ -1178,29 +1339,22 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
             )
 
     reported_allergies = _allergies_in(body.transcript)
-    draft_dishes = [
-        dish for dish in dishes
-        if draft_quantities.get(dish.id, 0) > 0
-    ]
+    draft_dishes = [dish for dish in dishes if draft_quantities.get(dish.id, 0) > 0]
 
     # ── Rule 1: Ghi chú bổ sung không kèm số lượng (Modifier-only next turn) ──
     # Nếu khách nói modifier-only (không kèm tên món rõ ràng) và lượt trước vừa thêm món
     requested_note_early = _note_for(body.transcript)
-    if (
-        requested_note_early
-        and body.last_added_item_id
-        and _is_modifier_only(body.transcript)
-    ):
+    if requested_note_early and body.last_added_item_id and _is_modifier_only(body.transcript):
         last_dish = next((d for d in dishes if d.id == body.last_added_item_id), None)
         if last_dish and draft_quantities.get(last_dish.id, 0) > 0:
             existing_notes = [
                 part.strip()
-                for line in body.draft if line.item_id == last_dish.id
-                for part in line.note.split(",") if part.strip()
+                for line in body.draft
+                if line.item_id == last_dish.id
+                for part in line.note.split(",")
+                if part.strip()
             ]
-            combined_note = ", ".join(
-                dict.fromkeys(existing_notes + requested_note_early.split(", "))
-            )
+            combined_note = ", ".join(dict.fromkeys(existing_notes + requested_note_early.split(", ")))
             return VoiceInterpretOut(
                 transcript=body.transcript,
                 intent="order",
@@ -1245,19 +1399,32 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
         return VoiceInterpretOut(
             transcript=body.transcript,
             intent="unknown",
-            ambiguities=[VoiceAmbiguity(
-                qty=1,
-                candidates=[dish.id for dish in draft_targets],
-                segment=body.transcript,
-            )],
+            ambiguities=[
+                VoiceAmbiguity(
+                    qty=1,
+                    candidates=[dish.id for dish in draft_targets],
+                    segment=body.transcript,
+                )
+            ],
             message="Dạ, anh/chị muốn điều chỉnh món nào trong giỏ hàng ạ?",
         )
 
-    decrease_request = any(phrase in normalized_transcript for phrase in (
-        "bo bot", "tru bot", "giam bot", "giam xuong", "giam con",
-        "chi giu lai", "giu lai", "de lai", "chi de lai",
-        "chi con", "giam di",
-    ))
+    decrease_request = any(
+        phrase in normalized_transcript
+        for phrase in (
+            "bo bot",
+            "tru bot",
+            "giam bot",
+            "giam xuong",
+            "giam con",
+            "chi giu lai",
+            "giu lai",
+            "de lai",
+            "chi de lai",
+            "chi con",
+            "giam di",
+        )
+    )
     if draft_targets and decrease_request:
         dish = draft_targets[0]
         current_quantity = draft_quantities.get(dish.id, 0)
@@ -1278,10 +1445,7 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
             new_quantity = max(current_quantity - (decrement or 1), 0)
         action = VoiceDraftChange(item_id=dish.id, quantity=new_quantity)
         if new_quantity:
-            message = (
-                f"Dạ, em đã giảm xuống còn {new_quantity} {dish.tenmon} "
-                "trong giỏ hàng ạ."
-            )
+            message = f"Dạ, em đã giảm xuống còn {new_quantity} {dish.tenmon} trong giỏ hàng ạ."
             return VoiceInterpretOut(
                 transcript=body.transcript,
                 intent="order",
@@ -1330,8 +1494,10 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
         dish = draft_targets[0]
         existing_notes = [
             part.strip()
-            for line in body.draft if line.item_id == dish.id
-            for part in line.note.split(",") if part.strip()
+            for line in body.draft
+            if line.item_id == dish.id
+            for part in line.note.split(",")
+            if part.strip()
         ]
         note = ", ".join(dict.fromkeys(existing_notes + requested_note.split(", ")))
         return VoiceInterpretOut(
@@ -1353,13 +1519,11 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
     # the generic first three dishes as recommendations.
     if ingredient_terms:
         matches = [
-            dish for dish in dishes
+            dish
+            for dish in dishes
             if not dish.het_hang
             and any(_dish_matches_ingredient_search(dish, term) for term in ingredient_terms)
-            and not any(
-                _dish_contains_allergen(dish, allergy)
-                for allergy in smart_intent.allergies
-            )
+            and not any(_dish_contains_allergen(dish, allergy) for allergy in smart_intent.allergies)
         ]
         if smart_intent.prefer_light:
             matches.sort(
@@ -1385,20 +1549,23 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
     # The menu already stores the staff-maintained bestseller flag. Use it directly.
     if _is_best_seller_question(body.transcript):
         matches = [
-            dish for dish in dishes
+            dish
+            for dish in dishes
             if dish.banchay is True
             and not dish.het_hang
-            and not any(
-                _dish_contains_allergen(dish, allergy)
-                for allergy in smart_intent.allergies
-            )
+            and not any(_dish_contains_allergen(dish, allergy) for allergy in smart_intent.allergies)
         ]
         recommendations = [_recommendation(dish) for dish in matches[:3]]
         if matches:
+
             def _banchay_reason(d: ThucDon) -> str:
                 return "món bán chạy"
+
             formatted = _friendly_candidates_with_price_and_reason(matches[:3], _banchay_reason)
-            message = f"Dạ, các món bán chạy của quán (khớp nhãn Bán chạy trên menu) hiện còn phục vụ gồm: {formatted}. Anh/chị muốn dùng món nào ạ?"
+            message = (
+                "Dạ, các món bán chạy của quán (khớp nhãn Bán chạy trên menu) "
+                f"hiện còn phục vụ gồm: {formatted}. Anh/chị muốn dùng món nào ạ?"
+            )
         elif smart_intent.allergies:
             message = "Dạ, hiện em chưa tìm thấy món bán chạy nào có thể xác nhận an toàn với dị ứng đã báo ạ."
         else:
@@ -1412,20 +1579,20 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
 
     # Handle a standalone allergy disclosure deterministically, even when Gemini
     # is configured. Unknown ingredient data remains excluded from recommendations.
-    if smart_intent.allergies and not any((
-        smart_intent.prefer_spicy is not None,
-        smart_intent.prefer_soup is not None,
-        smart_intent.prefer_vegetarian is not None,
-        smart_intent.prefer_dessert is not None,
-        smart_intent.prefer_light is not None,
-        smart_intent.exclude_ingredients,
-    )):
+    if smart_intent.allergies and not any(
+        (
+            smart_intent.prefer_spicy is not None,
+            smart_intent.prefer_soup is not None,
+            smart_intent.prefer_vegetarian is not None,
+            smart_intent.prefer_dessert is not None,
+            smart_intent.prefer_light is not None,
+            smart_intent.exclude_ingredients,
+        )
+    ):
         unsafe = [
-            dish for dish in dishes
-            if not dish.het_hang and any(
-                _dish_contains_allergen(dish, allergy)
-                for allergy in smart_intent.allergies
-            )
+            dish
+            for dish in dishes
+            if not dish.het_hang and any(_dish_contains_allergen(dish, allergy) for allergy in smart_intent.allergies)
         ]
         safe, _ = _filter_dishes_for_recommendation(dishes, smart_intent)
         warnings = [
@@ -1434,17 +1601,14 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
                 item_name=dish.tenmon,
                 allergen=", ".join(smart_intent.allergies),
                 message=(
-                    f"Dạ, {dish.tenmon} có chứa hoặc chưa xác nhận an toàn với "
-                    f"{', '.join(smart_intent.allergies)}."
+                    f"Dạ, {dish.tenmon} có chứa hoặc chưa xác nhận an toàn với {', '.join(smart_intent.allergies)}."
                 ),
             )
             for dish in unsafe
         ]
         unsafe_names = _friendly_candidates(unsafe[:8]) if unsafe else ""
         safe_names = _friendly_candidates_with_price_and_reason(safe[:3]) if safe else ""
-        message = (
-            f"Dạ, em đã ghi nhận anh/chị dị ứng {', '.join(smart_intent.allergies)}. "
-        )
+        message = f"Dạ, em đã ghi nhận anh/chị dị ứng {', '.join(smart_intent.allergies)}. "
         if unsafe_names:
             message += f"Các món cần tránh hoặc chưa xác nhận an toàn gồm {unsafe_names}. "
         if safe_names:
@@ -1460,26 +1624,40 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
         )
 
     is_recommendation_request = (
-        beverage_inquiry or soup_inquiry
-        or any(phrase in normalized_request for phrase in (
-            "goi y", "tu van", "nen an", "mon nao", "thich cay", "muon an cay",
-            "di ung", "khong thich an", "khong an", "an chay", "co sup",
-            "trang mieng", "mon ngot", "thanh dam", "nhe bung", "cay khong",
-        ))
+        beverage_inquiry
+        or soup_inquiry
+        or any(
+            phrase in normalized_request
+            for phrase in (
+                "goi y",
+                "tu van",
+                "nen an",
+                "mon nao",
+                "thich cay",
+                "muon an cay",
+                "di ung",
+                "khong thich an",
+                "khong an",
+                "an chay",
+                "co sup",
+                "trang mieng",
+                "mon ngot",
+                "thanh dam",
+                "nhe bung",
+                "cay khong",
+            )
+        )
     )
     if is_recommendation_request:
         if beverage_inquiry:
             matches = [
-                dish for dish in dishes
-                if normalize(dish.phanloai or "") in {"do uong", "khai vi"}
-                and not dish.het_hang
+                dish
+                for dish in dishes
+                if normalize(dish.phanloai or "") in {"do uong", "khai vi"} and not dish.het_hang
             ]
             if matches:
                 names = _friendly_candidates_with_price_and_reason(matches[:5])
-                message = (
-                    f"Dạ, quán có các món đồ uống giải khát như {names}. "
-                    "Anh/chị muốn dùng loại nào ạ?"
-                )
+                message = f"Dạ, quán có các món đồ uống giải khát như {names}. Anh/chị muốn dùng loại nào ạ?"
             else:
                 message = "Dạ, hiện quán chưa có món đồ uống hoặc khai vị phù hợp ạ."
             recommendations = [_recommendation(dish) for dish in matches[:3]]
@@ -1496,8 +1674,10 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
         # Case 1: Khẩu vị cay
         if smart_intent.prefer_spicy is True:
             if filtered_dishes:
+
                 def _spicy_reason(d: ThucDon) -> str:
                     return f"độ cay: {d.docay}" if d.docay else "món cay"
+
                 formatted = _friendly_candidates_with_price_and_reason(filtered_dishes, _spicy_reason)
                 message = f"Dạ, quán có các món cay trong thực đơn gồm: {formatted}. Anh/chị muốn dùng món nào ạ?"
                 recommendations = [_recommendation(dish) for dish in filtered_dishes]
@@ -1514,10 +1694,15 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
         # Case 2: Không ăn được cay
         if smart_intent.prefer_spicy is False:
             if filtered_dishes:
+
                 def _non_spicy_reason(d: ThucDon) -> str:
                     return "không cay, dễ ăn"
+
                 formatted = _friendly_candidates_with_price_and_reason(filtered_dishes, _non_spicy_reason)
-                message = f"Dạ, em đã loại toàn bộ món cay. Gợi ý các món không cay cho anh/chị: {formatted}. Anh/chị muốn dùng món nào ạ?"
+                message = (
+                    "Dạ, em đã loại toàn bộ món cay. Gợi ý các món không cay cho anh/chị: "
+                    f"{formatted}. Anh/chị muốn dùng món nào ạ?"
+                )
                 recommendations = [_recommendation(dish) for dish in filtered_dishes]
             else:
                 message = "Dạ, hiện thực đơn của quán không còn món nào phù hợp ạ."
@@ -1532,8 +1717,10 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
         # Case 3: Món ngọt tráng miệng
         if smart_intent.prefer_dessert is True:
             if filtered_dishes:
+
                 def _dessert_reason(d: ThucDon) -> str:
                     return "tráng miệng"
+
                 formatted = _friendly_candidates_with_price_and_reason(filtered_dishes, _dessert_reason)
                 message = f"Dạ, quán có các món ngọt trong Tráng miệng gồm: {formatted}. Anh/chị muốn dùng món nào ạ?"
                 recommendations = [_recommendation(dish) for dish in filtered_dishes]
@@ -1550,13 +1737,18 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
         # Case 4: Món thanh đạm, nhẹ bụng
         if smart_intent.prefer_light is True:
             if filtered_dishes:
+
                 def _light_reason(d: ThucDon) -> str:
                     return "thanh đạm, nhẹ bụng"
+
                 formatted = _friendly_candidates_with_price_and_reason(filtered_dishes, _light_reason)
-                message = f"Dạ, các món thanh đạm, nhẹ bụng theo dữ liệu thực đơn gồm: {formatted}. Anh/chị muốn dùng món nào ạ?"
+                message = (
+                    "Dạ, các món thanh đạm, nhẹ bụng theo dữ liệu thực đơn gồm: "
+                    f"{formatted}. Anh/chị muốn dùng món nào ạ?"
+                )
                 recommendations = [_recommendation(dish) for dish in filtered_dishes]
             else:
-                message = "Dạ, trong thực đơn hiện chưa có thông tin đánh dấu món 'thanh đạm'. Anh/chị có muốn em gợi ý món súp nhẹ hay món chay không ạ?"
+                message = "Dạ, trong thực đơn hiện chưa có thông tin đánh dấu món 'thanh đạm'. Anh/chị có muốn em gợi ý món súp nhẹ hay món chay không ạ?"  # noqa: E501
                 recommendations = []
             return VoiceInterpretOut(
                 transcript=body.transcript,
@@ -1588,7 +1780,10 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
                         for d in filtered_dishes
                     ]
                 else:
-                    message = f"Dạ, với thời tiết lạnh em gợi ý các món nước dùng nóng hổi: {formatted}. Anh/chị muốn dùng món nào ạ?"
+                    message = (
+                        "Dạ, với thời tiết lạnh em gợi ý các món nước dùng nóng hổi: "
+                        f"{formatted}. Anh/chị muốn dùng món nào ạ?"
+                    )
                 recommendations = [_recommendation(dish) for dish in filtered_dishes]
             else:
                 message = "Dạ, hiện thực đơn của quán chưa có món súp hoặc nước dùng phù hợp ạ."
@@ -1619,7 +1814,7 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
                 allergy_note = ""
                 if smart_intent.allergies:
                     allergy_note = (
-                        f"Hiện các món súp/lẩu của quán đều có "
+                        "Hiện các món súp/lẩu của quán đều có "
                         + " hoặc ".join(smart_intent.allergies)
                         + " nên em không thể gợi ý cho anh/chị. "
                     )
@@ -1645,17 +1840,11 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
         names = _friendly_candidates_with_price_and_reason(filtered_dishes)
         allergy_confirm = ""
         if smart_intent.allergies:
-            allergy_confirm = (
-                " (em đã loại tất cả món chứa "
-                + ", ".join(smart_intent.allergies) + ")"
-            )
+            allergy_confirm = " (em đã loại tất cả món chứa " + ", ".join(smart_intent.allergies) + ")"
         exclude_confirm = ""
         if smart_intent.exclude_ingredients:
             exclude_confirm = " và không có " + ", ".join(smart_intent.exclude_ingredients)
-        message = (
-            f"Dạ, em gợi ý{allergy_confirm}{exclude_confirm}: {names}. "
-            "Anh/chị muốn thử món nào ạ?"
-        )
+        message = f"Dạ, em gợi ý{allergy_confirm}{exclude_confirm}: {names}. Anh/chị muốn thử món nào ạ?"
         recommendations = [_recommendation(dish) for dish in filtered_dishes]
         return VoiceInterpretOut(
             transcript=body.transcript,
@@ -1674,18 +1863,22 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
         logger.info("Skipping Gemini — explicit multi-item or ambiguous order parsed by rules")
     elif not settings.effective_ai_key:
         logger.warning("Gemini skipped — no AI key configured (AI_API_KEY / GEMINI_API_KEY)")
-    gemini_data = None if (_note_handled_by_rules or deterministic_order) else await _gemini_interpret(
-        body.transcript, dishes, draft_quantities,
-        draft_lines=body.draft,
-        last_added_item_id=body.last_added_item_id,
+    gemini_data = (
+        None
+        if (_note_handled_by_rules or deterministic_order)
+        else await _gemini_interpret(
+            body.transcript,
+            dishes,
+            draft_quantities,
+            draft_lines=body.draft,
+            last_added_item_id=body.last_added_item_id,
+        )
     )
     if gemini_data is not None:
         result = _gemini_result_to_out(body.transcript, gemini_data, dishes, reported_allergies)
         # Ghi log và trả về
         if body.table_name:
-            ban_result = await db.execute(
-                select(Ban).where(Ban.tenban == body.table_name).limit(1)
-            )
+            ban_result = await db.execute(select(Ban).where(Ban.tenban == body.table_name).limit(1))
             ban = ban_result.scalars().first()
             if ban:
                 phieu_result = await db.execute(
@@ -1698,11 +1891,13 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
             else:
                 phieu = None
             if phieu:
-                db.add(LogGiongNoi(
-                    phieuban_id=phieu.phieuban_id,
-                    vanbangoc=body.transcript,
-                    ydinhai=result.model_dump(mode="json"),
-                ))
+                db.add(
+                    LogGiongNoi(
+                        phieuban_id=phieu.phieuban_id,
+                        vanbangoc=body.transcript,
+                        ydinhai=result.model_dump(mode="json"),
+                    )
+                )
                 await db.commit()
         return result
 
@@ -1729,10 +1924,10 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
     for segment in _segments(analysis_text, dishes):
         quantity, item_text, qty_explicit = _quantity_and_text(segment)
         segment_normalized = normalize(item_text)
-        if "di ung" in normalized_text and not _full_name_matches(item_text, dishes) and any(
-            alias in segment_normalized
-            for aliases in ALLERGY_TRIGGERS.values()
-            for alias in aliases
+        if (
+            "di ung" in normalized_text
+            and not _full_name_matches(item_text, dishes)
+            and any(alias in segment_normalized for aliases in ALLERGY_TRIGGERS.values() for alias in aliases)
         ):
             continue
         dish, candidates, is_search = _resolve_dish(item_text, dishes)
@@ -1751,11 +1946,12 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
                 )
             elif candidates and is_search:
                 suggestions.extend(
-                    VoiceRecommendation(id=item.id, name=item.tenmon, price=int(item.giaban))
-                    for item in candidates
+                    VoiceRecommendation(id=item.id, name=item.tenmon, price=int(item.giaban)) for item in candidates
                 )
-            elif not candidates and "di ung" not in normalize(segment) and not any(
-                phrase in normalize(segment) for phrase in ("goi y", "tu van", "nen an", "mon nao")
+            elif (
+                not candidates
+                and "di ung" not in normalize(segment)
+                and not any(phrase in normalize(segment) for phrase in ("goi y", "tu van", "nen an", "mon nao"))
             ):
                 not_found.append(segment)
             continue
@@ -1763,34 +1959,30 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
         selected.append(dish)
         if dish.het_hang:
             alternatives = [item for item in dishes if item.id != dish.id and not item.het_hang][:3]
-            out_of_stock.append(
-                VoiceOos(id=dish.id, qty=quantity, suggestions=[item.id for item in alternatives])
-            )
+            out_of_stock.append(VoiceOos(id=dish.id, qty=quantity, suggestions=[item.id for item in alternatives]))
         elif is_search:
-            suggestions.append(
-                VoiceRecommendation(id=dish.id, name=dish.tenmon, price=int(dish.giaban))
-            )
+            suggestions.append(VoiceRecommendation(id=dish.id, name=dish.tenmon, price=int(dish.giaban)))
         else:
             # Rule 2: Hỏi lại số lượng nếu khách không nói rõ (chỉ apply khi có 1 món, không đa món)
             if not qty_explicit and len(_segments(analysis_text, dishes)) == 1:
                 return VoiceInterpretOut(
                     transcript=body.transcript,
                     intent="unknown",
-                    needs_quantity_for=VoiceNeedsQuantity(
-                        item_id=dish.id, item_name=dish.tenmon
-                    ),
+                    needs_quantity_for=VoiceNeedsQuantity(item_id=dish.id, item_name=dish.tenmon),
                     message=f"Dạ, anh/chị muốn gọi mấy phần {dish.tenmon} ạ?",
                 )
             # Số phần còn: mua sẵn theo soluongton, chế biến theo nguyên liệu
             if dish.so_phan_con is not None:
                 available = max(dish.so_phan_con - draft_quantities.get(dish.id, 0), 0)
                 if quantity > available:
-                    stock_limits.append(VoiceStockLimit(
-                        item_id=dish.id,
-                        item_name=dish.tenmon,
-                        requested=quantity,
-                        available=available,
-                    ))
+                    stock_limits.append(
+                        VoiceStockLimit(
+                            item_id=dish.id,
+                            item_name=dish.tenmon,
+                            requested=quantity,
+                            available=available,
+                        )
+                    )
                     continue
             adds.append(
                 VoiceAdd(
@@ -1812,8 +2004,7 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
                         item_name=dish.tenmon,
                         allergen=allergen,
                         message=(
-                            f"Dạ, món {dish.tenmon} có chứa {allergen}, "
-                            "anh/chị có muốn đổi sang món khác không ạ?"
+                            f"Dạ, món {dish.tenmon} có chứa {allergen}, anh/chị có muốn đổi sang món khác không ạ?"
                         ),
                     )
                 )
@@ -1823,56 +2014,61 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
     allergy_only_warnings: list[VoiceWarning] = []
     allergy_only = (
         reported_allergies
-        and not adds and not ambiguities
-        and not out_of_stock and not stock_limits
-        and not suggestions and not warnings
+        and not adds
+        and not ambiguities
+        and not out_of_stock
+        and not stock_limits
+        and not suggestions
+        and not warnings
     )
     if allergy_only:
         for dish in dishes:
             for allergen in reported_allergies:
                 if _dish_contains_allergen(dish, allergen) and not dish.het_hang:
-                    allergy_only_warnings.append(VoiceWarning(
-                        item_id=dish.id,
-                        item_name=dish.tenmon,
-                        allergen=allergen,
-                        message=(
-                            f"Dạ, món {dish.tenmon} có chứa {allergen}, "
-                            "anh/chị có muốn đổi sang món khác không ạ?"
-                        ),
-                    ))
+                    allergy_only_warnings.append(
+                        VoiceWarning(
+                            item_id=dish.id,
+                            item_name=dish.tenmon,
+                            allergen=allergen,
+                            message=(
+                                f"Dạ, món {dish.tenmon} có chứa {allergen}, anh/chị có muốn đổi sang món khác không ạ?"
+                            ),
+                        )
+                    )
 
-    has_recommendation_intent = any(
-        phrase in normalized_text
-        for phrase in ("goi y", "tu van", "nen an", "mon nao")
-    )
+    has_recommendation_intent = any(phrase in normalized_text for phrase in ("goi y", "tu van", "nen an", "mon nao"))
     # ── Keyword/ingredient search (Intent A): khách hỏi theo nguyên liệu/từ khóa ──
     # Mở rộng trigger để nhận "tôi muốn ăn cơm", "có món nào chứa thịt bò không"
     ingredient_triggers = (
-        "co mon nao", "mon nao co", "co gi", "muon an", "muon uong",
-        "thich an", "thich uong", "co chua", "chua",
+        "co mon nao",
+        "mon nao co",
+        "co gi",
+        "muon an",
+        "muon uong",
+        "thich an",
+        "thich uong",
+        "co chua",
+        "chua",
     )
-    has_ingredient_search = any(
-        phrase in normalized_text for phrase in ingredient_triggers
-    ) or has_recommendation_intent
+    has_ingredient_search = (
+        any(phrase in normalized_text for phrase in ingredient_triggers) or has_recommendation_intent
+    )
 
     recommendations: list[VoiceRecommendation] = []
     if has_recommendation_intent:
         recommendations = [
             VoiceRecommendation(id=item.id, name=item.tenmon, price=int(item.giaban))
             for item in dishes
-            if not item.het_hang
-            and not any(
-                _dish_contains_allergen(item, allergy) for allergy in reported_allergies
-            )
+            if not item.het_hang and not any(_dish_contains_allergen(item, allergy) for allergy in reported_allergies)
         ][:3]
 
     # ── Xác định intent ──
     if adds or out_of_stock or ambiguities or stock_limits or not_found:
         intent = "order"
     elif allergy_only_warnings:
-        intent = "order"   # trả về kèm warnings để frontend hiển thị cảnh báo
+        intent = "order"  # trả về kèm warnings để frontend hiển thị cảnh báo
     elif suggestions or has_ingredient_search:
-        intent = "recommendation"   # khớp spec Intent A
+        intent = "recommendation"  # khớp spec Intent A
     elif has_recommendation_intent:
         intent = "recommendation"
     else:
@@ -1887,12 +2083,8 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
         message_parts = []
 
     if ambiguities:
-        choices = _friendly_candidates(
-            [dish for dish in dishes if dish.id in ambiguities[0].candidates]
-        )
-        message_parts.append(
-            f"Dạ, nhà hàng có {choices}. Anh/chị muốn dùng món nào ạ?"
-        )
+        choices = _friendly_candidates([dish for dish in dishes if dish.id in ambiguities[0].candidates])
+        message_parts.append(f"Dạ, nhà hàng có {choices}. Anh/chị muốn dùng món nào ạ?")
     elif stock_limits:
         limit = stock_limits[0]
         message_parts.append(
@@ -1902,50 +2094,30 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
     elif suggestions:
         # Intent A: "Dạ, quán có món [Tên]. Anh/chị có muốn dùng không ạ?"
         if len(suggestions) == 1:
-            message_parts.append(
-                f"Dạ, quán có món {suggestions[0].name}."
-                " Anh/chị có muốn dùng không ạ?"
-            )
+            message_parts.append(f"Dạ, quán có món {suggestions[0].name}. Anh/chị có muốn dùng không ạ?")
         else:
-            choices = _friendly_candidates(
-                [dish for dish in dishes if any(s.id == dish.id for s in suggestions)]
-            )
-            message_parts.append(
-                f"Dạ, quán có các món phù hợp gồm {choices}."
-                " Anh/chị muốn dùng món nào ạ?"
-            )
+            choices = _friendly_candidates([dish for dish in dishes if any(s.id == dish.id for s in suggestions)])
+            message_parts.append(f"Dạ, quán có các món phù hợp gồm {choices}. Anh/chị muốn dùng món nào ạ?")
     elif adds:
         noted_adds = [item for item in adds if item.note]
         if len(adds) == 1 and len(noted_adds) == 1:
-            message_parts.append(
-                f"Dạ, em đã ghi chú {noted_adds[0].note} cho món {noted_adds[0].name} ạ."
-            )
+            message_parts.append(f"Dạ, em đã ghi chú {noted_adds[0].note} cho món {noted_adds[0].name} ạ.")
         else:
             confirmed = ", ".join(
-                f"{item.qty} phần {item.name}"
-                + (f", ghi chú {item.note}" if item.note else "")
-                for item in adds
+                f"{item.qty} phần {item.name}" + (f", ghi chú {item.note}" if item.note else "") for item in adds
             )
-            message_parts.append(
-                f"Dạ, em đã ghi nhận {confirmed}. Anh/chị có muốn gọi thêm món nào nữa không ạ?"
-            )
+            message_parts.append(f"Dạ, em đã ghi nhận {confirmed}. Anh/chị có muốn gọi thêm món nào nữa không ạ?")
     elif out_of_stock:
-        message_parts.append(
-            "Dạ, món anh/chị chọn hiện đã hết hàng."
-            " Anh/chị chọn món khác giúp em nhé ạ."
-        )
+        message_parts.append("Dạ, món anh/chị chọn hiện đã hết hàng. Anh/chị chọn món khác giúp em nhé ạ.")
     elif recommendations:
         message_parts.append(
             "Dạ, em gợi ý "
-            + _friendly_candidates(
-                [dish for dish in dishes if any(item.id == dish.id for item in recommendations)]
-            )
+            + _friendly_candidates([dish for dish in dishes if any(item.id == dish.id for item in recommendations)])
             + ". Anh/chị muốn dùng món nào ạ?"
         )
     elif not_found:
         message_parts.append(
-            f"Dạ, em chưa tìm thấy {', '.join(not_found)} trong thực đơn. "
-            "Anh/chị cho em biết tên món khác nhé ạ."
+            f"Dạ, em chưa tìm thấy {', '.join(not_found)} trong thực đơn. Anh/chị cho em biết tên món khác nhé ạ."
         )
     else:
         message_parts.append("Dạ, anh/chị muốn dùng món nào ạ?")
@@ -1958,16 +2130,14 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
         oos=out_of_stock,
         stock_limits=stock_limits,
         not_found=not_found,
-        warnings=all_warnings,   # gồm cả allergy_only_warnings
+        warnings=all_warnings,  # gồm cả allergy_only_warnings
         recommendations=recommendations,
         suggestions=suggestions,
         message=" ".join(message_parts),
     )
     # Ghi transcript theo phiên để có thể xóa khi đóng bàn; không nhận/lưu file âm thanh.
     if body.table_name:
-        ban_result = await db.execute(
-            select(Ban).where(Ban.tenban == body.table_name).limit(1)
-        )
+        ban_result = await db.execute(select(Ban).where(Ban.tenban == body.table_name).limit(1))
         ban = ban_result.scalars().first()
         if ban:
             phieu_result = await db.execute(
@@ -1980,10 +2150,12 @@ async def interpret(db: AsyncSession, body: VoiceInterpretIn) -> VoiceInterpretO
         else:
             phieu = None
         if phieu:
-            db.add(LogGiongNoi(
-                phieuban_id=phieu.phieuban_id,
-                vanbangoc=body.transcript,
-                ydinhai=result.model_dump(mode="json"),
-            ))
+            db.add(
+                LogGiongNoi(
+                    phieuban_id=phieu.phieuban_id,
+                    vanbangoc=body.transcript,
+                    ydinhai=result.model_dump(mode="json"),
+                )
+            )
             await db.commit()
     return result

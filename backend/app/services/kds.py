@@ -115,9 +115,7 @@ async def update_status(db: AsyncSession, item_id: str, target: str) -> KdsItemO
     return await get_item(db, item_id)
 
 
-async def split_item(
-    db: AsyncSession, item_id: str, soluong: int, target: str
-) -> tuple[KdsItemOut, KdsItemOut]:
+async def split_item(db: AsyncSession, item_id: str, soluong: int, target: str) -> tuple[KdsItemOut, KdsItemOut]:
     """Nấu/Xong từng phần: tách `soluong` suất sang dòng mới với trạng thái `target`."""
     item, het_hang = await _load_for_update(db, item_id)
     current_qty = item.soluong or 1

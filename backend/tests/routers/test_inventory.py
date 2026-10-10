@@ -35,9 +35,7 @@ async def _order(db: AsyncSession, mon: ThucDon, qty: int, *, when=None, trangth
         phieu.giogoimon = datetime.fromtimestamp(when.timestamp(), tz=UTC).replace(tzinfo=None)
     db.add(phieu)
     await db.flush()
-    item = ChiTietPhieu(
-        phieuban_id=phieu.phieuban_id, mon_id=mon.id, soluong=qty, trangthai=trangthai
-    )
+    item = ChiTietPhieu(phieuban_id=phieu.phieuban_id, mon_id=mon.id, soluong=qty, trangthai=trangthai)
     # Gửi bếp trừ `soluongton` ngay (story-spec-tru-kho-tu-dong.md); món hủy đã được hoàn kho.
     # Đơn ngoài kỳ (`when`) coi như đã trừ trước khi kỳ bắt đầu → `stock` của _setup là tồn đầu kỳ.
     if mon.soluongton is not None and trangthai != "da_huy" and when is None:
@@ -50,17 +48,13 @@ def _line(body: dict, name: str) -> dict:
     return next(line for line in body["lines"] if line["tenmon"] == name)
 
 
-async def test_create_shift_snapshots_only_tracked_items_and_counts_sold(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_create_shift_snapshots_only_tracked_items_and_counts_sold(client: AsyncClient, db_session: AsyncSession):
     """AC1: phiếu chỉ gồm món đếm số lượng; B = đã bán trong kỳ (bỏ món hủy, món ngoài kỳ);
     C = A - B."""
     tra, pho = await _setup(db_session, stock=50)
     await _order(db_session, tra, 2)
     await _order(db_session, tra, 5, trangthai="da_huy")  # món hủy không tính
-    await _order(
-        db_session, tra, 7, when=datetime.now(UTC).replace(tzinfo=None) - timedelta(days=2)
-    )
+    await _order(db_session, tra, 7, when=datetime.now(UTC).replace(tzinfo=None) - timedelta(days=2))
     await _order(db_session, pho, 3)  # món không đếm số lượng
 
     resp = await client.post("/inventory/shifts")
@@ -108,9 +102,7 @@ async def test_save_lines_computes_loss(client: AsyncClient, db_session: AsyncSe
 async def test_close_requires_actual_stock(client: AsyncClient, db_session: AsyncSession):
     await _setup(db_session)
     shift = (await client.post("/inventory/shifts")).json()
-    resp = await client.post(
-        f"/inventory/shifts/{shift['id']}/close", json={"lines": [], "manager_pin": PIN}
-    )
+    resp = await client.post(f"/inventory/shifts/{shift['id']}/close", json={"lines": [], "manager_pin": PIN})
     assert resp.status_code == 422
     assert resp.json()["error_code"] == "ACTUAL_STOCK_MISSING"
 
@@ -135,25 +127,19 @@ async def test_close_rejects_loss_without_reason(client: AsyncClient, db_session
     assert (await client.get(f"/inventory/shifts/{shift['id']}")).json()["trangthai"] == "nhap"
 
 
-async def test_close_rejects_wrong_or_non_manager_pin(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_close_rejects_wrong_or_non_manager_pin(client: AsyncClient, db_session: AsyncSession):
     """AC5: chỉ PIN của tài khoản QUAN_LY được chốt ca (PIN Thu ngân cũng bị từ chối)."""
     tra, _ = await _setup(db_session, stock=5)
     shift = (await client.post("/inventory/shifts")).json()
     lines = [{"thucdon_id": str(tra.id), "tonthucte": 5}]
 
     for pin in ["0000", "9999"]:
-        resp = await client.post(
-            f"/inventory/shifts/{shift['id']}/close", json={"lines": lines, "manager_pin": pin}
-        )
+        resp = await client.post(f"/inventory/shifts/{shift['id']}/close", json={"lines": lines, "manager_pin": pin})
         assert resp.status_code == 403
         assert resp.json()["error_code"] == "INVALID_MANAGER_PIN"
 
 
-async def test_close_locks_shift_and_rolls_actual_into_next_opening(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_close_locks_shift_and_rolls_actual_into_next_opening(client: AsyncClient, db_session: AsyncSession):
     """AC3: chốt ca → lưu số liệu, ghi người chốt, tồn thực tế thành soluongton (tồn đầu ca sau)."""
     tra, _ = await _setup(db_session, stock=5)
     await _order(db_session, tra, 1)
@@ -187,24 +173,18 @@ async def test_closed_shift_is_read_only(client: AsyncClient, db_session: AsyncS
     tra, _ = await _setup(db_session, stock=5)
     shift = (await client.post("/inventory/shifts")).json()
     lines = [{"thucdon_id": str(tra.id), "tonthucte": 5}]
-    await client.post(
-        f"/inventory/shifts/{shift['id']}/close", json={"lines": lines, "manager_pin": PIN}
-    )
+    await client.post(f"/inventory/shifts/{shift['id']}/close", json={"lines": lines, "manager_pin": PIN})
 
     for resp in [
         await client.put(f"/inventory/shifts/{shift['id']}/lines", json={"lines": lines}),
-        await client.post(
-            f"/inventory/shifts/{shift['id']}/close", json={"lines": lines, "manager_pin": PIN}
-        ),
+        await client.post(f"/inventory/shifts/{shift['id']}/close", json={"lines": lines, "manager_pin": PIN}),
         await client.delete(f"/inventory/shifts/{shift['id']}"),
     ]:
         assert resp.status_code == 409
         assert resp.json()["error_code"] == "SHIFT_CLOSED"
 
 
-async def test_close_with_zero_stock_marks_menu_out_of_stock(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_close_with_zero_stock_marks_menu_out_of_stock(client: AsyncClient, db_session: AsyncSession):
     """Kiểm kê thấy hết sạch → món tự thành Hết hàng trên E-Menu."""
     tra, _ = await _setup(db_session, stock=2)
     shift = (await client.post("/inventory/shifts")).json()
@@ -233,33 +213,25 @@ async def test_list_and_delete_draft(client: AsyncClient, db_session: AsyncSessi
     assert resp.json()["error_code"] == "SHIFT_NOT_FOUND"
 
 
-async def test_save_lines_rejects_negative_and_unknown_items(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_save_lines_rejects_negative_and_unknown_items(client: AsyncClient, db_session: AsyncSession):
     _, pho = await _setup(db_session)
     shift = (await client.post("/inventory/shifts")).json()
     url = f"/inventory/shifts/{shift['id']}/lines"
 
-    assert (
-        await client.put(url, json={"lines": [{"thucdon_id": str(pho.id), "tonthucte": -1}]})
-    ).status_code == 422
+    assert (await client.put(url, json={"lines": [{"thucdon_id": str(pho.id), "tonthucte": -1}]})).status_code == 422
     resp = await client.put(url, json={"lines": [{"thucdon_id": str(pho.id), "tonthucte": 1}]})
     assert resp.status_code == 422
     assert resp.json()["error_code"] == "UNKNOWN_ITEM"
 
 
-async def test_opening_stock_not_double_counted_after_real_orders(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_opening_stock_not_double_counted_after_real_orders(client: AsyncClient, db_session: AsyncSession):
     """Regression BUG-US08-001: gửi bếp tự trừ soluongton (story-spec-tru-kho-tu-dong.md), nên
     phiếu tạo sau khi đã bán phải cộng lại số đã bán: A = 10, B = 3, C = 7
     (lỗi cũ: A = 7, C = 4)."""
     tra, _ = await _setup(db_session, stock=10)
     db_session.add(Ban(tenban="Bàn 01", trangthai=1))  # bàn master (ADR-N14)
     await db_session.commit()
-    resp = await client.post(
-        "/orders", json={"table_name": "Bàn 01", "items": [{"thucdon_id": tra.id, "soluong": 3}]}
-    )
+    resp = await client.post("/orders", json={"table_name": "Bàn 01", "items": [{"thucdon_id": tra.id, "soluong": 3}]})
     assert resp.status_code == 200
 
     line = _line((await client.post("/inventory/shifts")).json(), "Trà đá")

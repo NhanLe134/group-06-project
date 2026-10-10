@@ -51,9 +51,7 @@ async def _concurrent_orders(factory, thucdon_id: str) -> list[int]:
 
     async def one(ban: int) -> int:
         async with factory() as db:
-            data = OrderCreateIn(
-                table_name=f"Bàn {ban:02d}", items=[{"thucdon_id": thucdon_id, "soluong": 1}]
-            )
+            data = OrderCreateIn(table_name=f"Bàn {ban:02d}", items=[{"thucdon_id": thucdon_id, "soluong": 1}])
             try:
                 await order_service.create_order(db, data)
                 return 200
@@ -127,9 +125,7 @@ async def test_order_racing_kitchen_out_of_stock_is_rejected(session_factory):
 
 async def _concurrent_orders_one(factory, thucdon_id: str) -> int:
     async with factory() as db:
-        data = OrderCreateIn(
-            table_name="Bàn 01", items=[{"thucdon_id": thucdon_id, "soluong": 1}]
-        )
+        data = OrderCreateIn(table_name="Bàn 01", items=[{"thucdon_id": thucdon_id, "soluong": 1}])
         try:
             await order_service.create_order(db, data)
             return 200

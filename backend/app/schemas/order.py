@@ -78,9 +78,9 @@ class TableOut(BaseModel):
     gio_vao: str | None
     tongtien: int
     so_phieuban: int = 0
-    tong_mon: int = 0        # tổng dòng món chưa tính tiền
-    mon_phuc_vu: int = 0     # món đã phục vụ (da_phuc_vu)
-    mon_da_xong: int = 0     # món bếp xong chờ bưng (da_xong)
+    tong_mon: int = 0  # tổng dòng món chưa tính tiền
+    mon_phuc_vu: int = 0  # món đã phục vụ (da_phuc_vu)
+    mon_da_xong: int = 0  # món bếp xong chờ bưng (da_xong)
 
 
 class CloseTableOut(BaseModel):

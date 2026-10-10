@@ -30,15 +30,11 @@ def _start_of_today_vn(now: datetime) -> datetime:
 
 
 async def _period_start(db: AsyncSession, now: datetime) -> datetime:
-    last_close = await db.scalar(
-        select(func.max(PhieuKiemKe.giochot)).where(PhieuKiemKe.trangthai == DA_CHOT)
-    )
+    last_close = await db.scalar(select(func.max(PhieuKiemKe.giochot)).where(PhieuKiemKe.trangthai == DA_CHOT))
     return last_close or _start_of_today_vn(now)
 
 
-async def _sold(
-    db: AsyncSession, start: datetime, end: datetime | None, dish_ids: list[str]
-) -> dict[str, int]:
+async def _sold(db: AsyncSession, start: datetime, end: datetime | None, dish_ids: list[str]) -> dict[str, int]:
     """B — số đã bán trong kỳ: bỏ món đã hủy và hóa đơn đã hủy."""
     if not dish_ids:
         return {}
@@ -138,13 +134,9 @@ async def get_shift(db: AsyncSession, shift_id: str) -> ShiftDetailOut:
 
 async def create_shift(db: AsyncSession) -> ShiftDetailOut:
     if await db.scalar(select(PhieuKiemKe.id).where(PhieuKiemKe.trangthai == NHAP)):
-        raise ApiError(
-            409, "SHIFT_DRAFT_EXISTS", "Đang có phiếu kiểm kê chưa chốt — hãy mở phiếu đó."
-        )
+        raise ApiError(409, "SHIFT_DRAFT_EXISTS", "Đang có phiếu kiểm kê chưa chốt — hãy mở phiếu đó.")
     # Món mua sẵn (có soluongton); món chế biến trừ nguyên liệu — story-spec-tru-kho-tu-dong.md
-    tracked = (
-        (await db.execute(select(ThucDon).where(ThucDon.soluongton.is_not(None)))).scalars().all()
-    )
+    tracked = (await db.execute(select(ThucDon).where(ThucDon.soluongton.is_not(None)))).scalars().all()
     if not tracked:
         raise ApiError(
             409,
@@ -207,9 +199,7 @@ async def close_shift(
 
     missing = [mon.tenmon for line, mon in lines if line.tonthucte is None]
     if missing:
-        raise ApiError(
-            422, "ACTUAL_STOCK_MISSING", "Chưa nhập tồn thực tế cho tất cả các món.", missing
-        )
+        raise ApiError(422, "ACTUAL_STOCK_MISSING", "Chưa nhập tồn thực tế cho tất cả các món.", missing)
     # AC4: hao hụt (chênh lệch âm) bắt buộc có lý do — server kiểm tra lại dù giao diện đã chặn
     no_reason = [
         {"thucdon_id": str(line.thucdon_id), "tenmon": mon.tenmon}
@@ -224,13 +214,9 @@ async def close_shift(
             no_reason,
         )
     # AC5: Manager Override — PIN của một tài khoản Quản lý
-    manager = await db.scalar(
-        select(NguoiDung).where(NguoiDung.vaitro == QUAN_LY, NguoiDung.mapin == manager_pin)
-    )
+    manager = await db.scalar(select(NguoiDung).where(NguoiDung.vaitro == QUAN_LY, NguoiDung.mapin == manager_pin))
     if manager is None:
-        raise ApiError(
-            403, "INVALID_MANAGER_PIN", "Mã PIN không đúng hoặc không phải tài khoản Quản lý."
-        )
+        raise ApiError(403, "INVALID_MANAGER_PIN", "Mã PIN không đúng hoặc không phải tài khoản Quản lý.")
 
     flipped: list[ThucDon] = []
     for line, mon in lines:
