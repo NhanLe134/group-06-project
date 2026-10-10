@@ -50,26 +50,17 @@ def _fold(s: str) -> str:
     so khớp có dấu ('BÀN06' vs 'BAN06') nên luôn rớt xuống lượt so tiền.
     """
     nfkd = unicodedata.normalize("NFKD", s)
-    return (
-        "".join(c for c in nfkd if not unicodedata.combining(c))
-        .upper()
-        .replace(" ", "")
-        .replace("_", "")
-    )
+    return "".join(c for c in nfkd if not unicodedata.combining(c)).upper().replace(" ", "").replace("_", "")
 
 
-async def _find_table_by_sepay_content(
-    db: AsyncSession, content: str | None, amount: int
-) -> Ban | None:
+async def _find_table_by_sepay_content(db: AsyncSession, content: str | None, amount: int) -> Ban | None:
     """Tìm bàn theo nội dung chuyển khoản (VD: 'Ban 06 - HD-...' -> Bàn 06) hoặc số tiền."""
     bans = (await db.execute(select(Ban))).scalars().all()
     normalized_content = _fold(content or "")
 
     # 0. ƯU TIÊN: khớp hoadon_id trong nội dung (QR chứa 'Ban 06 - HD-...') —
     # chính xác từng hóa đơn, không nhầm khi 2 bàn trùng tổng tiền (ADR-N16)
-    drafts = (
-        await db.execute(select(HoaDon).where(HoaDon.trangthai == HOADON_CHUA_TT))
-    ).scalars().all()
+    drafts = (await db.execute(select(HoaDon).where(HoaDon.trangthai == HOADON_CHUA_TT))).scalars().all()
     for hd in drafts:
         if hd.hoadon_id and hd.hoadon_id.upper() in normalized_content:
             ban = await db.get(Ban, hd.ban_id)
@@ -117,10 +108,7 @@ async def sepay_webhook(
     if ban is None:
         return {
             "success": True,
-            "message": (
-                f"Không tìm thấy bàn khớp với nội dung '{data.content}' "
-                f"hoặc số tiền {data.transferAmount}đ"
-            ),
+            "message": (f"Không tìm thấy bàn khớp với nội dung '{data.content}' hoặc số tiền {data.transferAmount}đ"),
         }
 
     # Đóng bàn tự động & sinh hóa đơn
@@ -176,9 +164,7 @@ async def sepay_demo_simulation(ban_id: str, db: Db) -> dict[str, Any]:
     draft = await service.get_draft_hoadon(db, ban.ban_id)
     sim_data = SepayWebhookIn(
         gateway="MBBank",
-        content=service.build_transfer_content(
-            ban.tenban, draft.hoadon_id if draft else None
-        ),
+        content=service.build_transfer_content(ban.tenban, draft.hoadon_id if draft else None),
         transferAmount=amount,
     )
     auth = f"Apikey {settings.sepay_webhook_api_key}" if settings.sepay_webhook_api_key else None

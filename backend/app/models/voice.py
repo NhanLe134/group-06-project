@@ -27,6 +27,4 @@ class LogGiongNoi(Base):
     )
     vanbangoc: Mapped[str] = mapped_column(Text)
     # jsonb trên Postgres/Supabase; JSON thường khi test bằng SQLite in-memory
-    ydinhai: Mapped[dict[str, Any] | None] = mapped_column(
-        JSON().with_variant(JSONB(), "postgresql"), default=None
-    )
+    ydinhai: Mapped[dict[str, Any] | None] = mapped_column(JSON().with_variant(JSONB(), "postgresql"), default=None)

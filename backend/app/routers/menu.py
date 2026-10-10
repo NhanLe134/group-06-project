@@ -212,9 +212,15 @@ async def delete_menu_item(item_id: str, db: Db) -> None:
 
 
 async def broadcast_availability(db: AsyncSession, mon: MenuItemOut) -> None:
-    log.info("menu_availability %s", kv(
-        dish=mon.id, mon=mon.name, status=mon.status, portions=mon.portions,
-    ))
+    log.info(
+        "menu_availability %s",
+        kv(
+            dish=mon.id,
+            mon=mon.name,
+            status=mon.status,
+            portions=mon.portions,
+        ),
+    )
     await manager.publish(
         MENU_OOS_CHANNEL,
         "ITEM_OOS_BROADCAST",

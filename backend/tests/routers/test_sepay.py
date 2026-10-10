@@ -73,9 +73,7 @@ async def _phuc_vu_het(client, table_name="Bàn 06"):
     current = await client.get("/orders/current", params={"table_name": table_name})
     for it in current.json()["items"]:
         if it["trangthai"] != "da_xong":
-            res = await client.patch(
-                f"/kds/items/{it['id']}/status", json={"trangthai": "da_xong"}
-            )
+            res = await client.patch(f"/kds/items/{it['id']}/status", json={"trangthai": "da_xong"})
             assert res.status_code == 200, res.text
         res = await client.patch(f"/waiter/items/{it['id']}/serve")
         assert res.status_code == 200, res.text

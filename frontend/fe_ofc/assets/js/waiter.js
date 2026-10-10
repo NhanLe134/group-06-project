@@ -109,7 +109,7 @@ function renderTables() {
 
         let progressHtml = '';
         let tableStatusText = '';
-        let badgeColor = 'var(--color-danger)';
+        let badgeClass = 'badge-danger';
         
         if (t.status === 'occupied') {
             const totalItems = t.items.length;
@@ -504,8 +504,9 @@ function renderTasks() {
         
         t.items.forEach(i => {
             if (i.status === 'ready') {
-                if (!grouped[i.name]) grouped[i.name] = { isDrink: i.isDrink, items: [] };
-                grouped[i.name].items.push({ tableId: t.id, tableName: t.name, item: i });
+                const groupKey = i.name + '_' + (t.zone || 'unknown');
+                if (!grouped[groupKey]) grouped[groupKey] = { isDrink: i.isDrink, itemName: i.name, items: [] };
+                grouped[groupKey].items.push({ tableId: t.id, tableName: t.name, item: i });
                 totalTasks++;
             }
         });
@@ -527,8 +528,9 @@ function renderTasks() {
     // 3. Render nhóm 1: Gợi ý Gom đơn (Gom >= 2) - Dạng thanh trượt ngang
     let batchedHtml = '';
     let hasBatched = false;
-    Object.keys(grouped).forEach(itemName => {
-        const group = grouped[itemName];
+    Object.keys(grouped).forEach(groupKey => {
+        const group = grouped[groupKey];
+        const itemName = group.itemName;
         const list = group.items;
         if (list.length > 1) {
             hasBatched = true;
@@ -543,9 +545,9 @@ function renderTasks() {
             batchedHtml += `
             <div style="flex: 0 0 auto; background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 12px; padding: 12px; min-width: 150px; max-width: 180px; display: flex; flex-direction: column; gap: 8px;">
                 <span style="color: #B45309; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 4px;"><i class="ph-fill ph-stack"></i> GOM MÓN</span>
-                <span style="font-size: 15px; font-weight: 600; color: var(--color-text-main); line-height: 1.2;">${totalQty}x ${itemName}</span>
-                <span style="font-size: 12px; color: #64748B; line-height: 1.3;"><i class="ph-bold ph-map-pin"></i> ${tablesText}</span>
-                <button class="btn-primary" style="width: 100%; margin-top: auto;" onclick="event.stopPropagation(); serveBatch('${itemName}')">Lấy xong (${totalQty})</button>
+                <span style="font-size: 13px; font-weight: 600; color: var(--color-text-main); line-height: 1.2;">${totalQty}x ${itemName}</span>
+                <span style="font-size: 11px; color: #64748B; line-height: 1.3;"><i class="ph-bold ph-map-pin"></i> ${tablesText}</span>
+                <button style="width: 100%; margin-top: auto; padding: 8px 12px; font-size: 13px; border-radius: 8px; background: #FF5A36; color: #fff; border: none; font-weight: 700; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#E04826'" onmouseout="this.style.background='#FF5A36'" onclick="event.stopPropagation(); serveBatch('${itemName}')">Lấy xong (${totalQty})</button>
             </div>
             `;
             // KHÔNG xóa khỏi grouped để nó vẫn hiện trong danh sách Từng bàn ở dưới
@@ -568,8 +570,9 @@ function renderTasks() {
 
     // Gộp các món lẻ theo Bàn VÀ theo loại (Nước riêng, Đồ ăn riêng)
     let singlesByTableAndType = {};
-    Object.keys(grouped).forEach(itemName => {
-        const group = grouped[itemName];
+    Object.keys(grouped).forEach(groupKey => {
+        const group = grouped[groupKey];
+        const itemName = group.itemName;
         group.items.forEach(entry => {
             const key = entry.tableId + (group.isDrink ? '_drink' : '_food');
             if (!singlesByTableAndType[key]) {
@@ -595,7 +598,7 @@ function renderTasks() {
     if (allTimeline.length > 0) {
         html += `<h4 style="font-size: 12px; font-weight: 800; color: #64748B; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.05em;"><i class="ph-bold ph-clock-counter-clockwise"></i> Thông báo mới nhất</h4>`;
         
-        allTimeline.forEach(task => {
+        allTimeline.reverse().forEach(task => {
             if (task.type === 'serve') {
                 const tableData = task.tableData;
                 const isDrink = tableData.isDrink;
@@ -611,7 +614,7 @@ function renderTasks() {
                 });
                 
                 let itemsHtml = Object.entries(qtyByItem).map(([name, qty]) => {
-                    return `<p style="margin:0 0 4px 0; font-size: 15px; font-weight: 600; color: var(--color-text-main);">${qty}x ${name}</p>`;
+                    return `<p style="margin:0 0 4px 0; font-size: 13px; font-weight: 600; color: var(--color-text-main);">${qty}x ${name}</p>`;
                 }).join('');
                 
                 let itemIdsArrayStr = '[' + tableData.items.map(i => `'${i.item.id}'`).join(', ') + ']';
@@ -629,7 +632,7 @@ function renderTasks() {
                         ${itemsHtml}
                         <p style="margin:4px 0 0 0; font-size:13px; color: #64748B;"><i class="ph-bold ph-map-pin"></i> <span style="font-weight: 600; color: var(--color-text-main);">${tableData.tableName}</span></p>
                     </div>
-                    <button class="btn-primary" style="width: 100%;" onclick="${serveAction}"><i class="ph-bold ph-check"></i> Đã hoàn tất</button>
+                    <button style="width: 100%; padding: 8px 12px; font-size: 13px; border-radius: 8px; background: #FF5A36; color: #fff; border: none; font-weight: 700; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#E04826'" onmouseout="this.style.background='#FF5A36'" onclick="${serveAction}"><i class="ph-bold ph-check"></i> Đã hoàn tất</button>
                 </div>
                 `;
             } else if (task.type === 'clean') {
@@ -643,10 +646,10 @@ function renderTasks() {
                         <span class="notif-time">Vừa xong</span>
                     </div>
                     <div class="notif-desc" style="margin-bottom: 12px;">
-                        <p style="margin:0; font-size: 15px; font-weight: 600; color: var(--color-text-main);">Khách đã thanh toán rời đi</p>
+                        <p style="margin:0; font-size: 13px; font-weight: 600; color: var(--color-text-main);">Khách đã thanh toán rời đi</p>
                         <p style="margin:4px 0 0 0; font-size:13px; color: #64748B;"><i class="ph-bold ph-map-pin"></i> <span style="font-weight: 600; color: var(--color-text-main);">${t.name}</span></p>
                     </div>
-                    <button class="btn-primary" style="width: 100%;" onclick="markTableClean('${t.id}')"><i class="ph-bold ph-check"></i> Đã dọn xong</button>
+                    <button style="width: 100%; padding: 8px 12px; font-size: 13px; border-radius: 8px; background: #FF5A36; color: #fff; border: none; font-weight: 700; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#E04826'" onmouseout="this.style.background='#FF5A36'" onclick="markTableClean('${t.id}')"><i class="ph-bold ph-check"></i> Đã dọn xong</button>
                 </div>
                 `;
             }
@@ -763,7 +766,7 @@ function pushReadyNotifBatch(ban) {
     const time = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
     
     const totalItems = items.reduce((sum, i) => sum + i.soluong, 0);
-    const itemsHtml = items.map(i => `<p style="margin:0 0 4px 0;"><i class="ph-bold ph-cooking-pot"></i> <b>${escHtml(i.tenmon)}</b> × ${i.soluong}</p>`).join('');
+    const itemsHtml = items.map(i => `<p style="margin:0 0 4px 0; font-size: 13px;"><i class="ph-bold ph-cooking-pot"></i> <b>${escHtml(i.tenmon)}</b> × ${i.soluong}</p>`).join('');
     
     const card = document.createElement('div');
     card.className = 'notif-card';
@@ -772,7 +775,7 @@ function pushReadyNotifBatch(ban) {
         <div class="notif-desc">
             ${itemsHtml}
         </div>
-        ${table ? `<button class="btn-serve" onclick="openTableDrawer('${table.id}')"><i class="ph-bold ph-eye"></i> Mở xem ${escHtml(ban)}</button>` : ''}
+        ${table ? `<button style="width: 100%; margin-top: 8px; padding: 8px 12px; font-size: 13px; border-radius: 8px; background: #FF5A36; color: #fff; border: none; font-weight: 700; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#E04826'" onmouseout="this.style.background='#FF5A36'" onclick="openTableDrawer('${table.id}')"><i class="ph-bold ph-eye"></i> Mở xem ${escHtml(ban)}</button>` : ''}
     `;
     notifList.prepend(card);
     notifCount++; notifCountBadge.innerText = notifCount;
@@ -785,6 +788,9 @@ function handleItemReadyEvent({ ban, tenmon, soluong }) {
     if (table && currentZone !== 'all' && table.zone !== currentZone) {
         return; // Bỏ qua, không đưa vào danh sách gộp hay kêu chuông
     }
+
+    // Cập nhật UI ngay lập tức để hiển thị ở "Thông báo mới nhất"
+    if (typeof loadTables === 'function') loadTables();
 
     if (!batchingTimers[ban]) {
         batchingTimers[ban] = {

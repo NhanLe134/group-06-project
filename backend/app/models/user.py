@@ -23,9 +23,7 @@ class NguoiDung(Base):
     tendangnhap: Mapped[str | None] = mapped_column(String, unique=True, default=None)
     matkhau: Mapped[str | None] = mapped_column(String, default=None)
     mapin: Mapped[str | None] = mapped_column(String, default=None)
-    ngaytao: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=False), server_default=func.now()
-    )
+    ngaytao: Mapped[datetime | None] = mapped_column(DateTime(timezone=False), server_default=func.now())
 
 
 class LogHuyMon(Base):
@@ -38,7 +36,5 @@ class LogHuyMon(Base):
     chitietphieu_id: Mapped[str | None] = mapped_column(
         String(30), ForeignKey("chitietphieu.chitietphieu_id", ondelete="CASCADE"), default=None
     )
-    nguoiduyet_id: Mapped[str | None] = mapped_column(
-        String(30), ForeignKey("nguoidung.id"), default=None
-    )
+    nguoiduyet_id: Mapped[str | None] = mapped_column(String(30), ForeignKey("nguoidung.id"), default=None)
     lydohuy: Mapped[str] = mapped_column(Text)
