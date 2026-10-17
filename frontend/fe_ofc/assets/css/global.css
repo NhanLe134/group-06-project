@@ -5,6 +5,7 @@
 
 :root {
   --primary: #FF5A36;
+  --primary-600: #E04826;
   --primary-soft: #FFF0ED;
   --bg: #F0F2F5;
   --card: #FFFFFF;
@@ -228,12 +229,12 @@ h4 { font-size: 14px; margin: 16px 2px 8px; color: var(--muted); text-transform:
 
 /* ---------- Nút chung ---------- */
 .btn-primary {
-  min-height: 46px; padding: 10px 18px; border-radius: 12px;
+  min-height: 46px; padding: 10px 18px; border-radius: 10px;
   background: var(--primary); color: #fff; font-weight: 800; font-size: 14.5px;
 }
-.btn-primary:hover:not(:disabled) { background: var(--primary-600); }
+.btn-primary:hover:not(:disabled) { background: var(--primary-600); color: #fff; }
 .btn-ghost {
-  min-height: 46px; padding: 10px 18px; border-radius: 12px;
+  min-height: 46px; padding: 10px 18px; border-radius: 10px;
   border: 1.5px solid var(--line); background: #fff; font-weight: 700;
 }
 .btn-x { width: 36px; height: 36px; border-radius: 50%; font-size: 15px; color: var(--muted); background: var(--bg); }

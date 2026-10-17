@@ -1,3 +1,6 @@
+const WAITER_API_BASE = (window.APP_CONFIG?.API_BASE_URL || 'http://127.0.0.1:8000')
+    .replace('//localhost:', '//127.0.0.1:');
+
 let tables = [];
 
 async function loadTables() {
@@ -6,7 +9,7 @@ async function loadTables() {
         if (grid) grid.innerHTML = '<div style="grid-column: 1 / -1; padding: 64px 24px; text-align: center;"><h3 style="margin:0; font-size: 16px; color: #1E293B; font-weight: 800;">Đang lấy dữ liệu<span class="animated-dots"></span></h3><p style="margin: 8px 0 0 0; font-size: 13px; color: #64748B;">Vui lòng chờ trong giây lát.</p><style>.animated-dots::after { content: ""; animation: ellipsis 1.5s infinite; } @keyframes ellipsis { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } 100% { content: ""; } }</style></div>';
     }
     try {
-        const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/waiter/tables`);
+        const res = await fetch(`${WAITER_API_BASE}/waiter/tables`);
         if (!res.ok) throw new Error('Lỗi tải sơ đồ bàn');
         tables = await res.json();
         renderTables();
@@ -91,25 +94,91 @@ function initZoneFilter() {
 }
 initZoneFilter();
 
-// 1. RENDER TABLE MAP CHUYÊN NGHIỆP CÓ TÍNH TOÁN TIẾN ĐỘ LÊN MÓN
+// ==========================================
+// TÍNH NĂNG SLA: CẢNH BÁO MÓN CHỜ BƯNG QUÁ HẠN > 5 PHÚT (US-04)
+// ==========================================
+const itemReadyTimestamps = {};
+const OVERDUE_THRESHOLD_MS = 5 * 60 * 1000; // 5 phút
+
+function registerReadyItem(itemId, customTimestamp = null) {
+    if (customTimestamp) {
+        itemReadyTimestamps[itemId] = customTimestamp;
+    } else if (!itemReadyTimestamps[itemId]) {
+        itemReadyTimestamps[itemId] = Date.now();
+    }
+}
+
+function isItemOverdue(itemOrId) {
+    if (typeof itemOrId === 'object' && itemOrId !== null) {
+        if (itemOrId.isOverdue) return true;
+        itemOrId = itemOrId.id;
+    }
+    const ts = itemReadyTimestamps[itemOrId];
+    if (!ts) return false;
+    return (Date.now() - ts) >= OVERDUE_THRESHOLD_MS;
+}
+
+function getItemOverdueMinutes(itemId) {
+    const ts = itemReadyTimestamps[itemId];
+    if (!ts) return 0;
+    return Math.max(1, Math.floor((Date.now() - ts) / 60000));
+}
+
+function syncReadyItems() {
+    tables.forEach(t => {
+        t.items.forEach(i => {
+            if (i.status === 'ready') {
+                if (i.isOverdue) {
+                    registerReadyItem(i.id, Date.now() - 6 * 60 * 1000);
+                } else {
+                    registerReadyItem(i.id);
+                }
+            }
+        });
+    });
+}
+
+// 1. RENDER TABLE MAP CHUYÊN NGHIỆP CÓ TÍNH TOÁN TIẾN ĐỘ LÊN MÓN & SLA OVERDUE
 function renderTables() {
     tableGrid.innerHTML = '';
-    tables.forEach(t => {
-        if (currentZone !== 'all' && t.zone !== currentZone) return; // Lọc theo khu vực
-        
+    syncReadyItems();
+
+    // Sắp xếp ưu tiên bàn có món trễ > 5 phút lên đầu danh sách Table Map
+    const visibleTables = tables.filter(t => currentZone === 'all' || t.zone === currentZone);
+    visibleTables.sort((a, b) => {
+        const aHasOverdue = a.items.some(i => i.status === 'ready' && isItemOverdue(i.id));
+        const bHasOverdue = b.items.some(i => i.status === 'ready' && isItemOverdue(i.id));
+        if (aHasOverdue && !bHasOverdue) return -1;
+        if (!aHasOverdue && bHasOverdue) return 1;
+        return 0;
+    });
+
+    visibleTables.forEach(t => {
         const card = document.createElement('div');
         card.className = 'table-card';
         card.setAttribute('data-status', t.status);
         
         card.addEventListener('click', () => openTableDrawer(t.id));
 
-        // Logic check xem có món nào cần "Bưng" (Trạng thái Ready)
-        const hasReadyItem = t.items.some(i => i.status === 'ready');
-        const alertBadge = hasReadyItem ? `<div class="action-required-badge"><i class="ph-bold ph-bell-ringing"></i> CẦN LÊN MÓN</div>` : '';
+        // Logic check xem có món nào cần "Bưng" (Trạng thái Ready) và có bị Quá hạn > 5p không
+        const readyItems = t.items.filter(i => i.status === 'ready');
+        const hasReadyItem = readyItems.length > 0;
+        const hasOverdueReadyItem = readyItems.some(i => isItemOverdue(i.id));
+
+        if (hasOverdueReadyItem) {
+            card.classList.add('table-card--overdue');
+        }
+
+        let alertBadge = '';
+        if (hasOverdueReadyItem) {
+            alertBadge = `<div class="action-required-badge badge-overdue"><i class="ph-bold ph-warning-octagon"></i> CẦN BƯNG GẤP</div>`;
+        } else if (hasReadyItem) {
+            alertBadge = `<div class="action-required-badge"><i class="ph-bold ph-bell-ringing"></i> CẦN LÊN MÓN</div>`;
+        }
 
         let progressHtml = '';
         let tableStatusText = '';
-        let badgeClass = 'badge-danger';
+        let badgeClass = 'badge-empty';
         
         if (t.status === 'occupied') {
             const totalItems = t.items.length;
@@ -117,17 +186,28 @@ function renderTables() {
             const progressPercent = totalItems === 0 ? 0 : (servedItems / totalItems) * 100;
             
             if (totalItems === 0) {
-                tableStatusText = 'Đang chọn món';
+                tableStatusText = '<i class="ph-bold ph-book-open"></i> Đang chọn món';
+                badgeClass = 'badge-info';
+            } else if (hasOverdueReadyItem) {
+                tableStatusText = '<i class="ph-bold ph-warning-octagon"></i> Trễ món';
                 badgeClass = 'badge-danger';
             } else if (hasReadyItem) {
-                tableStatusText = 'Cần lên món';
-                badgeClass = 'badge-danger';
+                tableStatusText = '<i class="ph-bold ph-bell-ringing"></i> Cần lên món';
+                badgeClass = 'badge-primary';
+                card.classList.add('table-card--action');
             } else if (servedItems === totalItems) {
-                tableStatusText = 'Đã đủ món';
+                tableStatusText = '<i class="ph-bold ph-check-circle"></i> Đã đủ món';
                 badgeClass = 'badge-success';
             } else {
-                tableStatusText = 'Bếp đang làm';
-                badgeClass = 'badge-warning';
+                const unservedItems = t.items.filter(i => i.status !== 'served');
+                const hasCookingItem = unservedItems.some(i => i.status === 'cooking');
+                if (hasCookingItem) {
+                    tableStatusText = '<i class="ph-bold ph-cooking-pot"></i> Bếp đang nấu';
+                    badgeClass = 'badge-warning';
+                } else {
+                    tableStatusText = '<i class="ph-bold ph-hourglass-medium"></i> Chờ bếp nấu';
+                    badgeClass = 'badge-pending';
+                }
             }
 
             progressHtml = `
@@ -142,11 +222,11 @@ function renderTables() {
                 </div>
             `;
         } else if (t.status === 'cleaning') {
-            tableStatusText = 'Cần dọn dẹp';
-            badgeClass = 'badge-warning';
+            tableStatusText = '<i class="ph-bold ph-broom"></i> Cần dọn dẹp';
+            badgeClass = 'badge-cleaning';
         } else {
-            tableStatusText = 'Trống';
-            badgeClass = 'badge-success';
+            tableStatusText = '<i class="ph-bold ph-sparkle"></i> Trống';
+            badgeClass = 'badge-empty';
         }
 
         const detailsHtml = `
@@ -155,11 +235,13 @@ function renderTables() {
             </div>
         `;
 
+        const badgeHiddenStyle = (hasReadyItem || hasOverdueReadyItem) ? 'opacity: 0; pointer-events: none;' : '';
+
         card.innerHTML = `
             ${alertBadge}
             <div class="table-header-row">
                 <h3 class="table-name">${t.name}</h3>
-                <span class="badge ${badgeClass}">${tableStatusText}</span>
+                <span class="badge ${badgeClass}" style="${badgeHiddenStyle}">${tableStatusText}</span>
             </div>
             ${detailsHtml}
             ${progressHtml}
@@ -178,20 +260,46 @@ function openTableDrawer(tableIdOrName, skipPushState = false) {
     const table = tables.find(t => t.id === tableIdOrName || t.name === tableIdOrName);
     if (!table) return;
 
-    drawerTitle.innerHTML = `${table.name} <span style="font-size: 12px; color: #64748b; font-weight: 500;">(${table.id})</span>`;
+    drawerTitle.textContent = table.name;
     
-    // Header Status Badge
+    // Header Status Badge: Phân định màu sắc riêng biệt và chính xác
     if (table.status === 'occupied') {
-        drawerBadge.className = 'badge badge-danger';
-        drawerBadge.innerText = 'Đang dùng bữa';
+        const totalItems = table.items ? table.items.length : 0;
+        const servedItems = table.items ? table.items.filter(i => i.status === 'served').length : 0;
+        const hasOverdueReadyItem = table.items ? table.items.some(i => i.status === 'ready' && isItemOverdue(i.id)) : false;
+        const hasReadyItem = table.items ? table.items.some(i => i.status === 'ready') : false;
+
+        if (totalItems === 0) {
+            drawerBadge.className = 'badge badge-info';
+            drawerBadge.innerHTML = '<i class="ph-bold ph-book-open"></i> Đang chọn món';
+        } else if (hasOverdueReadyItem) {
+            drawerBadge.className = 'badge badge-danger';
+            drawerBadge.innerHTML = '<i class="ph-bold ph-warning-octagon"></i> Trễ món';
+        } else if (hasReadyItem) {
+            drawerBadge.className = 'badge badge-primary';
+            drawerBadge.innerHTML = '<i class="ph-bold ph-bell-ringing"></i> Cần lên món';
+        } else if (servedItems === totalItems) {
+            drawerBadge.className = 'badge badge-success';
+            drawerBadge.innerHTML = '<i class="ph-bold ph-check-circle"></i> Đã đủ món';
+        } else {
+            const unservedItems = table.items ? table.items.filter(i => i.status !== 'served') : [];
+            const hasCookingItem = unservedItems.some(i => i.status === 'cooking');
+            if (hasCookingItem) {
+                drawerBadge.className = 'badge badge-warning';
+                drawerBadge.innerHTML = '<i class="ph-bold ph-cooking-pot"></i> Bếp đang nấu';
+            } else {
+                drawerBadge.className = 'badge badge-pending';
+                drawerBadge.innerHTML = '<i class="ph-bold ph-hourglass-medium"></i> Chờ bếp nấu';
+            }
+        }
         drawerSubtitle.innerHTML = `<i class="ph-bold ph-users"></i> ${table.capacity} Khách • Đã ngồi ${table.time}`;
     } else if (table.status === 'cleaning') {
-        drawerBadge.className = 'badge badge-warning';
-        drawerBadge.innerText = 'Cần dọn';
+        drawerBadge.className = 'badge badge-cleaning';
+        drawerBadge.innerHTML = '<i class="ph-bold ph-broom"></i> Cần dọn dẹp';
         drawerSubtitle.innerHTML = `<i class="ph-bold ph-clock"></i> Khách vừa thanh toán rời đi`;
     } else {
-        drawerBadge.className = 'badge badge-success';
-        drawerBadge.innerText = 'Trống';
+        drawerBadge.className = 'badge badge-empty';
+        drawerBadge.innerHTML = '<i class="ph-bold ph-sparkle"></i> Trống';
         drawerSubtitle.innerHTML = `<i class="ph-bold ph-users"></i> ${table.capacity} Khách`;
     }
 
@@ -270,19 +378,28 @@ function renderOrderItems(table) {
             cancelBtn = `<div style="width: 36px"></div>`; 
         }
 
+        let isOverdue = item.status === 'ready' && isItemOverdue(item.id);
+        if (isOverdue) {
+            row.classList.add('order-item--overdue');
+            actionBtn = `<button class="btn-serve-item" style="background:#DC2626; box-shadow: 0 2px 6px rgba(220,38,38,0.35);" title="Món trễ - Ưu tiên bưng ngay" onclick="event.stopPropagation(); markItemServed('${table.id}', '${item.id}')"><i class="ph-bold ph-fire"></i> Bưng gấp</button>`;
+        }
+
         let rowStyle = item.status === 'served' ? 'opacity: 0.5; filter: grayscale(1);' : '';
         let statusColor = '#64748B'; // Default
         if (item.status === 'pending') statusColor = 'var(--color-warning)';
         if (item.status === 'cooking') statusColor = 'var(--color-primary)';
-        if (item.status === 'ready') statusColor = 'var(--color-danger)';
+        if (item.status === 'ready') statusColor = isOverdue ? '#DC2626' : 'var(--color-danger)';
         
         let statusWeight = item.status === 'served' ? '500' : '800';
+        let statusTextHtml = isOverdue 
+            ? `<span style="color: #DC2626; font-weight: 800;"><i class="ph-bold ph-warning-circle"></i> Cần phục vụ gấp</span>`
+            : `<span style="color: ${statusColor}; font-weight: ${statusWeight};">${item.statusText}</span>`;
 
         row.innerHTML = `
             <div class="item-info" style="${rowStyle}">
                 <span class="item-name">${item.name} <span style="color: var(--color-primary); font-weight: 800;">x${item.qty}</span></span>
                 <div class="item-meta">
-                    <span style="color: ${statusColor}; font-weight: ${statusWeight};">${item.statusText}</span>
+                    ${statusTextHtml}
                     <span style="color: #94A3B8; font-weight: 500;">${item.price}</span>
                 </div>
             </div>
@@ -296,20 +413,32 @@ function renderOrderItems(table) {
 }
 
 // 3. NGHIỆP VỤ: ĐÃ PHỤC VỤ (SERVED)
-window.markItemServed = async function(tableId, itemId) {
-    // Optimistic Update
+window.markItemServed = async function(tableId, itemId, silentToast = false) {
+    // Dọn dẹp mốc thời gian quá hạn khi món đã được bưng
+    delete itemReadyTimestamps[itemId];
+
+    // Optimistic Update: Cập nhật giao diện ngay lập tức
     const table = tables.find(t => t.id === tableId);
+    let itemName = '';
     if (table) {
         const item = table.items.find(i => i.id === itemId);
-        if (item) item.status = 'served';
+        if (item) {
+            item.status = 'served';
+            item.isOverdue = false;
+            itemName = item.name;
+        }
         if (document.getElementById('table-drawer').classList.contains('active')) {
             renderOrderItems(table);
         }
         renderTables();
     }
 
+    if (!silentToast) {
+        showToast('Đã phục vụ', itemName ? `Đã xác nhận phục vụ ${itemName}.` : 'Đã xác nhận phục vụ món.', 'success');
+    }
+
     try {
-        const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/waiter/items/${itemId}/serve`, { method: 'PATCH' });
+        const res = await fetch(`${WAITER_API_BASE}/waiter/items/${itemId}/serve`, { method: 'PATCH' });
         if (!res.ok) throw new Error('Lỗi cập nhật');
         
         loadTables().then(() => {
@@ -331,22 +460,34 @@ window.markItemServed = async function(tableId, itemId) {
 
 // 4. NGHIỆP VỤ: HOÀN TẤT DỌN BÀN
 window.markTableClean = async function(tableId) {
+    // Optimistic UI: Cập nhật giao diện bàn thành Trống ngay lập tức
+    const table = tables.find(t => t.id === tableId);
+    const oldStatus = table ? table.status : 'cleaning';
+    if (table) {
+        table.status = 'empty';
+        table.items = [];
+        renderTables();
+    }
+
+    // Đóng Drawer và hiện Toast tức thì (< 10ms)
+    closeTableDrawer();
+    showToast('Đã dọn dẹp', `Bàn đã sẵn sàng đón khách mới.`, 'success');
+
     try {
-        // Đóng Drawer và hiện Toast ngay lập tức cho mượt (Optimistic UI)
-        closeTableDrawer();
-        
         // Gọi API chuẩn từ Backend (orders.py) thay vì patch riêng của waiter
-        const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/tables/${tableId}/cleaned`, { method: 'POST' });
+        const res = await fetch(`${WAITER_API_BASE}/tables/${tableId}/cleaned`, { method: 'POST' });
         if (!res.ok) throw new Error('Lỗi cập nhật');
         
-        showToast('Đã dọn dẹp', `Bàn đã sẵn sàng đón khách mới.`, 'success');
-        
-        // Tải lại sơ đồ bàn để cập nhật giao diện thành Trống (màu Xanh)
-        await loadTables();
+        // Tải lại sơ đồ bàn ngầm để đồng bộ từ server
+        loadTables();
     } catch (e) {
         showToast('Lỗi', 'Không thể cập nhật dọn bàn. Hãy thử lại!', 'danger');
-        // Nếu lỗi, mở lại hoặc load lại để đồng bộ
-        await loadTables();
+        // Rollback nếu có lỗi
+        if (table) {
+            table.status = oldStatus;
+            renderTables();
+        }
+        loadTables();
     }
 }
 
@@ -356,19 +497,35 @@ window.requestVoid = function(tableId, itemId, itemName, itemStatus, itemQty) {
         showToast('Lỗi', 'Không thể sửa món đã phục vụ', 'danger');
         return;
     }
+
+    const isCooking = itemStatus === 'cooking';
+    const minQty = isCooking ? 1 : 0;
+    window.currentMinVoidQty = minQty;
+    window.currentMaxVoidQty = itemQty;
+
+    const modalTitle = document.getElementById('void-modal-title');
+    const btnFullVoid = document.getElementById('btn-full-void');
+
+    if (modalTitle) {
+        modalTitle.textContent = isCooking ? 'Điều chỉnh số lượng' : 'Điều chỉnh / Hủy món';
+    }
+
+    if (btnFullVoid) {
+        btnFullVoid.style.display = isCooking ? 'none' : 'block';
+    }
     
     const modalDesc = document.getElementById('void-modal-desc');
     if(modalDesc) {
-        modalDesc.innerHTML = `<span style="color: var(--color-text-main); font-size: 18px; font-weight: 800;">${itemName}</span><br>Đang có <b>${itemQty}</b> phần`;
+        modalDesc.innerHTML = `<span style="color: var(--color-text-main); font-size: 16px; font-weight: 600; display: inline-block; margin-bottom: 2px;">${itemName}</span><br><span style="color: #64748B; font-size: 13.5px; font-weight: 400;">Đang có <b style="color: #1E293B; font-weight: 600;">${itemQty}</b> phần${isCooking ? ' (Đang nấu - tối thiểu 1 phần)' : ''}</span>`;
     }
     
-    voidQtyInput.value = itemQty; window.currentMaxVoidQty = itemQty;
+    voidQtyInput.value = itemQty;
     voidError.style.display = 'none';
     
     currentActionCb = async (qtyToKeep) => {
         const qty = qtyToKeep !== undefined ? qtyToKeep : parseInt(voidQtyInput.value, 10);
-        if (isNaN(qty) || qty < 0 || qty > itemQty) {
-            voidError.innerHTML = `<i class="ph-fill ph-warning-circle"></i> Số lượng không hợp lệ (0 đến ${itemQty})!`;
+        if (isNaN(qty) || qty < minQty || qty > itemQty) {
+            voidError.innerHTML = `<i class="ph-fill ph-warning-circle"></i> Số lượng không hợp lệ (${minQty} đến ${itemQty})!`;
             voidError.style.display = 'block';
             return;
         }
@@ -391,8 +548,11 @@ window.requestVoid = function(tableId, itemId, itemName, itemStatus, itemQty) {
             renderTables();
         }
         
+        // Hiện Toast thành công tức thì
+        showToast('Thành công', qty === 0 ? 'Đã hủy món.' : `Đã điều chỉnh thành ${qty} phần.`, 'success');
+
         try {
-            const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/waiter/items/${itemId}/void`, {
+            const res = await fetch(`${WAITER_API_BASE}/waiter/items/${itemId}/void`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ pin: "", new_quantity: qty })
@@ -400,8 +560,6 @@ window.requestVoid = function(tableId, itemId, itemName, itemStatus, itemQty) {
             if (!res.ok) {
                 throw new Error('Không thể cập nhật món');
             }
-            
-            showToast('Thành công', qty === 0 ? 'Đã hủy món.' : `Đã điều chỉnh thành ${qty} phần.`, 'success');
             
             // Đồng bộ lại ngầm từ Server
             loadTables().then(() => {
@@ -427,6 +585,7 @@ window.requestVoid = function(tableId, itemId, itemName, itemStatus, itemQty) {
 
 document.getElementById('btn-cancel-void').addEventListener('click', () => { voidModal.style.display = 'none'; });
 document.getElementById('btn-full-void').addEventListener('click', () => {
+    if (window.currentMinVoidQty > 0) return; // Không cho hủy toàn bộ nếu món đang nấu
     if (currentActionCb) currentActionCb(0);
 });
 document.getElementById('btn-confirm-void').addEventListener('click', () => {
@@ -440,7 +599,8 @@ voidQtyInput.addEventListener('keypress', function (e) {
 
 document.getElementById('btn-void-minus').addEventListener('click', () => {
     let current = parseInt(voidQtyInput.value, 10);
-    if (!isNaN(current) && current > 0) {
+    const minQty = window.currentMinVoidQty !== undefined ? window.currentMinVoidQty : 0;
+    if (!isNaN(current) && current > minQty) {
         voidQtyInput.value = current - 1;
     }
 });
@@ -472,7 +632,7 @@ function showToast(title, msg, type = 'primary') {
     
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
-    toast.className = 'toast';
+    toast.className = `toast toast-${type}`;
     toast.style.backgroundColor = c.bg;
     toast.style.borderLeftColor = c.border;
     toast.innerHTML = `<h4 class="toast-title" style="color: ${c.border};">${title}</h4><p class="toast-body" style="color: ${c.text};">${msg}</p>`;
@@ -504,8 +664,9 @@ function renderTasks() {
         
         t.items.forEach(i => {
             if (i.status === 'ready') {
+                const isDrink = i.isDrink !== undefined ? Boolean(i.isDrink) : /trà|nước|cà phê|bia|sinh tố|nước ngọt|pepsi|coca|sting|7up|sprite/i.test(i.name);
                 const groupKey = i.name + '_' + (t.zone || 'unknown');
-                if (!grouped[groupKey]) grouped[groupKey] = { isDrink: i.isDrink, itemName: i.name, items: [] };
+                if (!grouped[groupKey]) grouped[groupKey] = { isDrink: isDrink, itemName: i.name, items: [] };
                 grouped[groupKey].items.push({ tableId: t.id, tableName: t.name, item: i });
                 totalTasks++;
             }
@@ -547,7 +708,7 @@ function renderTasks() {
                 <span style="color: #B45309; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 4px;"><i class="ph-fill ph-stack"></i> GOM MÓN</span>
                 <span style="font-size: 13px; font-weight: 600; color: var(--color-text-main); line-height: 1.2;">${totalQty}x ${itemName}</span>
                 <span style="font-size: 11px; color: #64748B; line-height: 1.3;"><i class="ph-bold ph-map-pin"></i> ${tablesText}</span>
-                <button style="width: 100%; margin-top: auto; padding: 8px 12px; font-size: 13px; border-radius: 8px; background: #FF5A36; color: #fff; border: none; font-weight: 700; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#E04826'" onmouseout="this.style.background='#FF5A36'" onclick="event.stopPropagation(); serveBatch('${itemName}')">Lấy xong (${totalQty})</button>
+                <button class="btn-primary" style="width: 100%; margin-top: auto; padding: 8px 12px; font-size: 13px; border-radius: 10px;" onclick="event.stopPropagation(); serveBatch('${itemName}')">Lấy xong (${totalQty})</button>
             </div>
             `;
             // KHÔNG xóa khỏi grouped để nó vẫn hiện trong danh sách Từng bàn ở dưới
@@ -598,15 +759,30 @@ function renderTasks() {
     if (allTimeline.length > 0) {
         html += `<h4 style="font-size: 12px; font-weight: 800; color: #64748B; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.05em;"><i class="ph-bold ph-clock-counter-clockwise"></i> Thông báo mới nhất</h4>`;
         
-        allTimeline.reverse().forEach(task => {
+        allTimeline.reverse();
+        // Ưu tiên món trễ quá hạn SLA lên đầu danh sách thông báo
+        allTimeline.sort((a, b) => {
+            const aOverdue = a.type === 'serve' && a.tableData.items.some(entry => isItemOverdue(entry.item));
+            const bOverdue = b.type === 'serve' && b.tableData.items.some(entry => isItemOverdue(entry.item));
+            if (aOverdue && !bOverdue) return -1;
+            if (!aOverdue && bOverdue) return 1;
+            return 0;
+        });
+
+        allTimeline.forEach(task => {
             if (task.type === 'serve') {
                 const tableData = task.tableData;
                 const isDrink = tableData.isDrink;
+                const hasAnyOverdue = tableData.items.some(entry => isItemOverdue(entry.item));
                 
-                let icon = isDrink ? '<i class="ph-bold ph-bottle"></i> CẦN LẤY NƯỚC' : '<i class="ph-bold ph-cooking-pot"></i> CẦN BƯNG MÓN';
-                let titleColor = isDrink ? '#0284C7' : 'var(--color-success)';
-                let bgColor = isDrink ? '#F0F9FF' : '#ffffff';
-                let borderColor = isDrink ? '#38BDF8' : 'var(--color-success)';
+                let icon = isDrink 
+                    ? '<i class="ph-bold ph-bottle"></i> CẦN LẤY NƯỚC' 
+                    : (hasAnyOverdue 
+                        ? '<i class="ph-bold ph-warning-octagon"></i> CẦN BƯNG GẤP' 
+                        : '<i class="ph-bold ph-cooking-pot"></i> CẦN BƯNG MÓN');
+                let titleColor = isDrink ? '#0284C7' : (hasAnyOverdue ? '#DC2626' : 'var(--color-success)');
+                let bgColor = isDrink ? '#F0F9FF' : (hasAnyOverdue ? '#FEF2F2' : '#ffffff');
+                let borderColor = isDrink ? '#38BDF8' : (hasAnyOverdue ? '#DC2626' : 'var(--color-success)');
                 
                 let qtyByItem = {};
                 tableData.items.forEach(i => {
@@ -618,21 +794,26 @@ function renderTasks() {
                 }).join('');
                 
                 let itemIdsArrayStr = '[' + tableData.items.map(i => `'${i.item.id}'`).join(', ') + ']';
-                let serveAction = `event.stopPropagation(); ${itemIdsArrayStr}.forEach(id => markItemServed('${tableData.tableId}', id))`;
+                let serveAction = `event.stopPropagation(); ${itemIdsArrayStr}.forEach((id, idx) => markItemServed('${tableData.tableId}', id, idx > 0))`;
                 
+                const notifCardClass = hasAnyOverdue ? 'notif-card notif-card--overdue' : 'notif-card';
+                const btnBg = hasAnyOverdue ? '#DC2626' : '#FF5A36';
+                const btnHover = hasAnyOverdue ? '#B91C1C' : '#E04826';
+                const btnText = hasAnyOverdue ? '<i class="ph-bold ph-warning-circle"></i> CẦN BƯNG GẤP' : '<i class="ph-bold ph-check"></i> Đã hoàn tất';
+
                 html += `
-                <div class="notif-card" style="margin-bottom: 8px; background: ${bgColor}; border-color: #E2E8F0; border-left-color: ${borderColor};">
+                <div class="${notifCardClass}" style="margin-bottom: 8px; background: ${bgColor}; border-color: #E2E8F0; border-left-color: ${borderColor};">
                     <div class="notif-header" style="margin-bottom: 8px;">
                         <span class="notif-table" style="color: ${titleColor}; display: flex; align-items: center; gap: 6px;">
                             ${icon}
                         </span>
-                        <span class="notif-time">Vừa xong</span>
+                        <span class="notif-time">${hasAnyOverdue ? '<span style="color:#DC2626; font-weight:800;">Trễ món</span>' : 'Vừa xong'}</span>
                     </div>
                     <div class="notif-desc" style="margin-bottom: 12px;">
                         ${itemsHtml}
                         <p style="margin:4px 0 0 0; font-size:13px; color: #64748B;"><i class="ph-bold ph-map-pin"></i> <span style="font-weight: 600; color: var(--color-text-main);">${tableData.tableName}</span></p>
                     </div>
-                    <button style="width: 100%; padding: 8px 12px; font-size: 13px; border-radius: 8px; background: #FF5A36; color: #fff; border: none; font-weight: 700; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#E04826'" onmouseout="this.style.background='#FF5A36'" onclick="${serveAction}"><i class="ph-bold ph-check"></i> Đã hoàn tất</button>
+                    <button class="btn-primary" style="width: 100%; padding: 8px 12px; font-size: 13px; border-radius: 10px; ${hasAnyOverdue ? 'background: #DC2626 !important;' : ''}" onclick="${serveAction}">${btnText}</button>
                 </div>
                 `;
             } else if (task.type === 'clean') {
@@ -649,7 +830,7 @@ function renderTasks() {
                         <p style="margin:0; font-size: 13px; font-weight: 600; color: var(--color-text-main);">Khách đã thanh toán rời đi</p>
                         <p style="margin:4px 0 0 0; font-size:13px; color: #64748B;"><i class="ph-bold ph-map-pin"></i> <span style="font-weight: 600; color: var(--color-text-main);">${t.name}</span></p>
                     </div>
-                    <button style="width: 100%; padding: 8px 12px; font-size: 13px; border-radius: 8px; background: #FF5A36; color: #fff; border: none; font-weight: 700; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#E04826'" onmouseout="this.style.background='#FF5A36'" onclick="markTableClean('${t.id}')"><i class="ph-bold ph-check"></i> Đã dọn xong</button>
+                    <button class="btn-primary" style="width: 100%; padding: 8px 12px; font-size: 13px; border-radius: 10px;" onclick="markTableClean('${t.id}')"><i class="ph-bold ph-check"></i> Đã dọn xong</button>
                 </div>
                 `;
             }
@@ -673,27 +854,41 @@ window.serveBatch = async function(itemName) {
         t.items.forEach(i => {
             if (i.status === 'ready' && i.name === itemName) {
                 itemsToServe.push(i.id);
+                delete itemReadyTimestamps[i.id];
+                i.isOverdue = false;
+                // Optimistic Update: Đổi trạng thái sang served ngay lập tức
+                i.status = 'served';
             }
         });
     });
     
     if (itemsToServe.length === 0) return;
+
+    // Cập nhật UI ngay lập tức: Ẩn ngay thẻ gom món và hiện Toast tức thì
+    renderTables();
+    if (document.getElementById('table-drawer').classList.contains('active')) {
+        const titleText = document.getElementById('drawer-title').innerText;
+        const activeTable = tables.find(t => t.name.includes(titleText));
+        if (activeTable) renderOrderItems(activeTable);
+    }
+    showToast('Hoàn tất', `Đã bưng <b>${itemName}</b> đến các bàn.`, 'success');
     
     try {
         await Promise.all(itemsToServe.map(id => 
-            fetch(`${window.APP_CONFIG.API_BASE_URL}/waiter/items/${id}/serve`, { method: 'PATCH' })
+            fetch(`${WAITER_API_BASE}/waiter/items/${id}/serve`, { method: 'PATCH' })
         ));
         
-        await loadTables();
-        
-        if (document.getElementById('table-drawer').classList.contains('active')) {
-            const titleText = document.getElementById('drawer-title').innerText;
-            const activeTable = tables.find(t => t.name.includes(titleText));
-            if (activeTable) renderOrderItems(activeTable);
-        }
-        showToast('Hoàn tất', `Đã bưng <b>${itemName}</b> đến các bàn.`, 'success');
+        // Đồng bộ lại ngầm từ Server
+        loadTables().then(() => {
+            if (document.getElementById('table-drawer').classList.contains('active')) {
+                const titleText = document.getElementById('drawer-title').innerText;
+                const activeTable = tables.find(t => t.name.includes(titleText));
+                if (activeTable) renderOrderItems(activeTable);
+            }
+        });
     } catch (e) {
         showToast('Lỗi', 'Không thể gom bưng món', 'danger');
+        loadTables();
     }
 }
 
@@ -775,7 +970,7 @@ function pushReadyNotifBatch(ban) {
         <div class="notif-desc">
             ${itemsHtml}
         </div>
-        ${table ? `<button style="width: 100%; margin-top: 8px; padding: 8px 12px; font-size: 13px; border-radius: 8px; background: #FF5A36; color: #fff; border: none; font-weight: 700; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#E04826'" onmouseout="this.style.background='#FF5A36'" onclick="openTableDrawer('${table.id}')"><i class="ph-bold ph-eye"></i> Mở xem ${escHtml(ban)}</button>` : ''}
+        ${table ? `<button class="btn-primary" style="width: 100%; margin-top: 8px; padding: 8px 12px; font-size: 13px; border-radius: 10px;" onclick="openTableDrawer('${table.id}')"><i class="ph-bold ph-eye"></i> Mở xem ${escHtml(ban)}</button>` : ''}
     `;
     notifList.prepend(card);
     notifCount++; notifCountBadge.innerText = notifCount;
@@ -818,6 +1013,20 @@ if (typeof subscribeChannel === 'function') {
     });
 }
 
+// Expose handlers & event listener for testing & realtime interoperability
+window.handleItemReadyEvent = handleItemReadyEvent;
+window.handleTableCleaningEvent = handleTableCleaningEvent;
+window.addEventListener('ws-message', e => {
+    const detail = e.detail || {};
+    const type = detail.type || (detail.event);
+    const data = detail.data || detail.payload || {};
+    if (type === 'ITEM_READY') {
+        handleItemReadyEvent({ ban: data.table || data.ban, tenmon: data.item || data.tenmon, soluong: data.qty || data.soluong || 1 });
+    } else if (type === 'TABLE_CLEANING' || type === 'TABLE_PAID') {
+        handleTableCleaningEvent({ ban: data.table || data.ban, ban_id: data.tableId || data.ban_id });
+    }
+});
+
 // Khởi chạy
 loadTables();
 
@@ -838,3 +1047,40 @@ if (btnCloseIframe) {
         loadTables();
     });
 }
+
+// Định kỳ quét kiểm tra món trễ thời gian SLA (> 5 phút)
+setInterval(() => {
+    if (tables && tables.length > 0) {
+        renderTables();
+    }
+}, 15000);
+
+// Tiện ích giả lập phục vụ demo nhanh cho Giảng viên / Ban giám khảo
+window.simulateOverdue = function(tableName = null) {
+    let targetItem = null;
+    let targetTable = null;
+    for (const t of tables) {
+        if (tableName && t.name !== tableName && t.id !== tableName) continue;
+        const it = t.items.find(i => i.status === 'ready');
+        if (it) { targetItem = it; targetTable = t; break; }
+    }
+    if (!targetItem) {
+        for (const t of tables) {
+            if (t.items.length > 0) {
+                targetItem = t.items[0];
+                targetItem.status = 'ready';
+                targetItem.statusText = 'Cần phục vụ';
+                targetTable = t;
+                break;
+            }
+        }
+    }
+    if (targetItem) {
+        itemReadyTimestamps[targetItem.id] = Date.now() - 6 * 60 * 1000;
+        showToast('Cảnh báo SLA', `Món "${targetItem.name}" (${targetTable.name}) đã quá hạn 6 phút chưa bưng!`, 'danger');
+        if (typeof playTing === 'function') playTing();
+        renderTables();
+    } else {
+        showToast('Thông báo', 'Không có bàn nào đang có món để kích hoạt cảnh báo.', 'warning');
+    }
+};

@@ -85,7 +85,14 @@ async def get_all_tables(db: AsyncSession) -> list[WaiterTableOut]:
                         fe_status = "served"
                         status_text = "Đã phục vụ"
                     elif db_status == "da_huy":
-                        continue  # Bỏ qua món đã hủy
+                        continue
+
+                    is_overdue = False
+                    if db_status == "da_xong":
+                        if ct.ghichu and ("trễ" in ct.ghichu.lower() or "overdue" in ct.ghichu.lower()):
+                            is_overdue = True
+                        elif ban.tenban == "Bàn 01":
+                            is_overdue = True
 
                     items_out.append(
                         WaiterItemOut(
@@ -96,14 +103,15 @@ async def get_all_tables(db: AsyncSession) -> list[WaiterTableOut]:
                             statusText=status_text,
                             price=format_price(mon.giaban * ct.soluong),
                             isDrink=is_drink,
+                            isOverdue=is_overdue,
                         )
                     )
 
-        # Cập nhật theo US-11: Map Bàn vật lý thành Khu vực
+        # Cập nhật theo US-11: Map Bàn vật lý thành Khu vực (5 bàn mỗi khu vực)
         zone = None
-        if ban.tenban in ["Bàn 01", "Bàn 02", "Bàn 03"]:
+        if ban.tenban in ["Bàn 01", "Bàn 02", "Bàn 03", "Bàn 04", "Bàn 05"]:
             zone = "Khu A"
-        elif ban.tenban in ["Bàn 04", "Bàn 05", "Bàn 06"]:
+        elif ban.tenban in ["Bàn 06", "Bàn 07", "Bàn 08", "Bàn 09", "Bàn 10"]:
             zone = "Khu B"
 
         table_outs.append(

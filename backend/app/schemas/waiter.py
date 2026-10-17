@@ -9,6 +9,7 @@ class WaiterItemOut(BaseModel):
     statusText: str
     price: str
     isDrink: bool
+    isOverdue: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 

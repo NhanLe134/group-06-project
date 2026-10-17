@@ -52,7 +52,7 @@ body {
   color: #FFFFFF;
   background-color: var(--color-primary);
   border: none;
-  border-radius: var(--radius-full);
+  border-radius: 10px;
   padding: 10px 20px;
   cursor: pointer;
   display: inline-flex;
@@ -61,8 +61,10 @@ body {
   gap: 8px;
   transition: all 0.2s ease;
 }
-.btn-primary:hover {
-  background-color: var(--color-primary-dark);
+.btn-primary:hover,
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--color-primary-dark, #E04826) !important;
+  color: #FFFFFF !important;
 }
 
 .btn-ghost {
@@ -70,7 +72,7 @@ body {
   color: var(--color-text-main);
   background-color: transparent;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
+  border-radius: 10px;
   padding: 10px 20px;
   cursor: pointer;
   display: inline-flex;
@@ -81,6 +83,7 @@ body {
 }
 .btn-ghost:hover {
   background-color: #F1F5F9;
+  color: var(--color-text-main);
 }
 
 .badge {
@@ -93,7 +96,11 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
-.badge-success { background: #DCFCE7; color: var(--color-success); }
-.badge-warning { background: #FEF3C7; color: var(--color-warning); }
-.badge-danger  { background: #FEE2E2; color: var(--color-danger); }
-.badge-primary { background: var(--color-primary-soft); color: var(--color-primary); }
+.badge-success { background: #DCFCE7; color: var(--color-success); border: 1px solid #86EFAC; }
+.badge-warning { background: #FEF3C7; color: var(--color-warning); border: 1px solid #FCD34D; }
+.badge-pending { background: #FFFBEB; color: #D97706; border: 1px solid #FDE68A; }
+.badge-danger  { background: #FEE2E2; color: var(--color-danger); border: 1px solid #FCA5A5; }
+.badge-primary { background: var(--color-primary-soft); color: var(--color-primary); border: 1px solid #FDBA74; }
+.badge-info    { background: #E0F2FE; color: #0284C7; border: 1px solid #7DD3FC; }
+.badge-cleaning{ background: #F3E8FF; color: #7E22CE; border: 1px solid #D8B4FE; }
+.badge-empty   { background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; }

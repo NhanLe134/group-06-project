@@ -57,6 +57,7 @@
         <header class="topbar">
             <h2 id="page-title">Tổng quan Doanh thu (Dashboard)</h2>
             <div class="header-actions">
+                <button class="btn-icon" id="btn-refresh-dashboard" title="Làm mới dữ liệu Dashboard" onclick="loadDashboard()"><i class="ph-bold ph-arrows-clockwise"></i></button>
                 <button class="btn-icon"><i class="ph-bold ph-bell-ringing"></i></button>
                 <a href="../index.html"><button class="btn-logout"><i class="ph-bold ph-sign-out"></i> Thoát Cổng</button></a>
             </div>
@@ -71,24 +72,24 @@
                         <div class="kpi-icon" style="background: #E0F2FE; color: #0284C7;"><i class="ph-fill ph-money"></i></div>
                         <div class="kpi-info">
                             <span class="kpi-label">Doanh thu hôm nay</span>
-                            <span class="kpi-value">12.540.000đ</span>
-                            <span class="kpi-trend positive"><i class="ph-bold ph-trend-up"></i> +15% so với hôm qua</span>
+                            <span class="kpi-value" id="dash-revenue">0đ</span>
+                            <span class="kpi-trend positive" id="dash-revenue-trend"><i class="ph-bold ph-trend-up"></i> Đang tải dữ liệu...</span>
                         </div>
                     </div>
                     <div class="kpi-card">
                         <div class="kpi-icon" style="background: #FEF3C7; color: #D97706;"><i class="ph-fill ph-receipt"></i></div>
                         <div class="kpi-info">
-                            <span class="kpi-label">Tổng đơn hàng</span>
-                            <span class="kpi-value">42 Đơn</span>
-                            <span class="kpi-trend positive"><i class="ph-bold ph-trend-up"></i> +5 đơn</span>
+                            <span class="kpi-label">Đơn hoàn tất hôm nay</span>
+                            <span class="kpi-value" id="dash-orders">0 Đơn</span>
+                            <span class="kpi-trend positive" id="dash-orders-trend"><i class="ph-bold ph-trend-up"></i> Đang tải dữ liệu...</span>
                         </div>
                     </div>
                     <div class="kpi-card">
                         <div class="kpi-icon" style="background: #FCE7F3; color: #DB2777;"><i class="ph-fill ph-users"></i></div>
                         <div class="kpi-info">
                             <span class="kpi-label">Tỷ lệ lấp đầy bàn (Occupancy)</span>
-                            <span class="kpi-value">85%</span>
-                            <span class="kpi-trend negative"><i class="ph-bold ph-trend-down"></i> Bàn trống rất ít</span>
+                            <span class="kpi-value" id="dash-occupancy">0%</span>
+                            <span class="kpi-trend" id="dash-occupancy-trend"><i class="ph-bold ph-users"></i> Đang tải dữ liệu...</span>
                         </div>
                     </div>
                 </div>
@@ -99,17 +100,11 @@
                             <h3><i class="ph-bold ph-chart-bar"></i> Doanh thu theo giờ</h3>
                         </div>
                         <div class="panel-body">
-                            <div class="mock-chart">
-                                <!-- Giả lập biểu đồ cột bằng CSS -->
-                                <div class="bar" style="height: 30%;" title="10:00 - 5tr"></div>
-                                <div class="bar" style="height: 50%;" title="11:00 - 8tr"></div>
-                                <div class="bar" style="height: 90%;" title="12:00 - 15tr"></div>
-                                <div class="bar" style="height: 60%;" title="13:00 - 10tr"></div>
-                                <div class="bar" style="height: 20%;" title="14:00 - 3tr"></div>
-                                <div class="bar" style="height: 40%;" title="15:00 - 6tr"></div>
+                            <div class="mock-chart" id="dash-chart-bars">
+                                <!-- Giả lập biểu đồ cột bằng CSS qua JS -->
                             </div>
-                            <div class="chart-labels">
-                                <span>10h</span><span>11h</span><span>12h</span><span>13h</span><span>14h</span><span>15h</span>
+                            <div class="chart-labels" id="dash-chart-labels">
+                                <!-- Nhãn giờ qua JS -->
                             </div>
                         </div>
                     </div>
@@ -119,22 +114,8 @@
                             <h3><i class="ph-bold ph-star"></i> Top Món Bán Chạy (Bestsellers)</h3>
                         </div>
                         <div class="panel-body p-0">
-                            <ul class="top-list">
-                                <li>
-                                    <span class="rank rank-1">1</span>
-                                    <div class="top-info"><b>Lẩu Thái Tomyum</b><small>15 suất</small></div>
-                                    <span class="top-rev">5.250.000đ</span>
-                                </li>
-                                <li>
-                                    <span class="rank rank-2">2</span>
-                                    <div class="top-info"><b>Bò Lúc Lắc</b><small>12 suất</small></div>
-                                    <span class="top-rev">1.440.000đ</span>
-                                </li>
-                                <li>
-                                    <span class="rank rank-3">3</span>
-                                    <div class="top-info"><b>Cơm Chiên Hải Sản</b><small>10 suất</small></div>
-                                    <span class="top-rev">1.100.000đ</span>
-                                </li>
+                            <ul class="top-list" id="dash-top-list">
+                                <!-- Render danh sách top món qua JS -->
                             </ul>
                         </div>
                     </div>
