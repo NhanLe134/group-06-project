@@ -22,6 +22,9 @@ navItems.forEach(item => {
                 tab.classList.add('active');
             }
         });
+        if (targetTabId === 'tab-dashboard') {
+            loadDashboard();
+        }
     });
 });
 
@@ -1106,7 +1109,92 @@ function showToast(title, msg, type = 'primary') {
     setTimeout(() => toast.remove(), 4000);
 }
 
+// ==========================================
+// NGHIỆP VỤ: DASHBOARD TỔNG QUAN DOANH THU & CHỈ SỐ THỰC TẾ (US-06)
+// ==========================================
+const DASHBOARD_API = `${(window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) || 'http://localhost:8000'}/api/dashboard/stats`;
+
+async function loadDashboard() {
+    const revEl = document.getElementById('dash-revenue');
+    const revTrendEl = document.getElementById('dash-revenue-trend');
+    const ordersEl = document.getElementById('dash-orders');
+    const ordersTrendEl = document.getElementById('dash-orders-trend');
+    const occEl = document.getElementById('dash-occupancy');
+    const occTrendEl = document.getElementById('dash-occupancy-trend');
+    const chartBarsEl = document.getElementById('dash-chart-bars');
+    const chartLabelsEl = document.getElementById('dash-chart-labels');
+    const topListEl = document.getElementById('dash-top-list');
+    const refreshBtn = document.getElementById('btn-refresh-dashboard');
+
+    if (refreshBtn) refreshBtn.classList.add('loading');
+
+    try {
+        const res = await fetch(DASHBOARD_API);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        // 1. Doanh thu
+        if (revEl) revEl.textContent = `${data.today_revenue.toLocaleString('vi-VN')}đ`;
+        if (revTrendEl) {
+            if (data.today_revenue > 0) {
+                revTrendEl.className = 'kpi-trend positive';
+                revTrendEl.innerHTML = `<i class="ph-bold ph-trend-up"></i> Hôm nay có phát sinh · Tích lũy: ${data.total_revenue.toLocaleString('vi-VN')}đ`;
+            } else {
+                revTrendEl.className = 'kpi-trend';
+                revTrendEl.innerHTML = `<i class="ph-bold ph-clock"></i> Chưa có đơn hôm nay · Tích lũy: ${data.total_revenue.toLocaleString('vi-VN')}đ`;
+            }
+        }
+
+        // 2. Tổng đơn
+        if (ordersEl) ordersEl.textContent = `${data.today_orders} Đơn`;
+        if (ordersTrendEl) {
+            ordersTrendEl.className = 'kpi-trend positive';
+            ordersTrendEl.innerHTML = `<i class="ph-bold ph-receipt"></i> Tích lũy toàn thời gian: ${data.total_orders} đơn`;
+        }
+
+        // 3. Tỷ lệ lấp đầy bàn
+        if (occEl) occEl.textContent = `${data.occupancy.rate}%`;
+        if (occTrendEl) {
+            const isHigh = data.occupancy.rate >= 60;
+            occTrendEl.className = isHigh ? 'kpi-trend negative' : 'kpi-trend positive';
+            occTrendEl.innerHTML = `<i class="ph-bold ph-users"></i> ${data.occupancy.description}`;
+        }
+
+        // 4. Biểu đồ doanh thu theo giờ
+        if (chartBarsEl && chartLabelsEl && data.hourly_stats) {
+            chartBarsEl.innerHTML = data.hourly_stats.map(s => `
+                <div class="bar" style="height: ${s.height_percent}%;" title="${s.hour} - ${s.revenue.toLocaleString('vi-VN')}đ"></div>
+            `).join('');
+            chartLabelsEl.innerHTML = data.hourly_stats.map(s => `
+                <span>${s.hour}</span>
+            `).join('');
+        }
+
+        // 5. Top món bán chạy
+        if (topListEl && data.top_dishes) {
+            if (data.top_dishes.length === 0) {
+                topListEl.innerHTML = '<li style="padding: 16px; color: #94A3B8; text-align: center;">Chưa có món nào được gọi trong hệ thống</li>';
+            } else {
+                topListEl.innerHTML = data.top_dishes.map((m, idx) => `
+                    <li>
+                        <span class="rank rank-${idx + 1}">${idx + 1}</span>
+                        <div class="top-info"><b>${m.name}</b><small>${m.quantity} suất</small></div>
+                        <span class="top-rev">${m.revenue.toLocaleString('vi-VN')}đ</span>
+                    </li>
+                `).join('');
+            }
+        }
+    } catch (err) {
+        console.warn('Không tải được số liệu Dashboard thật:', err);
+        if (revTrendEl) revTrendEl.innerHTML = `<i class="ph-bold ph-warning"></i> Chờ kết nối máy chủ`;
+    } finally {
+        if (refreshBtn) refreshBtn.classList.remove('loading');
+    }
+}
+window.loadDashboard = loadDashboard;
+
 // Khởi tạo
+loadDashboard();
 loadMenuItems();
 renderIngredients();
 renderInventorySessions();

@@ -14,7 +14,7 @@ import { expectToastSuccess, expectToastDanger } from '../utils/assertions';
 
 // ===== Cấu hình thời gian chờ =====
 const TEST_TIMEOUT = 60000; // tối đa cho mỗi test
-const NAV_WAIT_MS = 10000; // chờ sau khi mở trang để load dữ liệu
+const NAV_WAIT_MS = 5000; // chờ sau khi mở trang để load dữ liệu
 const UI_TIMEOUT = 15000; // timeout cho mỗi assertion UI
 
 test.describe('US-07 — CMS Quản lý Thực đơn', () => {
@@ -163,7 +163,7 @@ test.describe('US-07 — CMS Quản lý Thực đơn', () => {
     // Mở trang manager -> Tab Thực đơn (CMS)
     await cms.goto();
 
-    // Chờ 10s cho trang load dữ liệu rồi mới thao tác
+    // Chờ 5s cho trang load dữ liệu rồi mới thao tác
     await page.waitForTimeout(NAV_WAIT_MS);
     await expect(cms.menuRows.first()).toBeVisible({ timeout: UI_TIMEOUT });
   });
@@ -233,9 +233,11 @@ test.describe('US-07 — CMS Quản lý Thực đơn', () => {
       name: 'Sườn sụn rang muối',
       category: 'Món chính',
       price: 85000,
+      stockMode: 'Chế biến',
       description: 'Sườn sụn giòn ngon đậm vị.',
       ingredients: 'Sườn heo, tỏi, ớt',
       spicy: 'Cay nhẹ',
+      diet: 'Mặn',
       allergens: 'Không có',
     });
     await cms.submitAdd();

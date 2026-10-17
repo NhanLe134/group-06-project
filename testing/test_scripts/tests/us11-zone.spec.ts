@@ -37,25 +37,25 @@ test.describe('US-11 — Quản lý khu vực bàn', () => {
     await expect(page.locator('.table-item', { hasText: 'Bàn 02' })).toBeVisible();
     await expect(page.locator('.table-item', { hasText: 'Bàn 03' })).toBeVisible();
     
-    // Bàn 04, 05, 06 phải bị ẩn
-    await expect(page.locator('.table-item', { hasText: 'Bàn 04' })).not.toBeVisible();
+    // Bàn 06, 07 (thuộc Khu B) phải bị ẩn
     await expect(page.locator('.table-item', { hasText: 'Bàn 06' })).not.toBeVisible();
+    await expect(page.locator('.table-item', { hasText: 'Bàn 07' })).not.toBeVisible();
   });
 
   test('TC-US11-03: Chặn thông báo của Khu vực không thuộc ca trực', async ({ page }) => {
     const filterSelect = page.locator('#zone-filter');
     await filterSelect.selectOption('Khu A');
     
-    // Bắn event KDS của Bàn 04 (Khu B)
+    // Bắn event KDS của Bàn 06 (Khu B)
     await page.evaluate(() => {
-      window.dispatchEvent(new CustomEvent('ws-message', { detail: { type: 'ITEM_READY', data: { table: 'Bàn 04', item: 'Gà nướng', category: 'Đồ ăn', zone: 'Khu B' } } }));
+      window.dispatchEvent(new CustomEvent('ws-message', { detail: { type: 'ITEM_READY', data: { table: 'Bàn 06', item: 'Gà nướng', category: 'Đồ ăn', zone: 'Khu B' } } }));
     });
 
     // Chờ 11s để đảm bảo batching chạy xong
     await page.waitForTimeout(11000);
 
-    // Không được có popup nào của Bàn 04
-    await expect(page.locator('.notif-card', { hasText: 'Bàn 04' })).not.toBeVisible();
+    // Không được có popup nào của Bàn 06
+    await expect(page.locator('.notif-card', { hasText: 'Bàn 06' })).not.toBeVisible();
   });
 
   test('TC-US11-04: Đổi khu vực qua lại không làm mất trạng thái bàn', async ({ page }) => {

@@ -214,3 +214,53 @@ Cao — ảnh hưởng bộ test tự động; cần chạy lại toàn suite sa
 - Automated: chạy lại toàn bộ `us07-create_cms.spec.ts` → TC-012 và TC-013 pass.
 - Automated: kiểm tra không có timeout trong nhiều lần chạy liên tiếp.
 - TC liên quan: TC-MA-CMS-012, TC-MA-CMS-013.
+
+
+---
+
+# BUG-US07-006 — Playwright timeout khi tương tác ô tìm kiếm món ăn trên giao diện Mobile
+
+| Mục | Nội dung |
+|---|---|
+| Story | US-07 — CMS Quản lý Thực đơn |
+| Mức độ | **P2 — High** — ảnh hưởng bộ test tự động US-07 trên thiết bị di động |
+| Phát hiện | 2026-10-17, chạy `us07-create_cms.spec.ts` trên Mobile Chrome |
+| Người sửa | Ny (AI hỗ trợ — AI_USAGE_LOG A-NY20) |
+| Trạng thái | Open |
+
+## Summary
+TC-MA-CMS-002 trong bộ test Playwright bị timeout khi nhập từ khóa tìm kiếm món ăn vào ô input trên cấu hình Mobile Chrome.
+
+## Environment
+Playwright / Mobile Chrome / `tests/us07-create_cms.spec.ts` / `CmsPage.ts`.
+
+## Reproduction Steps
+1. Chạy `npx playwright test tests/us07-create_cms.spec.ts --project="Mobile Chrome"`.
+2. Quan sát TC-MA-CMS-002 (Tìm kiếm món ăn theo tên) fail.
+3. `cms.search('Coca')` gọi `this.searchInput.fill(query)` tại line 84 trong `CmsPage.ts`.
+4. Log: `TimeoutError: locator.fill: Timeout 10000ms exceeded.`
+
+## Expected vs Actual
+- Expected: Ô tìm kiếm hiển thị rõ ràng, điền được từ khóa và lọc món thành công; test pass.
+- Actual: Phần tử `#tab-menu-cms .search-box input` có trong DOM nhưng ở trạng thái ẩn (`element is not visible`). Playwright retry `fill` đến hết 10.000ms rồi thất bại.
+
+## Root Cause Analysis
+Kết hợp 2 vấn đề:
+1. Layout responsive trên màn hình di động làm khung `.search-box` bị ẩn, hoặc chưa được mở rộng bằng nút/icon tìm kiếm riêng của layout mobile.
+2. Page Object gọi thẳng `.fill()` mà không mở thanh tìm kiếm trước (nếu giao diện mobile yêu cầu toggle/expand).
+
+## Solution
+1. Chỉnh CSS/layout trong `manager.html` để ô tìm kiếm luôn hiển thị và tương tác được trên viewport di động.
+2. Cập nhật `CmsPage.ts`: trước khi gọi `.fill()`, kiểm tra ô tìm kiếm đã visible chưa. Nếu chưa, kích hoạt nút/icon mở thanh tìm kiếm (chỉ khi chạy trên môi trường Mobile).
+3. Đảm bảo `playwright.config.ts` khai báo đúng project `Mobile Chrome` (ví dụ dùng device `Pixel 5`) để lệnh `--project="Mobile Chrome"` chạy được.
+
+## Regression Risk
+Trung bình — ảnh hưởng bộ test tự động trên di động và trải nghiệm tìm kiếm của người dùng Mobile.
+
+## Test Plan
+- Automated: chạy `npx playwright test tests/us07-create_cms.spec.ts -g "TC-MA-CMS-002" --project="Mobile Chrome"` → test pass.
+- Automated: chạy lại toàn bộ `us07-create_cms.spec.ts` trên cả Chromium (desktop) và Mobile Chrome để chắc không làm hỏng desktop.
+- Manual: mở trang Manager trên Mobile Chrome, kiểm tra tìm kiếm món ăn hoạt động bình thường.
+- TC liên quan: TC-MA-CMS-002.
+
+

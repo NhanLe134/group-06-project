@@ -30,10 +30,10 @@
             <span class="text">Đang đồng bộ...</span>
         </div>
 
-        <button class="btn-primary" id="btn-batch-serve" style="border-radius: 8px; padding: 10px 16px; border: none; font-weight: 700; cursor: pointer; display:none;"><i class="ph-bold ph-stack"></i> Gom Món</button>
+        <button class="btn-primary" id="btn-batch-serve" style="border-radius: 10px; padding: 10px 16px; border: none; font-weight: 700; cursor: pointer; display:none;"><i class="ph-bold ph-stack"></i> Gom Món</button>
         <div class="waiter-profile">
             <img src="https://ui-avatars.com/api/?name=Waiter&background=FF5A36&color=fff" alt="Avatar" class="avatar">
-            <span>Ca Sáng (Tầng 1)</span>
+            <span id="waiter-user-name">Waiter</span>
         </div>
         <a href="../index.html"><button class="btn-logout"><i class="ph-bold ph-sign-out"></i> Thoát</button></a>
       </div>
@@ -56,9 +56,14 @@
                 <!-- <p style="color: var(--color-text-muted); font-size: 14px; margin-top: 4px;">Click vào bàn để xem chi tiết Order & Cập nhật trạng thái</p> -->
             </div>
             <div class="status-legend">
-                <span class="legend-item"><span class="dot success"></span>Trống (Sẵn sàng)</span>
-                <span class="legend-item"><span class="dot danger"></span>Đang dùng bữa</span>
-                <span class="legend-item"><span class="dot warning"></span>Cần dọn dẹp</span>
+                <span class="legend-item"><span class="dot dot-empty"></span>Trống</span>
+                <span class="legend-item"><span class="dot dot-info"></span>Đang chọn món</span>
+                <span class="legend-item"><span class="dot dot-pending"></span>Chờ bếp nấu</span>
+                <span class="legend-item"><span class="dot dot-warning"></span>Bếp đang nấu</span>
+                <span class="legend-item"><span class="dot dot-primary"></span>Cần lên món</span>
+                <span class="legend-item"><span class="dot dot-success"></span>Đã đủ món</span>
+                <span class="legend-item"><span class="dot dot-danger"></span>Trễ món</span>
+                <span class="legend-item"><span class="dot dot-cleaning"></span>Cần dọn</span>
             </div>
         </div>
         
@@ -94,8 +99,13 @@
   <div class="drawer" id="table-drawer">
       <div class="drawer-header">
           <div>
-              <h3 id="drawer-title" style="display: flex; align-items: center; gap: 8px;">Bàn 01 <span id="drawer-status-badge" class="badge">Đang ăn</span></h3>
-              <p class="drawer-subtitle" id="drawer-subtitle"><i class="ph-bold ph-users"></i> 2/4 Khách • Đã ngồi 45 phút</p>
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                  <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--color-text-main); display: flex; align-items: center; gap: 6px;">
+                      <span id="drawer-title">Bàn 01</span>
+                  </h3>
+                  <span id="drawer-status-badge" class="badge">Trống</span>
+              </div>
+              <p class="drawer-subtitle" id="drawer-subtitle" style="margin: 0;"><i class="ph-bold ph-users"></i> 2/4 Khách • Đã ngồi 45 phút</p>
           </div>
           <button class="btn-close-drawer" id="btn-close-drawer"><i class="ph-bold ph-x"></i></button>
       </div>
@@ -120,24 +130,24 @@
   </div>
 
   <!-- Component: Custom Void/Adjust Dialog -->
-  <div class="modal-overlay" id="void-modal" style="display: none; z-index: 9999;" role="dialog" aria-modal="true">
-      <div class="modal-content glass-modal" style="border-radius: 20px; padding: 24px 20px;">
-          <div class="modal-icon" style="background: #E8F4F2; color: var(--color-primary); font-size: 28px; width: 56px; height: 56px; margin-bottom: 12px;"><i class="ph-duotone ph-pencil-simple"></i></div>
-          <h3 class="modal-title" id="void-modal-title" style="font-size: 18px; font-weight: 800; color: #1E293B; margin-bottom: 8px;">Điều chỉnh số lượng</h3>
-          <p class="modal-desc" id="void-modal-desc" style="color: #64748B; font-weight: 500; font-size: 14px; line-height: 1.4; margin-bottom: 20px; margin-top: 0;">Mô tả thông tin món</p>
+  <div class="modal-overlay" id="void-modal" style="display: none; z-index: 12000;" role="dialog" aria-modal="true">
+      <div class="modal-content glass-modal" style="border-radius: 20px; padding: 24px 22px; font-family: 'Outfit', 'Be Vietnam Pro', -apple-system, sans-serif; -webkit-font-smoothing: antialiased;">
+          <div class="modal-icon" style="background: #F1F5F9; color: var(--color-primary); font-size: 24px; width: 48px; height: 48px; margin-bottom: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center;"><i class="ph-duotone ph-pencil-simple"></i></div>
+          <h3 class="modal-title" id="void-modal-title" style="font-size: 17px; font-weight: 600; color: #0F172A; margin: 0 0 6px 0; letter-spacing: -0.01em;">Điều chỉnh số lượng</h3>
+          <p class="modal-desc" id="void-modal-desc" style="color: #64748B; font-weight: 400; font-size: 13.5px; line-height: 1.5; margin: 0 0 18px 0;">Mô tả thông tin món</p>
           
-          <div id="void-qty-container" style="display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom: 20px; width: 100%;">
-              <button id="btn-void-minus" style="width: 40px; height: 40px; border-radius: 10px; border: 1px solid #E2E8F0; background: #F8FAFC; font-size: 20px; font-weight: bold; color: #1E293B; cursor: pointer; display: flex; align-items: center; justify-content: center; outline:none;">-</button>
-              <input type="number" id="void-qty-input" class="modal-input numeric" style="text-align:center; font-size: 24px; font-weight: 800; padding: 0; width: 56px; border: none; background: transparent; outline:none;" min="0" readonly>
-              <button id="btn-void-plus" style="width: 40px; height: 40px; border-radius: 10px; border: 1px solid #E2E8F0; background: #F8FAFC; font-size: 20px; font-weight: bold; color: #1E293B; cursor: pointer; display: flex; align-items: center; justify-content: center; outline:none;">+</button>
+          <div id="void-qty-container" style="display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom: 18px; width: 100%;">
+              <button id="btn-void-minus" style="width: 38px; height: 38px; border-radius: 10px; border: 1px solid #E2E8F0; background: #F8FAFC; font-size: 18px; font-weight: 400; color: #334155; cursor: pointer; display: flex; align-items: center; justify-content: center; outline:none; transition: all 0.15s ease;">-</button>
+              <input type="number" id="void-qty-input" class="modal-input numeric" style="text-align:center; font-size: 22px; font-weight: 600; padding: 0; width: 52px; border: none; background: transparent; outline:none; font-family: 'Outfit', sans-serif; color: #0F172A;" min="0" readonly>
+              <button id="btn-void-plus" style="width: 38px; height: 38px; border-radius: 10px; border: 1px solid #E2E8F0; background: #F8FAFC; font-size: 18px; font-weight: 400; color: #334155; cursor: pointer; display: flex; align-items: center; justify-content: center; outline:none; transition: all 0.15s ease;">+</button>
           </div>
 
-          <div id="void-error" class="error-msg" style="display:none; color: var(--color-danger); font-size: 13px; font-weight: 600; margin-bottom: 12px; width: 100%; text-align: left;"><i class="ph-fill ph-warning-circle"></i> <span id="void-error-text">Số lượng không hợp lệ!</span></div>
-          <div class="modal-actions" style="display: flex; gap: 8px; width: 100%; margin-top: 0;">
-              <button class="btn btn-ghost" id="btn-cancel-void" style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid #E2E8F0; background: #fff; color: #1E293B; font-weight: 700; font-size: 14px; cursor: pointer;">Đóng</button>
-              <button class="btn btn-primary" id="btn-confirm-void" style="flex: 1; padding: 10px; border-radius: 10px; border: none; background: var(--color-primary); color: #fff; font-weight: 700; font-size: 14px; cursor: pointer;">Cập nhật</button>
+          <div id="void-error" class="error-msg" style="display:none; color: var(--color-danger); font-size: 12.5px; font-weight: 500; margin-bottom: 12px; width: 100%; text-align: left;"><i class="ph-fill ph-warning-circle"></i> <span id="void-error-text">Số lượng không hợp lệ!</span></div>
+          <div class="modal-actions" style="display: flex; gap: 10px; width: 100%; margin-top: 0;">
+              <button class="btn btn-ghost" id="btn-cancel-void" style="flex: 1; padding: 10px 14px; border-radius: 10px; border: 1px solid #E2E8F0; background: #fff; color: #475569; font-weight: 500; font-size: 13.5px; cursor: pointer; letter-spacing: 0.01em;">Đóng</button>
+              <button class="btn btn-primary" id="btn-confirm-void" style="flex: 1; padding: 10px 14px; border-radius: 10px; border: none; background: var(--color-primary); color: #fff; font-weight: 500; font-size: 13.5px; cursor: pointer; letter-spacing: 0.01em;">Cập nhật</button>
           </div>
-          <button id="btn-full-void" style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #FECDD3; background: #FFF1F2; color: #E11D48; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 10px;"><i class="ph-bold ph-trash"></i> Hủy toàn bộ món này</button>
+          <button id="btn-full-void" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid #FECDD3; background: #FFF1F2; color: #E11D48; font-weight: 500; font-size: 13px; cursor: pointer; margin-top: 10px; letter-spacing: 0.01em;"><i class="ph-bold ph-trash"></i> Hủy toàn bộ món này</button>
       </div>
   </div>
 
@@ -160,6 +170,6 @@
 
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/realtime.js"></script>
-  <script src="../assets/js/waiter.js?v=2"></script>
+  <script src="../assets/js/waiter.js?v=clean_overlap_2"></script>
 </body>
 </html>

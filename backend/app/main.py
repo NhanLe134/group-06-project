@@ -17,7 +17,7 @@ from app.errors import register_error_handlers
 from app.logging_setup import configure_logging, kv
 from app.models.menu import ThucDon
 from app.models.user import NguoiDung
-from app.routers import auth, ingredients, inventory, kds, menu, orders, sepay, voice, waiter
+from app.routers import auth, dashboard, ingredients, inventory, kds, menu, orders, sepay, voice, waiter
 from app.ws import router as ws_router
 
 SEED_MENU_ITEMS = [
@@ -132,6 +132,8 @@ app.include_router(voice.ai_router)
 app.include_router(waiter.router)
 app.include_router(ws_router.router)
 app.include_router(auth.router)
+app.include_router(dashboard.router)
+app.include_router(dashboard.router, prefix="/api")
 
 
 @app.get("/health")
