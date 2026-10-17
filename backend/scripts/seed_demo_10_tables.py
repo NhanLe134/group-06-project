@@ -16,9 +16,9 @@ Kèm các trạng thái thông báo:
 """
 
 import asyncio
+import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-import sys
 
 # Tự động nạp thư mục backend vào sys.path để chạy từ bất cứ đâu
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -144,7 +144,8 @@ async def seed_demo():
                     ("Sữa chua Hy Lạp", 1, "da_phuc_vu", None),
                 ],
             ),
-            # 9. GOM MÓN TIỆN ĐƯỜNG (Bàn 09 - Khu B): Cùng gọi "Sprite" thời gian hao hao Bàn 08 -> Kích hoạt widget "GOM MÓN"
+            # 9. GOM MÓN TIỆN ĐƯỜNG (Bàn 09 - Khu B): Cùng gọi "Sprite" với Bàn 08
+            # -> Kích hoạt widget "GOM MÓN"
             (
                 "Bàn 09",
                 2,
