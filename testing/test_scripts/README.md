@@ -40,9 +40,9 @@ npx playwright install chromium
 npx playwright test
 
 # Chạy 1 file cụ thể
-npx playwright test tests/us01-emenu.spec.ts
+npx playwright test tests/us07-cms.spec.ts
  # hoặc
-npx playwright test tests/us07-create_cms.spec.ts --headed --reporter=list --project=chromium
+npx playwright test tests/us07-cms.spec.ts --headed --reporter=list --project=chromium
 # Chạy với UI mode (debug)
 npx playwright test --ui
 
@@ -61,3 +61,8 @@ npx playwright test -c playwright.us03.config.ts --project=staging-smoke  # smok
 
 Chạy bằng `playwright.config.ts` chung thì các test này tự `skip`. Test case: `testing/test_cases/test-cases-US03.md`, `US08.md`; kết quả: `testing/reports/US-03/`.
 
+npx playwright test
+npx playwright test tests/e2e-us07-cms.spec.ts
+
+uv run pytest tests/routers/test_menu.py -v -p no:cacheprovider
+uv run pytest tests/routers -v
